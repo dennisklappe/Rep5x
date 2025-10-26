@@ -1,4 +1,4 @@
-# Rep5x - Marlin firmware
+# Rep5x - Firmware - Marlin
 
 Marlin 2.1.x configurations for Rep5x 5-axis printing systems.
 

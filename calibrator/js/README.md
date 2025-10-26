@@ -1,4 +1,4 @@
-# JavaScript files
+# Rep5x - Calibrator - JavaScript
 
 > **Developer note**: Apologies for the large JS files - I'm not a programmer but it works! Feel free to refactor and make a PR to improve the code quality.
 

@@ -5,7 +5,7 @@ A web-based calibration tool for Rep5x 5-axis 3D printers to determine kinematic
 ## Quick start
 
 ### Online version
-Visit `calibrator.rep5x.com/` (once deployed)
+Visit [http://calibrator.rep5x.com/](http://calibrator.rep5x.com/)
 
 ### Local usage
 1. Open `index.html` in a modern browser (Chrome/Edge recommended)
@@ -32,10 +32,20 @@ Visit `calibrator.rep5x.com/` (once deployed)
 - USB connection to printer
 
 ### Hardware
-- USB camera mounted on print bed looking upward (camera mode)
-- Calibration cone for cone mode
 
-See [hardware/README.md](hardware/README.md) for detailed hardware setup instructions and purchase recommendations.
+**Two calibration methods available:**
+
+1. **Cone-based calibration** (recommended for beginners)
+   - Just print a calibration cone (~€0.10)
+   - No additional equipment needed
+   - Simple and reliable
+
+2. **Camera-based calibration** (advanced)
+   - USB camera mounted on print bed looking upward (~€10.50)
+   - Includes LEDs for consistent lighting
+   - Magnetic mount for easy positioning
+
+See [hardware/README.md](hardware/README.md) for complete hardware setup instructions, bill of materials, assembly guides, and 3D printable files.
 
 ## Project structure
 
@@ -60,7 +70,9 @@ calibrator/
 │   ├── la-lb-cone.js     # Cone kinematic calibration
 │   └── printer-interface.js # Serial communication
 └── hardware/             # Hardware setup documentation
-    └── README.md         # Camera and hardware setup guide
+    ├── README.md         # Complete hardware guide (cone & camera)
+    ├── *.jpg, *.png      # Assembly photos and technical drawings
+    └── *.3mf, *.f3d      # 3D printable files (camera mount)
 ```
 
 ## How it works
@@ -69,9 +81,11 @@ calibrator/
 
 #### Camera method
 1. **Stage 1: kinematic parameters**
-   - Mount camera on print bed facing up
-   - Home all axes
-   - Align nozzle at specific angles to determine la and lb values
+   - **Recommended**: Enter la and lb values from your CAD model if known (most accurate)
+   - **Alternative**: Measure using the tool:
+     - Mount camera on print bed facing up
+     - Home all axes
+     - Align nozzle at specific angles to determine la and lb values
 
 2. **Stage 2: XYZ offset table (optional)**
    - Set reference at A=0°, B=0°
@@ -79,11 +93,13 @@ calibrator/
    - Generate lookup table for error compensation
 
 #### Cone method
-1. Place calibration cone on bed
-2. Align nozzle with cone tip
-3. Apply test angles and measure offsets
-4. Confirm position for each angle
-5. View calculated parameters
+1. **Recommended**: Enter la and lb values from your CAD model if known (most accurate)
+2. **Alternative**: Measure using the tool:
+   - Place calibration cone on bed
+   - Align nozzle with cone tip
+   - Apply test angles and measure offsets
+   - Confirm position for each angle
+   - View calculated parameters
 
 ### Output
 
@@ -123,8 +139,9 @@ The calibration determines:
 - [x] Basic camera and cone calibration modes
 - [x] Kinematic parameter determination
 - [x] XYZ offset table generation
+- [x] Camera hardware design and testing
+- [x] Hardware documentation and build guide
 - [ ] Detailed usage instructions and documentation
-- [ ] Camera mode verification and testing
 - [ ] Automatic Python script generation for G-code post-processing
 
 ### Not planned (future considerations)
