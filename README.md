@@ -53,7 +53,8 @@ Currently supported printers:
 
 ```
 Rep5x/
-├── printer-models/           # Hardware for specific printer models
+├── calibrator/              # Web-based calibration tool
+├── printer-models/          # Hardware for specific printer models
 │   ├── ender-5-pro/         # Ender 5 Pro retrofit (working prototype)
 │   │   ├── 3d-printed-parts/ # STL files and CAD assembly
 │   │   ├── BOM.md           # Complete parts list
@@ -92,7 +93,7 @@ Rep5x/
 - [x] Setting up the Discord community
 - [ ] Ender 3 V3 SE adaptation
 - [ ] Detailed assembly instructions
-- [ ] Web-based setup/calibration tool
+- [x] Web-based setup/calibration tool
 - [ ] Community guidelines for new printer adaptations
 
 ### Community-driven development

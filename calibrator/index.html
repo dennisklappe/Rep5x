@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rep5x Calibrator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="landing-header">
+            <h1>Rep5x Calibrator</h1>
+            <p class="subtitle">5-Axis Printer Kinematic Calibration Tool</p>
+            <p class="description">
+                Professional calibration software for Rep5x 5-axis 3D printers. 
+                Determine kinematic parameters and compensate for manufacturing errors 
+                to achieve precise multi-angle printing.
+            </p>
+        </header>
+
+        <div class="landing-content">
+            <div class="workflow-cards">
+                <div class="workflow-card">
+                    <div class="card-icon">📐</div>
+                    <h3>1. Kinematic Setup</h3>
+                    <p>Enter your printer's la and lb link lengths, or measure them using our guided tools.</p>
+                    <a href="html/setup.html" class="card-button">Start Setup</a>
+                </div>
+
+                <div class="workflow-card">
+                    <div class="card-icon">📷</div>
+                    <h3>Camera Calibration</h3>
+                    <p>Use a USB camera for automated XY offset detection and Z probing calibration.</p>
+                    <a href="html/camera.html" class="card-button" id="cameraModeBtn">Camera Mode</a>
+                </div>
+
+                <div class="workflow-card">
+                    <div class="card-icon">📍</div>
+                    <h3>Cone Calibration</h3>
+                    <p>Manual calibration using a physical cone reference for maximum precision.</p>
+                    <a href="html/cone.html" class="card-button" id="coneModeBtn">Cone Mode</a>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2>Features</h2>
+                <div class="features-grid">
+                    <div class="feature">
+                        <h4>Automatic Z Compensation</h4>
+                        <p>Conductive probe automatically measures Z deviations at different B angles</p>
+                    </div>
+                    <div class="feature">
+                        <h4>Error Visualization</h4>
+                        <p>Real-time graphs showing X, Y, Z errors for both A and B axis rotations</p>
+                    </div>
+                    <div class="feature">
+                        <h4>Export Ready</h4>
+                        <p>Generates calibration data and error measurements for analysis and compensation</p>
+                    </div>
+                    <div class="feature">
+                        <h4>Web Serial API</h4>
+                        <p>Direct printer control through modern browser interfaces</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-section">
+                <h2>System Status</h2>
+                <div class="status-checks">
+                    <div class="status-item">
+                        <span class="status-icon" id="browserStatus">⚠️</span>
+                        <span>Browser Compatibility</span>
+                        <span class="status-text" id="browserText">Checking...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-icon" id="cameraStatus">⚠️</span>
+                        <span>Camera Access</span>
+                        <span class="status-text" id="cameraText">Not tested</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-icon" id="serialStatus">⚠️</span>
+                        <span>Serial Port Access</span>
+                        <span class="status-text" id="serialText">Not tested</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="landing-footer">
+            <p>Rep5x Calibrator - Open Source 5-Axis Printing Calibration</p>
+            <p>Built for democratizing multi-axis 3D printing technology</p>
+        </footer>
+    </div>
+
+    <script src="js/landing.js"></script>
+</body>
+</html>

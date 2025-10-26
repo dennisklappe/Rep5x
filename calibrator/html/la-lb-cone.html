@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cone La/Lb Measurement - Rep5x Calibrator</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Rep5x Calibrator</h1>
+            <p class="subtitle">Cone La/Lb Measurement</p>
+            <nav class="breadcrumb">
+                <a href="../index.html">Home</a> > <a href="setup.html">Setup</a> > Cone La/Lb
+            </nav>
+        </header>
+
+        <div class="calibration-interface">
+            <!-- Instructions and GCode Log - Split Top Row -->
+            <div class="camera-section">
+                <div class="cone-instructions-container">
+                    <h3>La/Lb Measurement Setup</h3>
+                    <div class="instruction-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Position Cone</h4>
+                                <p>Place a calibration cone on the print bed. We'll measure la and lb by positioning the nozzle at the cone tip.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Measure La (A-axis)</h4>
+                                <p>Position nozzle at cone tip for A0°, A90°, A180°, A270°. We'll calculate la from position differences.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Measure Lb (B-axis)</h4>
+                                <p>Position nozzle at cone tip for B-90°, B0°, B90°. We'll calculate lb from position differences.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="gcode-log-container">
+                    <h3>GCode Log</h3>
+                    <div class="gcode-log" id="gcodeLog">
+                        <div class="log-entry">Ready to connect...</div>
+                    </div>
+                    <div class="log-controls">
+                        <button id="clearLogBtn" class="secondary-btn">Clear Log</button>
+                        <button id="autoScrollBtn" class="secondary-btn active">Auto Scroll</button>
+                    </div>
+                    <div class="manual-gcode-container">
+                        <input type="text" id="manualGcodeInput" placeholder="Enter G-code command (e.g., G28, M114, G0 X10 Y10)">
+                        <button id="sendGcodeBtn" class="primary-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Grid - 2 rows of 3 boxes -->
+            <div class="control-grid">
+                <!-- Row 1 -->
+                <div class="control-box">
+                    <h3>Printer Connection</h3>
+                    <div class="status-item">
+                        <span id="printerStatus" class="status-icon">⚠️</span>
+                        <span>Printer: </span>
+                        <span id="printerText">Not connected</span>
+                    </div>
+                    <div class="status-item">
+                        <span id="coneStatus" class="status-icon">⚠️</span>
+                        <span>Cone: </span>
+                        <span id="coneText">Not positioned</span>
+                    </div>
+                    <button id="connectBtn" class="primary-btn">Connect Printer</button>
+                    <button id="testModeBtn" class="secondary-btn">Test Mode</button>
+                </div>
+
+                <div class="control-box">
+                    <h3>Movement Controls</h3>
+                    
+                    <div class="movement-container">
+                        <!-- XY Movement Grid -->
+                        <div class="xy-movement">
+                            <h4>XY Movement</h4>
+                            <div class="movement-grid">
+                                <div></div>
+                                <button class="move-btn" data-axis="Y" data-direction="1">Y+<br>↑</button>
+                                <div></div>
+                                <button class="move-btn" data-axis="X" data-direction="-1">X-<br>←</button>
+                                <button class="home-btn" data-axis="XY">⌂<br>Home All</button>
+                                <button class="move-btn" data-axis="X" data-direction="1">→<br>X+</button>
+                                <div></div>
+                                <button class="move-btn" data-axis="Y" data-direction="-1">↓<br>Y-</button>
+                                <div></div>
+                            </div>
+                        </div>
+
+                        <!-- Z Movement -->
+                        <div class="z-movement">
+                            <h4>Z Movement</h4>
+                            <div class="z-controls">
+                                <button class="move-btn" data-axis="Z" data-direction="1">Z+<br>↑</button>
+                                <button class="move-btn" data-axis="Z" data-direction="-1">Z-<br>↓</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Step Size -->
+                    <div class="step-controls">
+                        <h4>Step Size</h4>
+                        <div class="step-buttons">
+                            <button class="step-btn" data-step="0.1">0.1mm</button>
+                            <button class="step-btn active" data-step="1">1mm</button>
+                            <button class="step-btn" data-step="10">10mm</button>
+                            <input type="number" id="moveDistance" value="1" step="0.1" min="0.1" placeholder="Custom">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-box">
+                    <h3>Current Position</h3>
+                    <div class="current-measurement">
+                        <p>A: <span id="currentA">--</span>°</p>
+                        <p>B: <span id="currentB">--</span>°</p>
+                        <p>X: <span id="currentX">--</span>mm</p>
+                        <p>Y: <span id="currentY">--</span>mm</p>
+                        <p>Z: <span id="currentZ">--</span>mm</p>
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="control-box">
+                    <h3>Measurement Control</h3>
+                    <p>Select which parameter to measure:</p>
+                    <div class="measurement-buttons">
+                        <button id="startLaBtn" class="measurement-btn" disabled>Measure La (A-axis)</button>
+                        <button id="startLbBtn" class="measurement-btn" disabled>Measure Lb (B-axis)</button>
+                    </div>
+                    
+                    <div class="input-group" id="zOffsetGroup" style="display: none;">
+                        <label for="z-offset-input">Z Safety Offset:</label>
+                        <input type="number" id="zOffsetInput" value="50" step="0.1" min="0">
+                        <span class="unit">mm</span>
+                    </div>
+                    
+                    <div class="measurement-results">
+                        <div id="laResults" style="display: none;">
+                            <p>La: <span id="laValue">--</span>mm</p>
+                            <p>Consistency: <span id="laConsistency">--</span></p>
+                        </div>
+                        <div id="lbResults" style="display: none;">
+                            <p>Lb: <span id="lbValue">--</span>mm</p>
+                            <p>Consistency: <span id="lbConsistency">--</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-box" id="measurementProgress" style="display: none;">
+                    <h3>Measurement Progress</h3>
+                    <div id="measurementInstruction">
+                        <p>Position the nozzle tip to touch the cone tip</p>
+                    </div>
+                    <div class="calibration-status">
+                        <p>Current step: <span id="currentStep">--</span></p>
+                        <p>Angle: <span id="currentAngle">--</span></p>
+                        <p>Expected position: X=<span id="expectedX">--</span> Y=<span id="expectedY">--</span> Z=<span id="expectedZ">--</span></p>
+                        <p>Actual position: X=<span id="actualX">--</span> Y=<span id="actualY">--</span> Z=<span id="actualZ">--</span></p>
+                    </div>
+                    <button id="confirmPositionBtn" class="primary-btn">Confirm Position</button>
+                    <button id="skipMeasurementBtn" class="secondary-btn">Skip This Point</button>
+                </div>
+
+                <div class="control-box">
+                    <h3>Save Results</h3>
+                    <div class="final-results" id="finalResults" style="display: none;">
+                        <p>Final La: <span id="finalLa">--</span>mm</p>
+                        <p>Final Lb: <span id="finalLb">--</span>mm</p>
+                    </div>
+                    <button id="saveParametersBtn" class="primary-btn" disabled>Save Parameters</button>
+                    <button id="backToSetupBtn" class="secondary-btn">Back to Setup</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="statusMessage">Connect printer and position cone to begin measurement</span>
+            <span id="measurementProgressText">Ready to start</span>
+        </div>
+    </div>
+
+    <script src="../js/la-lb-cone.js"></script>
+</body>
+</html>

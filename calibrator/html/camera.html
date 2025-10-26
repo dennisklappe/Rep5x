@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Calibration - Rep5x Calibrator</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Rep5x Calibrator</h1>
+            <p class="subtitle">Camera Calibration Mode</p>
+            <nav class="breadcrumb">
+                <a href="../index.html">Home</a> > <a href="setup.html">Setup</a> > Camera
+            </nav>
+        </header>
+
+        <div class="calibration-interface">
+            <!-- Camera Feed and GCode Log - Split Top Row -->
+            <div class="camera-section">
+                <div class="camera-container">
+                    <video id="cameraFeed" autoplay playsinline muted></video>
+                    <div class="camera-overlay">
+                        <div class="crosshair-horizontal"></div>
+                        <div class="crosshair-vertical"></div>
+                        <div class="z-reference-line" style="display: none;"></div>
+                    </div>
+                    <div class="camera-info">
+                        <p id="cameraInstruction">Position nozzle at center of crosshair</p>
+                    </div>
+                </div>
+                <div class="gcode-log-container">
+                    <h3>GCode Log</h3>
+                    <div class="gcode-log" id="gcodeLog">
+                        <div class="log-entry">Ready to connect...</div>
+                    </div>
+                    <div class="log-controls">
+                        <button id="clearLogBtn" class="secondary-btn">Clear Log</button>
+                        <button id="autoScrollBtn" class="secondary-btn active">Auto Scroll</button>
+                    </div>
+                    <div class="manual-gcode-container">
+                        <input type="text" id="manualGcodeInput" placeholder="Enter G-code command (e.g., G28, M114, G0 X10 Y10)">
+                        <button id="sendGcodeBtn" class="primary-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Grid - 2 rows of 3 boxes -->
+            <div class="control-grid">
+                <!-- Row 1 -->
+                <div class="control-box">
+                    <h3>Printer Connection</h3>
+                    <div class="status-item">
+                        <span id="printerStatus" class="status-icon">⚠️</span>
+                        <span>Printer: </span>
+                        <span id="printerText">Not connected</span>
+                    </div>
+                    <div class="status-item">
+                        <span id="cameraStatus" class="status-icon">⚠️</span>
+                        <span>Camera: </span>
+                        <span id="cameraText">Not started</span>
+                    </div>
+                    <button id="connectBtn" class="primary-btn">Connect Printer</button>
+                    <button id="startCameraBtn" class="secondary-btn">Start Camera</button>
+                    <button id="testModeBtn" class="secondary-btn">Test Mode</button>
+                </div>
+
+                <div class="control-box">
+                    <h3>Movement Controls</h3>
+                    
+                    <div class="movement-container">
+                        <!-- XY Movement Grid -->
+                        <div class="xy-movement">
+                            <h4>XY Movement</h4>
+                            <div class="movement-grid">
+                                <div></div>
+                                <button class="move-btn" data-axis="Y" data-direction="1">Y+<br>↑</button>
+                                <div></div>
+                                <button class="move-btn" data-axis="X" data-direction="-1">X-<br>←</button>
+                                <button class="home-btn" data-axis="XY">⌂<br>Home</button>
+                                <button class="move-btn" data-axis="X" data-direction="1">→<br>X+</button>
+                                <div></div>
+                                <button class="move-btn" data-axis="Y" data-direction="-1">↓<br>Y-</button>
+                                <div></div>
+                            </div>
+                        </div>
+
+                        <!-- Z Movement -->
+                        <div class="z-movement">
+                            <h4>Z Movement</h4>
+                            <div class="z-controls">
+                                <button class="move-btn" data-axis="Z" data-direction="1">Z+<br>↑</button>
+                                <button class="move-btn" data-axis="Z" data-direction="-1">Z-<br>↓</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step Size -->
+                    <div class="step-controls">
+                        <h4>Step Size</h4>
+                        <div class="step-buttons">
+                            <button class="step-btn" data-step="0.1">0.1mm</button>
+                            <button class="step-btn active" data-step="1">1mm</button>
+                            <button class="step-btn" data-step="10">10mm</button>
+                            <input type="number" id="moveDistance" value="1" step="0.1" min="0.1" placeholder="Custom">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-box">
+                    <h3>Current Position</h3>
+                    <div class="current-measurement">
+                        <p>A: <span id="currentA">--</span>°</p>
+                        <p>B: <span id="currentB">--</span>°</p>
+                        <p>X: <span id="currentX">--</span>mm</p>
+                        <p>Y: <span id="currentY">--</span>mm</p>
+                        <p>Z: <span id="currentZ">--</span>mm</p>
+                    </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="control-box">
+                    <h3>Calibration Control</h3>
+                    <button id="zCalibrationBtn" class="secondary-btn" disabled>Z Calibration</button>
+                    <button id="startCalibrationBtn" class="primary-btn" disabled>Start XY Calibration</button>
+                    <button id="exportResultsBtn" class="secondary-btn" disabled>Export Results</button>
+                    
+                    <div class="progress-section">
+                        <h4>Progress</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="calibrationProgress"></div>
+                        </div>
+                        <p id="progressText">Ready to start</p>
+                    </div>
+                </div>
+
+                <div class="control-box" id="zCalibrationBox" style="display: none;">
+                    <h3>Z Calibration</h3>
+                    <div id="zCalibrationInstruction">
+                        <p>Choose calibration method for each axis:</p>
+                        <p style="color: #6b7280; font-size: 0.9rem;">A-axis: Automated probing | B-axis: Manual with camera</p>
+                    </div>
+                    <div class="calibration-status" id="zCalibrationStatus" style="display: none;">
+                        <p>Current step: <span id="zCurrentStep">--</span></p>
+                        <p>Angle: <span id="zCurrentAngle">--</span></p>
+                        <p>Expected position: <span>Z=<span id="zExpectedZ">--</span></span></p>
+                        <p>Actual position: <span>Z=<span id="zActualZ">--</span></span></p>
+                    </div>
+                    <div class="z-calibration-info" id="zCalibrationInfo" style="display: none;">
+                        <p style="color: #6b7280; font-size: 0.9rem;">Automatic process - no manual input required</p>
+                    </div>
+                    <div class="z-calibration-buttons">
+                        <button id="zAAxisBtn" class="primary-btn">A-axis (Automated)</button>
+                        <button id="zBAxisBtn" class="secondary-btn">B-axis (Manual)</button>
+                    </div>
+                </div>
+
+                <div class="control-box" id="calibrationBox" style="display: none;">
+                    <h3>XY Calibration (Manual)</h3>
+                    <div id="calibrationInstruction">
+                        <p>Align the nozzle with the center crosshair</p>
+                    </div>
+                    <div class="calibration-status">
+                        <p>Current step: <span id="currentStep">--</span></p>
+                        <p>Angle: <span id="currentAngle">--</span></p>
+                        <p>Expected position: X=<span id="expectedX">--</span> Y=<span id="expectedY">--</span></p>
+                        <p>Actual position: X=<span id="actualX">--</span> Y=<span id="actualY">--</span></p>
+                    </div>
+                    <button id="confirmAlignmentBtn" class="primary-btn">Confirm Position</button>
+                    <button id="skipPointBtn" class="secondary-btn">Skip Point</button>
+                </div>
+
+                <div class="control-box">
+                    <h3>Error Graphs</h3>
+                    <div class="graph-tabs">
+                        <button class="graph-tab active" data-graph="a-axis">A-Axis</button>
+                        <button class="graph-tab" data-graph="b-axis">B-Axis</button>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="aAxisGraph" width="300" height="200"></canvas>
+                        <canvas id="bAxisGraph" width="300" height="200" style="display: none;"></canvas>
+                    </div>
+                    <div class="graph-legend">
+                        <span class="legend-item"><span class="legend-color" style="background: #ef4444;"></span>X Error</span>
+                        <span class="legend-item"><span class="legend-color" style="background: #10b981;"></span>Y Error</span>
+                        <span class="legend-item"><span class="legend-color" style="background: #3b82f6;"></span>Z Error</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alignment Panel (hidden by default) -->
+            <div id="alignmentPanel" class="alignment-panel" style="display: none;">
+                <div class="alignment-content">
+                    <h3>Align Nozzle</h3>
+                    <p id="alignmentInstruction">Position the nozzle at the center of the crosshair</p>
+                    <div class="alignment-buttons">
+                        <button id="alignmentOkBtn" class="primary-btn">Position is Correct</button>
+                        <button id="alignmentSkipBtn" class="secondary-btn">Skip This Point</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="statusMessage">Connect printer and start camera to begin calibration</span>
+            <span id="kinematicValues">la: -- lb: --</span>
+        </div>
+    </div>
+
+    <script src="../js/camera.js"></script>
+</body>
+</html>
