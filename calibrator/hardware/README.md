@@ -78,10 +78,34 @@ The camera housing consists of two parts:
 - 4x LED mounting holes (customizable in Fusion 360)
 - 5x magnet mounting holes (6x2mm, Gridfinity compatible)
 
+### Z-axis calibration mount
+For calibrating the Z-axis in camera mode, the camera needs to be mounted sideways:
+- **Z-axis mount**: [3MF](camera-mount-z-axis-v1.3mf) | [Fusion 360](camera-mount-z-axis-v1.f3d)
+
+**Features:**
+- Holds camera sideways for Z-axis calibration
+- 9x magnet mounting holes at bottom (use at least 5 for secure attachment)
+- 2x optional internal magnet holes for camera retention
+- Good press-fit with camera - internal magnets not required
+
+**Important - Internal magnets:**
+- The press-fit alone is sufficient to hold the camera
+- If adding internal magnets, ensure correct polarity - they must **attract** the camera magnets, not repel
+- Test magnet orientation before pressing into place
+
+![Camera installed in Z-axis mount](camera-z-axis-mount-installed.jpg)
+*Camera mounted sideways in the Z-axis calibration mount*
+
 ### Magnets
 **6x2mm Neodymium Magnets** - Standard Gridfinity size (you may already have these!)
 
-**Note:** These magnets are friction-fit into the bottom of the mounting plate, so no glue is needed. They keep the camera mounted to the printer bed.
+**Quantity needed:**
+- Main camera mount: 5 magnets
+- Z-axis mount: 5-9 magnets (at least 5 recommended)
+- Optional internal retention: 2 magnets (only if needed)
+- **Total: 10-16 magnets** (20-piece pack recommended)
+
+**Note:** These magnets are friction-fit into the mounting plates, so no glue is needed. They keep the camera securely mounted to the printer bed.
 
 **Where to buy:**
 - **AliExpress**: €1.96 for 20 pieces - [Link](https://s.click.aliexpress.com/e/_c4aZJq5N)²

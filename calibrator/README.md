@@ -44,6 +44,7 @@ Visit [http://calibrator.rep5x.com/](http://calibrator.rep5x.com/)
    - USB camera mounted on print bed looking upward (~€10.50)
    - Includes LEDs for consistent lighting
    - Magnetic mount for easy positioning
+   - Includes Z-axis mount for sideways camera positioning
 
 See [hardware/README.md](hardware/README.md) for complete hardware setup instructions, bill of materials, assembly guides, and 3D printable files.
 
@@ -87,7 +88,12 @@ calibrator/
      - Home all axes
      - Align nozzle at specific angles to determine la and lb values
 
-2. **Stage 2: XYZ offset table (optional)**
+2. **Z-axis calibration (camera mode)**
+   - Use the Z-axis mount to position camera sideways on bed
+   - Camera views nozzle from the side for Z-axis measurements
+   - See [hardware documentation](hardware/README.md) for Z-axis mount details
+
+3. **XYZ offset table (optional)**
    - Set reference at A=0°, B=0°
    - Measure offsets at various angle combinations
    - Generate lookup table for error compensation
