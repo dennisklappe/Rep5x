@@ -32,9 +32,9 @@ This is the original prototype configuration that demonstrates the Rep5x concept
 
 ### Mechanical components
 - **`3d-printed-parts/`** - All 3D printable components
-  - Complete STL files for 5-axis assembly (coming soon)
+  - **`3mf/`** - 3MF files for printing
+  - **`step/`** - STEP files for CAD modification and manufacturing
   - CAD assembly file included
-  - Optimized for FDM printing
 
 ### Documentation
 - **`BOM.md`** - Complete bill of materials with specifications
