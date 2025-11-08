@@ -40,7 +40,7 @@ If you discover easier methods, better techniques, or have suggestions for impro
 ### Step 1: Gather all materials
 
 #### Verify you have all components from:
-- **[Universal BOM](universal-parts/bill-of-materials/shared-bom.md)** - All shared components
+- **[Universal BOM](universal-parts/bill-of-materials/bom-shared.md)** - All shared components
 - **[Printer-specific BOM](printer-specific/[your-printer]/README.md)** - Additional printer-specific components
 - **3D printed parts** - All components printed and quality checked
 
@@ -270,45 +270,64 @@ The slip ring needs the following connections:
   </div>
 </div>
 
-## Part 4: Testing and calibration
+<div>
+  <img src="images/printer-complete.jpg" alt="Figure 13: Completed Rep5x printer" width="600">
+  <p><em>Figure 13: Completed Rep5x 5-axis printer ready for calibration</em></p>
+  <p><strong>Note:</strong> Improved cable management photos coming soon - this build was done with limited cable organizers.</p>
+</div>
 
-**Note**: More detailed testing instructions and additional photos are currently in progress and will be posted next week.
+## Part 4: Testing and calibration
 
 ### Step 15: System verification and testing
 
 #### System verification
 1. **Power up system** and verify no error messages
-2. **Test all 6 axes** with careful manual G-code commands
+2. **Test all 6 axes** with careful manual G-code commands:
+   - X, Y, Z axes: `G1 X10 F1000` (move slowly, verify direction)
+   - A-axis: `G1 A45 F1000` (rotate in 45° increments)
+   - B-axis: `G1 B10 F1000` (tilt slowly, watch for collisions)
+   - Extruder: `G1 E10 F100` (extrude 10mm slowly)
 3. **Verify endstops** trigger properly with `M119` command
-4. **Check thermal systems** - hotend heating and temperature reading
+4. **Check thermal systems**:
+   - Hotend heating: `M104 S200` (heat to 200°C)
+   - Bed heating: `M140 S60` (heat to 60°C)
+   - Verify temperature readings are stable
 
-#### Calibration
+#### Extruder calibration
+
+**Why calibrate the extruder:**
+- Bowden setups can have different extrusion rates due to tube friction and length
+- Incorrect E-steps leads to over/under-extrusion, poor print quality
+- Critical for accurate material deposition in 5-axis printing
+
+**How to calibrate E-steps:**
+
+1. **Mark filament** - Make a mark 120mm above the extruder entrance
+2. **Heat hotend** - `M104 S200` (or your printing temperature)
+3. **Extrude 100mm** - Send command: `G1 E100 F100`
+4. **Measure remaining distance** - Measure from extruder entrance to your mark
+5. **Calculate actual extrusion** - Should be 20mm remaining (120mm - 100mm)
+6. **Calculate new E-steps**:
+   - If more than 20mm remains → extruding too little
+   - If less than 20mm remains → extruding too much
+   - Formula: `New E-steps = (Current E-steps × 100) / Actual distance extruded`
+   - Example: Mark is at 25mm instead of 20mm → only 95mm extruded
+   - New E-steps = (Current × 100) / 95
+7. **Update firmware** - `M92 E[new value]` then `M500` to save
+8. **Verify** - Repeat test to confirm accuracy
+
+#### 5-axis kinematic calibration
+
 1. **Use Rep5x calibration tool** at [calibrator.rep5x.com](https://calibrator.rep5x.com/)
-2. **Follow cone or camera-based calibration** procedure
-3. **Update firmware** with calibrated kinematic parameters
+2. **Follow cone or camera-based calibration** procedure:
+   - Cone method: Print calibration cone and measure deviations
+   - Camera method: Use computer vision to detect tool center point offset
+3. **Update firmware** with calibrated kinematic parameters:
+   - A-axis offset
+   - B-axis offset
+   - Tool center point (TCP) coordinates
 4. **Test print** simple geometry to verify functionality
 
-## Troubleshooting
-
-### Common assembly issues
-- **Microswitch not triggering**: Adjust B-driven-pulley screw position
-- **Binding rotation**: Check bearing installation and wire routing
-- **Electrical issues**: Verify connector wiring and slip ring continuity
-- **Motion problems**: Check belt tension and stepper motor connections
-
-### Safety reminders
-
-#### Before first power-on
-- **Double-check all wiring** - No shorts or crossed connections
-- **Verify endstop operation** - All endstops should trigger properly
-- **Check motion limits** - Ensure no mechanical interference
-- **Confirm slip ring rotation** - Should be smooth throughout full range
-
-#### During testing
-- **Start with low speeds** - Test motion at reduced rates initially
-- **Emergency stop ready** - Have emergency stop accessible
-- **Monitor temperatures** - Watch for thermal issues during testing
-- **Gradual testing** - Increase complexity step by step
 
 ---
 

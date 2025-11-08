@@ -22,8 +22,8 @@ Complete step-by-step assembly guide:
 
 ### [`bill-of-materials/`](bill-of-materials/) - Component specifications
 Universal component requirements:
-- **[Shared BOM](bill-of-materials/shared-bom.md)** - Complete parts list with specifications
-- Electronics, fasteners, and mechanical components  
+- **[Shared BOM](bill-of-materials/bom-shared.md)** - Complete parts list with specifications
+- Electronics, fasteners, and mechanical components
 - Vendor suggestions and sourcing guidance
 
 ### [`electronics/`](electronics/) - Electrical documentation
@@ -119,7 +119,7 @@ Current version: **v1.0**
 
 ### Documentation hierarchy
 1. **Start here** - [Assembly guide](../assembly-guide.md)
-2. **Components** - [Shared BOM](bill-of-materials/shared-bom.md) for parts specifications  
+2. **Components** - [Shared BOM](bill-of-materials/bom-shared.md) for parts specifications
 3. **Electronics** - [Wiring diagrams](electronics/control-boards/) for control board setup
 4. **Printer-specific** - [`../printer-specific/`](../printer-specific/) for adaptations
 
