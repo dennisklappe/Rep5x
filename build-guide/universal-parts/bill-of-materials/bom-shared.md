@@ -10,11 +10,10 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 
 | Component | File | Description |
 |-----------|------|-------------|
-| A-driven-pulley | A-driven-pulley_v1.0.0.3mf | Drive pulley for A-axis |
-| B-driven-pulley | b-driven-pulley_v1.0.0.3mf | Custom pulley for B-axis drive |
+| A-driven-pulley | A-driven-pulley_v1.1.0.3mf | Drive pulley for A-axis |
+| B-driven-pulley | b-driven-pulley_v1.1.0.3mf | Custom pulley for B-axis drive |
 | B_arm | B_arm_v1.0.0.3mf | Rotational arm for B-axis |
-| B_switch_cover | B_switch_cover_v1.0.0.3mf | Protection cover for switch |
-| Slip ring holder | slip-ring-holder_v1.0.0.3mf | Mount for slip ring assembly |
+| Slip ring holder | slip-ring-holder_v1.1.0.3mf | Mount for slip ring assembly |
 | Spacer 3mm | spacer-3mm_v1.0.0.3mf | 3mm spacer component |
 | Hotend spacer | hotend-spacer_v1.0.0.3mf | Spacer for hotend mounting |
 
@@ -30,12 +29,12 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 | 6 | 2 | 61804 bearing | Thin section bearing for carriage mount | For A-axis rotation |
 | 7 | 1 | Microswitch | Endstop switch for B-axis | 2-pin micro limit switch |
 | 8 | 1 | Optical sensor | A-axis homing sensor | 3-pin optical endstop sensor |
-| 9 | 1 | Control board | 6+ stepper driver board | See tested control boards section - BTT Octopus V1.1 tested |
+| 9 | 1 | Control board | 6+ stepper driver board | See tested control boards section|
 | 10 | 6 | TMC2208 | Stepper drivers | UART mode, for all 6 axes |
 | 11 | 1 | MST-005-12A slipring | Slipring assembly | 12 channels, 2A each, 5mm bore |
 | 12 | 1 | Wire/cables | Connection wires | For slip ring and stepper connections |
 | 13 | 1 | JST connectors (optional) | Removable connectors | For easy maintenance |
-| 14 | 10-20 | Cable organizers (optional) | Zip ties, cable clips, or spiral wrap | For clean wire routing |
+| 14 | 1 | Cable organizers (optional) | Zip ties, cable clips, or spiral wrap | For clean wire routing |
 
 ## Universal fasteners
 
@@ -43,7 +42,7 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 |------|-----|-------------|
 | DIN912 M3x6mm | 8 | Socket head cap bolt |
 | DIN912 M3x10mm | 8 | Socket head cap bolt |
-| M3 heat-set insert | 3 | Threaded insert for plastic |
+| M3 heat-set insert | 2 | Threaded insert for plastic |
 
 ## Electronics requirements
 
@@ -67,16 +66,14 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 - **Channels**: 12 electrical channels
 - **Current rating**: 2A per channel
 - **Through-bore**: 5mm diameter
-- **Purpose**: Allows continuous rotation while maintaining electrical connections
+- **Purpose**: Allows continuous rotation
 
 ## Printer-specific components
 
 The following components require printer-specific adaptation:
 
 1. **Carriage mount** - Varies by printer X-carriage design
-2. **Frame modifications** - Mounting points and clearances
-3. **Wiring routing** - Cable paths and lengths
-4. **Endstop positions** - May require relocation or addition
+2. **Endstop positions** - May require relocation or addition
 
 See printer-specific folders for adaptation requirements.
 

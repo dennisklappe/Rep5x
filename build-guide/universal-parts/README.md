@@ -18,38 +18,17 @@ Universal 3D printed components compatible with all printer models:
 Complete step-by-step assembly guide:
 - **[Assembly guide](../assembly-guide.md)** - Complete build instructions
 - Phase-by-phase approach from planning to testing
-- Safety considerations and troubleshooting
 
 ### [`bill-of-materials/`](bill-of-materials/) - Component specifications
 Universal component requirements:
 - **[Shared BOM](bill-of-materials/bom-shared.md)** - Complete parts list with specifications
 - Electronics, fasteners, and mechanical components
-- Vendor suggestions and sourcing guidance
+- Vendor suggestions and sourcing
 
 ### [`electronics/`](electronics/) - Electrical documentation
 Control board and wiring information:
 - **[Wiring diagrams](electronics/control-boards/)** - Complete wiring documentation
 - Tested control board configurations
-
-## Universal components overview
-
-### 3D printed parts (7 components)
-All parts designed for PLA/PETG printing with standard settings:
-- **Drive components**: A-driven-pulley, b-driven-pulley, B_arm
-- **Mounting parts**: slip-ring-holder, spacer-3mm, B_switch_cover  
-- **Hotend interface**: hotend-spacer
-
-### Electronics requirements
-- **Control board** with 6+ stepper drivers (BTT Octopus series recommended)
-- **6x TMC2208 drivers** for unified configuration
-- **2x NEMA17 stepper motors** (1 pancake, 1 standard)
-- **MST-005-12A slip ring** for continuous rotation
-
-### Mechanical hardware
-- **2x 608 2RS bearings** for rotation axes
-- **GT2 timing belt** and pulleys for drive system
-- **Standard metric fasteners** (M3, M2.5 bolts and heat-set inserts)
-- **Endstops and sensors** for position feedback
 
 ## Getting started
 
@@ -66,12 +45,6 @@ All parts designed for PLA/PETG printing with standard settings:
 4. **Electronics** - Wiring and control board setup (~4-6 hours)
 5. **Firmware** - Configuration and upload (~2-3 hours)
 6. **Calibrate** - Setup and testing using web tool (~2-4 hours)
-
-### Quality requirements
-- **Print quality** - 0.2mm layers, 20% infill, proper support removal
-- **Assembly precision** - Smooth rotation, minimal backlash
-- **Electrical safety** - Proper connections, thermal protection
-- **Calibration accuracy** - Precise kinematic parameter determination
 
 ## Compatibility notes
 
@@ -90,7 +63,7 @@ While these components are universal, each printer requires:
 
 ## Version compatibility
 
-Current version: **v1.0**
+Current version: **v1.1**
 
 ### Version tracking
 - All components marked with compatible version numbers
@@ -101,20 +74,6 @@ Current version: **v1.0**
 - **v1.0 → v1.1** - Direct replacement, full compatibility
 - **v1.x → v2.0** - Migration guide provided for major changes
 
-## Community contributions
-
-### Ways to help
-- **Test on new printers** - Verify compatibility and document adaptations
-- **Improve documentation** - Clearer instructions and troubleshooting
-- **Design enhancements** - Better parts, easier assembly, improved performance
-- **Share experiences** - Build logs, tips, and lessons learned
-
-### Quality standards
-- **Documentation** - Clear, illustrated, step-by-step instructions
-- **Design files** - Properly formatted with version information
-- **Testing** - Verified functionality before submission
-- **Compatibility** - Maintains universal design principles
-
 ## Support and resources
 
 ### Documentation hierarchy
@@ -123,16 +82,6 @@ Current version: **v1.0**
 3. **Electronics** - [Wiring diagrams](electronics/control-boards/) for control board setup
 4. **Printer-specific** - [`../printer-specific/`](../printer-specific/) for adaptations
 
-### Getting help
-- **Discord community** - Real-time support and discussions
-- **GitHub issues** - Bug reports and feature requests
-- **Build documentation** - Comprehensive guides and troubleshooting
-
-### External resources
-- **Rep5x calibrator** - [calibrator.rep5x.com](https://calibrator.rep5x.com/)
-- **Firmware repository** - Latest Marlin configurations
-- **Community Discord** - [discord.gg/GNdah82VBg](https://discord.gg/GNdah82VBg)
-
 ---
 
-**Ready to build?** Start with the [assembly guide](../assembly-guide.md) for complete step-by-step instructions.
+**Ready to build?** Start with the [assembly guide](../assembly-guide.md) for complete step-by-step instructions. Join our [Discord community](https://discord.gg/GNdah82VBg) for support.

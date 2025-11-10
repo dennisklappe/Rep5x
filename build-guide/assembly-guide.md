@@ -1,6 +1,6 @@
 # Rep5x - Assembly guide
 
-Complete build instructions for converting any compatible 3D printer to 5-axis capability using the Rep5x system. Based on proven build process from working prototypes.
+Complete build instructions for converting any compatible 3D printer to 5-axis capability. Based on proven build process from working prototypes.
 
 ## Before you start
 
@@ -10,7 +10,7 @@ Complete build instructions for converting any compatible 3D printer to 5-axis c
 If you discover easier methods, better techniques, or have suggestions for improvement during your build, please contribute back to the project:
 - **Open a Pull Request** on GitHub with your proposed changes
 - **Document your improvements** with photos and clear explanations  
-- **Share your experience** in our Discord community
+- **Share your experience** in our [Discord community](https://discord.gg/GNdah82VBg)
 - Help make Rep5x better for everyone!
 
 ## Prerequisites
@@ -58,7 +58,6 @@ Download the Marlin firmware configuration from your printer-specific folder:
 
 ### Step 3: Remove old control board
 
-#### Safe removal process
 1. **Power down printer** completely
 2. **Disconnect all cables** from old control board
 3. **Remove old board** from electronics enclosure
@@ -112,7 +111,7 @@ M105       ; Read all temperatures - should show room temperature
 M119       ; Check all endstop status - should show current state
 ```
 
-**Important**: All basic printer functions must work before proceeding to 5-axis assembly.
+**Important**: All basic printer functions must work before proceeding.
 
 ## Part 2: Component preparation
 
@@ -127,7 +126,7 @@ The slip ring needs the following connections:
 1. **Cut wires to appropriate lengths** for routing through slip ring (or keep full length for safety - prevents wires being too short, though cable management is harder)
 2. **Connect wires** using your preferred method:
    - **JST connectors** (recommended) - Clean, removable connections
-   - **Direct soldering** - Permanent but reliable
+   - **Direct soldering** - Permanent but reliable, no prep needed for now
    - **Wire nuts or terminal blocks** - Alternative connection methods
 3. **Test continuity** of all connections using a multimeter
 
@@ -200,7 +199,7 @@ The slip ring needs the following connections:
 ### Step 11: Install A-axis drive system
 
 #### A-axis pulley, stepper and drive installation
-1. **Install A-driven-pulley** in carriage mount (now that carriage mount is attached to printer)
+1. **Install A-driven-pulley** in carriage mount
 2. **Add optical sensor** to carriage mount for A-axis position sensing
 3. **Mount A-axis (yaw) stepper motor** to carriage mount using 4x M3x6mm bolts
 4. **Use long hex key** to access stepper motor mounting bolts
@@ -220,14 +219,7 @@ The slip ring needs the following connections:
   </div>
 </div>
 
-### Step 12: Mount control board and configure endstops
-
-#### Control board installation
-1. **Mount control board** in electronics enclosure (now that all connections are confirmed working)
-2. **Secure all connections** and verify proper cable routing
-3. **Ensure adequate cooling** for stepper drivers and electronics
-
-### Step 13: Install B_arm and connect wiring
+### Step 12: Install B_arm and connect wiring
 
 #### B_arm installation and wire routing
 1. **Route all wires and Bowden tube** through B_arm center
@@ -240,19 +232,24 @@ The slip ring needs the following connections:
 
 *Figure 10: B_arm connected to carriage mount with proper wire routing*
 
+### Step 13: Install B-axis drive system
+
+#### B-axis drive system installation
+1. **Install B-axis (tilt) stepper motor** to B_arm mounting points
+2. **Install GT2 timing belt** connecting B-axis stepper to b-driven-pulley
+3. **Tension belt properly** - should be snug but allow smooth rotation
+
 ### Step 14: Install hotend and final wiring
 
 #### Hotend installation and complete wiring
-1. **Attach hotend assembly** to B_arm mounting points (now that B_arm is attached and accessible)
+1. **Attach hotend assembly** to B_arm mounting points
 2. **Connect all hotend components** through slip ring connections:
    - Hotend heater (2-pin connection)
    - Hotend thermistor (2-pin connection)
    - Hotend cooling fan (2-pin connection)
 3. **Connect B-axis stepper** through slip ring (4-pin connection)
 4. **Connect B-axis endstop** through slip ring (2-pin connection)
-5. **Test all connections** with multimeter for continuity
-6. **Verify no shorts** between power and ground
-7. **Check slip ring rotation** - should rotate freely without binding wires
+5. **Check slip ring rotation** - should rotate freely without binding wires
 
 #### Cable management
 1. **Organize all wiring** for clean routing
@@ -296,9 +293,7 @@ The slip ring needs the following connections:
 #### Extruder calibration
 
 **Why calibrate the extruder:**
-- Bowden setups can have different extrusion rates due to tube friction and length
 - Incorrect E-steps leads to over/under-extrusion, poor print quality
-- Critical for accurate material deposition in 5-axis printing
 
 **How to calibrate E-steps:**
 

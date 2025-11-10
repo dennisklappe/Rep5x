@@ -29,31 +29,9 @@ All files available in [`3d-printed-parts/3mf/`](3d-printed-parts/3mf/) and [`3d
 Pre-configured Marlin 2.1.x firmware available in [`firmware/octopus-v1.1/`](firmware/octopus-v1.1/) folder:
 - Configuration.h
 - Configuration_adv.h
-- firmware_rep5x_ender3v3se.bin
+- firmware_rep5x_ender3v3se_octopus_v1.1.bin
 
 See [firmware README](firmware/octopus-v1.1/README.md) for installation instructions.
-
-## Known modifications required
-
-### Endstop relocation
-- **Original Y endstop**: Located in hotend assembly (removed during conversion)
-- **New Y endstop**: 3D printed mount with microswitch on Y-axis
-- **Original Z endstop**: Located in hotend assembly (removed during conversion)
-- **New Z endstop**: 3D printed mount with microswitch on X gantry
-
-### Hotend replacement
-- **Issue**: Stock V3 SE hotend has smooth bore with no Bowden tube retention
-- **Solution**: Replace with E3D V6 clone or similar Bowden-compatible hotend
-- **Alternative**: Modify stock hotend (compression clamp or pin method)
-
-### Display replacement (optional)
-- **Issue**: Stock V3 SE display uses proprietary protocol incompatible with Marlin
-- **Recommended**: BTT Mini 12864 Display
-- **Alternatives**: Other Marlin-compatible displays (RepRapDiscount Full Graphic Smart Controller, BTT TFT screens, Ender 3 V2 display) or run headless with OctoPrint/similar
-
-### Extruder conversion
-- **Original**: Direct drive extruder on X carriage
-- **Required**: External Bowden extruder (any standard Bowden extruder compatible)
 
 ## Getting help
 

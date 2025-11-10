@@ -1,13 +1,11 @@
 # Rep5x - Open source 5-axis 3D printer
 
-[![Early Alpha](https://img.shields.io/badge/status-early%20alpha-orange)](https://github.com/dennisklappe/Rep5x)
+[![Beta](https://img.shields.io/badge/status-beta-yellow)](https://github.com/dennisklappe/Rep5x)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ![5-axis printing demonstration](5axis-printing-demo.gif)
 
 *Rep5x enables complex geometries without support structures through 5-axis printing*
-
-> **Early Alpha Notice**: This repository contains early development work. Detailed documentation, assembly instructions, and improved software will be added in the coming weeks.
 
 ## Overview
 
@@ -22,12 +20,14 @@ Rep5x democratises 5-axis 3D printing by creating an **affordable retrofit syste
 
 ### 1. Check hardware support
 Currently supported printers:
-- **Ender 5 Pro** - Working prototype with full documentation
+- **Ender 5 Pro** - Working prototype
+- **Ender 3 V3 SE** - Working prototype with full documentation
 
 ### 2. Get the files
-- **STL files**: `printer-models/ender-5-pro/3d-printed-parts/`
-- **Parts list**: `printer-models/ender-5-pro/BOM.md`
-- **Firmware**: `firmware/marlin/configs/octopus-v1.1/`
+- **3D printed parts**: `build-guide/printer-specific/[your-printer]/3d-printed-parts/`
+- **Parts list**: `build-guide/universal-parts/bill-of-materials/bom-shared.md`
+- **Assembly guide**: `build-guide/assembly-guide.md`
+- **Firmware**: `build-guide/printer-specific/[your-printer]/firmware/`
 
 ### 3. Join the community
 **Discord**: https://discord.gg/GNdah82VBg for build support and discussions
@@ -36,9 +36,9 @@ Currently supported printers:
 
 | Printer model | Status | Documentation |
 |---------------|--------|---------------|
-| Ender 5 Pro | Working prototype | Basic |
-| Ender 3 V3 SE | Planned | Coming soon |
-| Generic | Guidelines only | Basic |
+| Ender 5 Pro | ✅ Working prototype | Minimal |
+| Ender 3 V3 SE | ✅ Working prototype | Complete |
+| Generic | Guidelines only | Complete |
 
 ## Features
 
@@ -53,16 +53,17 @@ Currently supported printers:
 
 ```
 Rep5x/
-├── printer-models/           # Hardware for specific printer models
-│   ├── ender-5-pro/         # Ender 5 Pro retrofit (working prototype)
-│   │   ├── 3d-printed-parts/ # STL files and CAD assembly
-│   │   ├── BOM.md           # Complete parts list
-│   │   └── README.md        # Build instructions
-│   ├── ender-3-v3-se/       # Ender 3 V3 SE retrofit (planned)
-│   └── generic/             # Common guidelines
-└── firmware/                # Firmware configurations
-    └── marlin/              # Marlin 2.1.x configurations
-        └── configs/         # Board-specific configs
+├── build-guide/             # Complete build documentation
+│   ├── assembly-guide.md    # Step-by-step assembly instructions
+│   ├── universal-parts/     # Components shared across all printers
+│   │   ├── 3d-printed-parts/ # Universal STL files and CAD assembly
+│   │   ├── bill-of-materials/ # Complete shared parts list
+│   │   ├── electronics/     # Wiring diagrams and control boards
+│   │   └── firmware/        # General firmware installation guide
+│   └── printer-specific/    # Printer-specific adaptations
+│       ├── ender-5-pro/     # Ender 5 Pro retrofit (working)
+│       └── ender-3-v3-se/   # Ender 3 V3 SE retrofit (working)
+└── README.md               # This file
 ```
 
 ## Community & contributing
@@ -85,21 +86,26 @@ Rep5x/
 
 ## Roadmap
 
-### Phase 1 (current)
+### Phase 1 (completed)
 - [x] Ender 5 Pro working prototype
-- [x] Basic documentation and STL files
+- [x] Ender 3 V3 SE adaptation
+- [x] Complete documentation and assembly guide
 - [x] Marlin firmware configuration
 - [x] Setting up the Discord community
-- [ ] Ender 3 V3 SE adaptation
-- [ ] Detailed assembly instructions
-- [ ] Web-based setup/calibration tool
-- [ ] Community guidelines for new printer adaptations
+- [x] Community guidelines for new printer adaptations
+
+### Phase 2 (current)
+- [ ] Community testing and documentation feedback
+- [ ] Support users building their first Rep5x systems
+- [ ] Identify and fill documentation gaps
+- [ ] Accelerate development through user contributions
+- [ ] Additional printer model support based on community demand
 
 ### Community-driven development
 The project's future depends on community involvement. We're focusing on enabling makers to:
 - **Adapt to new printer models** with community support
 - **Improve documentation** through collaborative contributions
-- **Develop advanced slicing features** as open-source solutions
+- **Develop slicing features** as open-source solutions
 - **Share builds and modifications** to help others
 
 Join our [Discord](https://discord.gg/GNdah82VBg) to help shape the project's direction and contribute to new printer model support!

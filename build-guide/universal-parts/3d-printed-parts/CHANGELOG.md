@@ -16,35 +16,16 @@ Version history and changes for Rep5x 3D printed components. This log helps buil
 - **Reason**: Hotend fan is now directly mounted to hotend assembly, eliminating need for additional mounting points
 - **Compatibility**: Direct replacement for v1.0.0
 
-### carriage-mount v1.1.0 (Ender 3 V3 SE)
-- **New**: Carriage mount designed for Ender 3 V3 SE printer
-- **Updated**: Uses optical sensor mount instead of hall effect sensor
-- **Updated**: Includes integrated slipring mount design
-- **Reason**: Different X-carriage design, optical sensor simplicity (easier positioning, more common in printer community, likely already owned by builders), and better slipring mounting
-- **Compatibility**: Printer-specific design, not compatible with Ender 5 Pro
-
-### y-endstop v1.1.0 (Ender 3 V3 SE)
-- **New**: Y-axis endstop mount designed for Ender 3 V3 SE
-- **Purpose**: Microswitch mount to replace original Y endstop (removed with hotend assembly)
-- **Compatibility**: Ender 3 V3 SE specific
-
-### z-endstop v1.1.0 (Ender 3 V3 SE)
-- **New**: Z-axis endstop mount designed for Ender 3 V3 SE
-- **Purpose**: Microswitch mount on X gantry to replace original Z endstop (removed with hotend assembly)
-- **Compatibility**: Ender 3 V3 SE specific
-
 ### slip-ring-holder v1.1.0
 - **Updated**: Redesigned slipring mounting component
-- **Replaces**: fan-mount v1 v1.0.0 functionality
-- **Reason**: Better slipring positioning and eliminates need for separate fan mount
-- **Compatibility**: Works with both printer models, incorporates multiple v1.0.0 functions
+- **Replaces**: slip-ring-holder v1.0.0
+- **Reason**: Redesigned to better fit the new carriage mount for Ender 3 V3 SE
+- **Compatibility**: Designed for Ender 3 V3 SE carriage mount, does not work with Ender 5 Pro carriage mount
 
-### Changed parts (no longer used)
-- **fanmount v1.0.0 & fan-mount v1.0.0**: No longer used in current build examples (hotend fan mounted directly to hotend)
-- **Note**: These components remain available for builders with different hotend configurations or preferences
-
-### Other components
-- B_arm v1.1.0, B_switch_cover v1.1.0, hotend-spacer v1.1.0, spacer-3mm v1.1.0: No changes from v1.0.0
+### B_switch_cover v1.1.0
+- **Removed**: No longer required in v1.1.0 design
+- **Reason**: Hot glue positioning method eliminates need for 3D printed cover
+- **Compatibility**: Use hot glue to position switch directly
 
 ---
 
