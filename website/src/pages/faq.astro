@@ -1,0 +1,25 @@
+---
+import Base from "@/layouts/Base.astro";
+import CallToAction from "@/partials/CallToAction.astro";
+import FaqPertial from "@/partials/Faq.astro";
+import PageHeader from "@/partials/PageHeader.astro";
+import { getEntry, type CollectionEntry } from "astro:content";
+
+const faq = (await getEntry(
+  "faq",
+  "faq"
+)) as CollectionEntry<"faq">;
+const { title, description, badge } = faq.data;
+---
+
+<Base
+  title={title}
+  meta_title={title}
+  description={description}
+>
+  <PageHeader title={title} description={description} />
+  <div class="section-up pb-0">
+    <FaqPertial />
+  </div>
+  <CallToAction />
+</Base>

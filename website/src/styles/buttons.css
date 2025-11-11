@@ -1,0 +1,84 @@
+.btn {
+  @apply inline-flex cursor-pointer flex-nowrap items-center gap-2 gap-x-4 overflow-hidden whitespace-nowrap rounded-full border border-transparent py-1 pe-2 ps-6 text-base font-medium capitalize transition duration-300 md:text-lg/[inherit];
+}
+
+.btn:hover .icon-wrapper .icon {
+  @apply translate-x-full;
+}
+
+.btn:hover .icon-wrapper .icon:first-child {
+  @apply opacity-100;
+}
+
+.btn:hover .icon-wrapper .icon:last-child {
+  @apply opacity-0;
+}
+
+.btn:hover .icon:last-child {
+  @apply transition-[opacity,transform] duration-[0.6s] ease-in-out;
+}
+
+.icon-wrapper {
+  @apply flex h-12 w-12 justify-end overflow-hidden rounded-full transition-all duration-300;
+}
+
+.icon-wrapper .icon {
+  @apply flex h-12 min-w-12 items-center justify-center gap-x-0 align-middle text-text-dark transition-all;
+  transition-duration: 0.4s;
+}
+
+.icon-wrapper .icon svg {
+  @apply h-5 w-5;
+}
+
+.icon-wrapper .icon:first-child {
+  @apply translate-x-1/2 opacity-0;
+}
+
+.btn-icon {
+  @apply h-14 w-8 items-center justify-center p-0;
+}
+
+.btn-icon:hover .icon-wrapper {
+  @apply gap-x-0;
+}
+
+.btn-icon .icon-wrapper {
+  @apply gap-x-4;
+}
+
+.btn-icon .icon-wrapper,
+.btn-icon .icon {
+  @apply w-full;
+}
+
+.btn-icon .icon {
+  @apply min-w-full;
+}
+
+.btn-light .icon-wrapper,
+.btn-light .icon,
+.btn-dark .icon-wrapper,
+.btn-dark .icon {
+  @apply w-8;
+}
+
+.btn-light {
+  @apply border-dark/10 bg-transparent bg-white text-text-dark hover:text-white hover:border-primary hover:bg-primary;
+}
+
+.btn-light:hover svg {
+  @apply text-text-light;
+}
+
+.btn-light svg {
+  @apply text-text-dark;
+}
+
+.btn-dark {
+  @apply border-dark bg-dark text-white hover:border-primary hover:bg-primary;
+}
+
+.btn-dark svg {
+  @apply text-text-light;
+}

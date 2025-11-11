@@ -1,0 +1,49 @@
+---
+import config from "@/config/config.json";
+import dateFormat from "@/lib/utils/dateFormat";
+import { humanize, plainify } from "@/lib/utils/textConverter";
+import ImageMod from "./ImageMod.astro";
+
+const {
+  summary_length,
+  blog_folder,
+}: { summary_length: number; blog_folder: string } = config.settings;
+const { data } = Astro.props;
+const { title, image, date, categories } = data.data;
+---
+
+<div class="bg-body border border-dark/10 rounded-3xl p-3 min-h-full">
+  <div class="relative group overflow-hidden rounded-2xl">
+    {
+      image && (
+        <ImageMod
+          class="mb-6 w-full  h-[280px] object-cover object-center group-hover:scale-110 transition duration-700"
+          src={image}
+          alt={title}
+          width={445}
+          height={280}
+          format="webp"
+        />
+      )
+    }
+
+    {
+      categories
+        .slice(0, 1)
+        .map((category: string) => (
+          <p class="absolute top-2 left-2 bg-body rounded-full px-2 py-1 text-sm">
+            {humanize(category)}
+          </p>
+        ))
+    }
+  </div>
+
+  {date && <p class="inline-block">{dateFormat(date)}</p>}
+
+  <h4 class="my-3 h5">
+    <a class="u-underline" href={`/${blog_folder}/${data.id}/`}>
+      <span class="s-underline">{title}</span>
+    </a>
+  </h4>
+  <p class="mb-6">{plainify(data.body?.slice(0, Number(summary_length)))}</p>
+</div>

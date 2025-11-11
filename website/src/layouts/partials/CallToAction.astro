@@ -1,0 +1,64 @@
+---
+import ImageMod from "@/components/ImageMod.astro";
+import DiscordBtn from "@/layouts/components/DiscordBtn.astro";
+import { markdownify } from "@/lib/utils/textConverter";
+import { getEntry } from "astro:content";
+
+const cta = await getEntry("cta", "call-to-action");
+
+if (!cta) {
+  return;
+}
+const { enable, title, description, image, button } = cta.data;
+---
+
+{
+  enable && (
+    <section class="section pt-0">
+      <div class="container">
+        <div class="bg-light px-10 py-16 xl:p-20 rounded-[38px] relative overflow-hidden">
+          <ImageMod
+            class="object-cover size-full inset-0 opacity-15 absolute"
+            src={"/images/grainy.svg"}
+            alt="cta-image"
+            width={641}
+            height={641}
+          />
+          <div
+            class="absolute -bottom-10 -left-20 z-0 pointer-events-none"
+            data-aos="fade-in"
+            data-aos-delay="200"
+          >
+            <ImageMod
+              class=" h-[641px] w-auto"
+              src={image}
+              alt="cta-image"
+              width={641}
+              height={641}
+            />
+          </div>
+          <div class="row items-center justify-center relative z-10">
+            <div class="lg:col-8 text-center">
+              <h2
+                set:html={markdownify(title)}
+                class="mb-4"
+                data-aos="fade-up-sm"
+              />
+              <p
+                set:html={markdownify(description)}
+                class="text-lg/[inherit] mb-6"
+                data-aos="fade-up-sm"
+                data-aos-delay="50"
+              />
+              {button.enable && (
+                <div data-aos="fade-up-sm" data-aos-delay="200">
+                  <DiscordBtn href={button.link} label={button.label} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}

@@ -1,0 +1,42 @@
+---
+import { Icon } from "astro-icon/components";
+import Base from "@/layouts/Base.astro";
+---
+
+<Base title="Page Not Found">
+  <!-- Add the grainy background inside the Base component -->
+  <div class="absolute inset-0 z-0">
+    <img
+      src="/images/grainy.svg"
+      alt="Grainy background"
+      class="w-full h-full object-cover opacity-[.08] pointer-events-none"
+    />
+  </div>
+  
+  <section class="section text-center relative z-10">
+    <div class="container" data-aos="fade-up-sm">
+      <div class="row justify-center">
+        <div class="sm:col-10 md:col-8 lg:col-7 text-center">
+          <h1 class="gradient-404-text mb-16">404</h1>
+          <div class="content">
+            <p>
+              Looks like this page wandered off into the 4th dimension. <br /> 
+              Let's get you back to exploring 5-axis printing technology.
+            </p>
+          </div>
+          <a href="/" class="btn btn-dark mt-8">
+            Back to home
+            <span class="icon-wrapper">
+              <span class="icon">
+                <Icon name="lucide:arrow-right" />
+              </span>
+              <span class="icon" aria-hidden="true">
+                <Icon name="lucide:arrow-right" />
+              </span>
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

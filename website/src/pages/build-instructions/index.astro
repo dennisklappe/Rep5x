@@ -1,0 +1,181 @@
+---
+import Base from "@/layouts/Base.astro";
+import PageHeader from "@/partials/PageHeader.astro";
+import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
+import { Marked } from "marked";
+import { processMarkdownForWeb } from "./_markdown-processor";
+import ProgressBar from "./_ProgressBar.astro";
+import BackToTop from "./_BackToTop.astro";
+import ImageLightbox from "./_ImageLightbox.astro";
+import PrinterSelector from "./_PrinterSelector.astro";
+import TableOfContents from "./_TableOfContents.astro";
+import BuildContent from "./_BuildContent.astro";
+
+const marked = new Marked();
+
+// Read universal content
+const buildGuidePath = join(process.cwd(), "..", "build-guide");
+const universalAssemblyGuideRaw = await readFile(
+  join(buildGuidePath, "assembly-instructions-universal.md"),
+  "utf-8"
+);
+const universalBOMRaw = await readFile(
+  join(buildGuidePath, "universal-parts", "bom-universal.md"),
+  "utf-8"
+);
+
+// Process universal content
+const universalAssemblyGuide = processMarkdownForWeb(universalAssemblyGuideRaw);
+const universalBOM = processMarkdownForWeb(universalBOMRaw);
+
+// Get list of available printers
+const printerSpecificPath = join(buildGuidePath, "printer-specific");
+const printerDirs = await readdir(printerSpecificPath, { withFileTypes: true });
+const printers = printerDirs
+  .filter((dirent) => dirent.isDirectory())
+  .map((dirent) => dirent.name);
+
+// Read printer-specific files for all printers
+const printerData: Record<
+  string,
+  {
+    overview?: string;
+    bom: string;
+    instructions?: string;
+    displayName: string;
+  }
+> = {};
+
+for (const printer of printers) {
+  const printerPath = join(printerSpecificPath, printer);
+
+  // Read files in printer folder
+  const bomFiles = await readdir(printerPath);
+
+  // Read overview from README.md (short 1-paragraph intro)
+  let overviewRaw: string | undefined;
+  if (bomFiles.includes("README.md")) {
+    overviewRaw = await readFile(join(printerPath, "README.md"), "utf-8");
+  }
+
+  // Process overview content
+  const overview = overviewRaw
+    ? processMarkdownForWeb(overviewRaw, printer)
+    : undefined;
+
+  // Read BOM
+  const bomFile = bomFiles.find((f: string) => f.startsWith("bom-") && f.endsWith(".md"));
+  const bomRaw = bomFile
+    ? await readFile(join(printerPath, bomFile), "utf-8")
+    : "No BOM available";
+
+  // Process BOM content
+  const bom = processMarkdownForWeb(bomRaw, printer);
+
+  // Read assembly instructions (assembly-instructions-{printer}.md)
+  const instructionsFile = bomFiles.find(
+    (f: string) => f.startsWith("assembly-instructions-") && f.endsWith(".md")
+  );
+  let instructionsRaw: string | undefined;
+  if (instructionsFile) {
+    instructionsRaw = await readFile(join(printerPath, instructionsFile), "utf-8");
+  }
+
+  // Process instructions content
+  const instructions = instructionsRaw
+    ? processMarkdownForWeb(instructionsRaw, printer)
+    : undefined;
+
+  // Create display name
+  const displayName = printer
+    .split("-")
+    .map((word: string, index: number) => {
+      // First word: only first letter capitalized
+      if (index === 0) {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+      // Exception for "Pro" - regular capitalization
+      if (word.toLowerCase() === "pro") {
+        return "Pro";
+      }
+      // Everything else uppercase
+      return word.toUpperCase();
+    })
+    .join(" ");
+
+  printerData[printer] = { overview, bom, instructions, displayName };
+}
+
+// Convert universal content to HTML
+const universalAssemblyHTML = await marked.parse(universalAssemblyGuide);
+const universalBOMHTML = await marked.parse(universalBOM);
+
+// Convert printer-specific content to HTML
+const printerDataHTML: Record<
+  string,
+  {
+    overview?: string;
+    bom: string;
+    instructions?: string;
+    displayName: string;
+  }
+> = {};
+for (const [key, value] of Object.entries(printerData)) {
+  printerDataHTML[key] = {
+    overview: value.overview ? await marked.parse(value.overview) : undefined,
+    bom: await marked.parse(value.bom),
+    instructions: value.instructions
+      ? await marked.parse(value.instructions)
+      : undefined,
+    displayName: value.displayName,
+  };
+}
+---
+
+<Base
+  title="Build Instructions"
+  meta_title="Build Instructions - Rep5x"
+  description="Complete build instructions and bill of materials for Rep5x 5-axis 3D printer conversion"
+>
+  <PageHeader
+    title="Build Instructions"
+    description="Complete step-by-step guide to building your Rep5x 5-axis printer"
+    hasSmallHeight={true}
+  />
+
+  <ProgressBar />
+  <BackToTop />
+  <ImageLightbox />
+
+  <section class="section pt-0 -mt-32 relative z-30">
+    <div class="container">
+      <!-- Info Banner -->
+      <div class="mb-6">
+        <div class="row justify-center">
+          <div class="col-12 lg:col-10">
+            <div class="bg-light border border-primary/20 rounded-lg p-4 text-center">
+              <p class="text-sm text-gray-700">
+                These are the same build instructions available on <a href="https://github.com/dennisklappe/Rep5x/tree/main/build-guide" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary/80 underline font-medium">GitHub</a>, but formatted for easier reading on the web.
+                Want to improve these instructions? <a href="https://github.com/dennisklappe/Rep5x" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary/80 underline font-medium">Open a PR on GitHub</a> — we'd love your help!
+                Need support? Join our <a href="https://discord.gg/GNdah82VBg" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary/80 underline font-medium">Discord community</a>!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <PrinterSelector printers={printers} printerData={printerData} />
+
+      <!-- Content Area -->
+      <div class="row justify-center gap-8">
+        <TableOfContents />
+        <BuildContent
+          printerDataHTML={printerDataHTML}
+          universalBOMHTML={universalBOMHTML}
+          universalAssemblyHTML={universalAssemblyHTML}
+        />
+      </div>
+    </div>
+  </section>
+</Base>

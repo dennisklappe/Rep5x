@@ -1,0 +1,143 @@
+---
+import { markdownify } from "@/lib/utils/textConverter";
+import type { CollectionEntry } from "astro:content";
+import { getEntry } from "astro:content";
+
+const faq = (await getEntry("faq", "faq")) as CollectionEntry<"faq">;
+
+const {
+  title,
+  description,
+  exclusive_open,
+  exclusive_open_group,
+  list,
+  badge,
+} = faq.data;
+
+const isFAQPage =
+  Astro.url.pathname.includes("faq") || Astro.url.pathname === "/faq";
+---
+
+<section class="section pt-0">
+  <div class="container">
+    <div class="row">
+      {
+        !isFAQPage && (
+          <div class="section-title">
+            <div class="col-10 xl:col-8" data-aos="fade-up-sm">
+              <p set:html={markdownify(badge)} />
+              <h2 set:html={markdownify(title)} />
+              {description && <p set:html={markdownify(description)} />}
+            </div>
+          </div>
+        )
+      }
+
+      <div class="col-12">
+        <div class={`row justify-center ${!isFAQPage && "g-4"}`}>
+          {
+            list?.map(
+              (
+                item: {
+                  title: string;
+                  description: string;
+                  active?: boolean;
+                },
+                index: number
+              ) => (
+                <div
+                  class={`lg:col-8 ${isFAQPage ? "bg-body p-5 first:rounded-t-[30px]" : ""}`}
+                  data-aos="fade-up-sm"
+                  data-aos-delay={index * 100}
+                >
+                  <div
+                    data-exclusive-open={`${exclusive_open}`}
+                    data-accordion-group={exclusive_open_group}
+                    class="accordion"
+                  >
+                    {item.title && (
+                      <details
+                        class="group peer"
+                        {...(item.active ? { open: true } : {})}
+                      >
+                        <summary class="accordion-header text-xl !p-5 justify-between">
+                          <span set:html={item.title} />
+                          <span class="icon-toggle transition-transform duration-300">
+                            {item.active ? "-" : "+"}
+                          </span>
+                        </summary>
+                      </details>
+                    )}
+                    {item.description && (
+                      <div class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 peer-open:grid-rows-[1fr]">
+                        <div class="overflow-hidden">
+                          <div
+                            class="p-5 pt-0"
+                            set:html={markdownify(item.description)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    const accordions =
+      document.querySelectorAll<HTMLDetailsElement>(".accordion details");
+
+    accordions.forEach((accordion) => {
+      const icon = accordion.querySelector<HTMLSpanElement>(".icon-toggle");
+      const accordionWrapper = accordion.closest('[data-exclusive-open]');
+
+      accordion.addEventListener("toggle", () => {
+        if (icon) {
+          if (accordion.open) {
+            icon.textContent = "-";
+            icon.classList.add("rotate-180");
+            
+            // Close other accordions if exclusive open is enabled
+            if (accordionWrapper?.getAttribute('data-exclusive-open') === 'true') {
+              const group = accordionWrapper.getAttribute('data-accordion-group');
+              const allAccordions = document.querySelectorAll<HTMLDetailsElement>(
+                `[data-accordion-group="${group}"] details`
+              );
+              
+              allAccordions.forEach((otherAccordion) => {
+                if (otherAccordion !== accordion && otherAccordion.open) {
+                  otherAccordion.open = false;
+                  const otherIcon = otherAccordion.querySelector<HTMLSpanElement>(".icon-toggle");
+                  if (otherIcon) {
+                    otherIcon.textContent = "+";
+                    otherIcon.classList.remove("rotate-180");
+                  }
+                }
+              });
+            }
+          } else {
+            icon.textContent = "+";
+            icon.classList.remove("rotate-180");
+          }
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  .icon-toggle {
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .rotate-180 {
+    transform: rotate(180deg);
+  }
+</style>

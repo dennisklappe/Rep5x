@@ -1,0 +1,71 @@
+---
+import ImageMod from "@/components/ImageMod.astro";
+import { markdownify } from "@/lib/utils/textConverter";
+import { getEntry } from "astro:content";
+
+const client = await getEntry("foundations", "foundations");
+
+if (!client) {
+  return;
+}
+const { title, brands } = client.data;
+
+const {
+  isGrayscale,
+  sectionGap,
+}: { isGrayscale?: boolean; sectionGap?: string } = Astro.props;
+---
+
+{
+  (
+    <section class={`${sectionGap} pt-40 md:pt-52`}>
+      <div class="container">
+        <div class="row">
+          <div class="col-12" data-aos="fade-up-sm">
+            <div class="text-center sm:flex">
+              <p
+                class="w-full pb-3 text-center text-2xl/snug font-medium tracking-wide sm:whitespace-nowrap sm:pb-0"
+                set:html={markdownify(title)}
+              />
+            </div>
+          </div>
+          <div class="col-12 pt-14" data-aos="fade-up-sm" data-aos-delay="200">
+            <div class="relative flex gap-x-6 overflow-hidden before:pointer-events-none before:absolute before:left-0 before:z-10 before:h-full before:w-20 before:bg-gradient-to-r before:from-body before:to-transparent before:content-[''] after:pointer-events-none after:absolute after:right-0 after:h-full after:w-20 after:bg-gradient-to-r after:from-transparent after:to-body after:content-[''] md:gap-x-10 before:md:w-40 after:md:w-40">
+              <div class="marquee flex shrink-0 items-center justify-center gap-x-6 gap-y-6 opacity-100 md:gap-x-10">
+                {brands?.map((logo) => (
+                  <div class="h-16 w-32">
+                    <ImageMod
+                      src={logo.src}
+                      class={`h-full w-full object-contain ${isGrayscale ? "grayscale" : "grayscale-0"}`}
+                      alt="brand logo"
+                      width={128}
+                      height={64}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div
+                class="marquee flex shrink-0 items-center justify-center gap-x-6 gap-y-6 opacity-100 md:gap-x-10"
+                aria-hidden="true"
+              >
+                {brands?.map((logo) => (
+                  <div class="h-16 w-32">
+                    <ImageMod
+                      src={logo.src}
+                      class={`h-full w-full object-contain ${isGrayscale ? "grayscale" : "grayscale-0"}`}
+                      alt="brand logo"
+                      width={128}
+                      height={64}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Overlay */}
+        <div class="" />
+      </div>
+    </section>
+  )
+}

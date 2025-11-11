@@ -1,0 +1,51 @@
+---
+import { markdownify } from "@/lib/utils/textConverter";
+import { Icon } from "astro-icon/components";
+import type { CollectionEntry } from "astro:content";
+import { getEntry } from "astro:content";
+
+const homepage = (await getEntry(
+  "homepage",
+  "-index"
+)) as CollectionEntry<"homepage">;
+const { solution_section } = homepage.data;
+const { enable, title, content, badge, cards } = solution_section;
+---
+
+{
+  enable && (
+    <section class="section pt-0">
+      <div class="container">
+        <div class="section-title">
+          <div class="col-10 xl:col-8" data-aos="fade-up-sm">
+            <p set:html={markdownify(badge)} />
+            <h2 set:html={markdownify(title)} />
+            <p set:html={markdownify(content)} />
+          </div>
+        </div>
+
+        <div class="section-cards">
+          {cards.map(({ title, content, icon }, index: number) => (
+            <div
+              class="card-container group "
+              data-aos="fade-up-sm"
+              data-aos-delay={index * 100}
+            >
+              <div class="card relative min-h-full overflow-hidden">
+                <div class="icon-container flex h-16 w-16 items-center justify-center">
+                  <div class="min-w-14 flex justify-center items-center min-h-16">
+                    <Icon class="w-full icon transition duration-300 ease-out group-hover:scale-110" name={icon} />
+                  </div>
+                </div>
+                <h5 set:html={markdownify(title)} />
+                <p class="mt-[10px]" set:html={markdownify(content)} />
+
+                <div class="pointer-events-none absolute bottom-[-22%] right-[-40%] h-[180px] w-[335px] rotate-[-20deg] from-dark/0 to-primary opacity-0 blur-[80px] transition-opacity duration-300 bg-primary/15 group-hover:opacity-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}

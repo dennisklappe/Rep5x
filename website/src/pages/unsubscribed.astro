@@ -1,0 +1,70 @@
+---
+import Base from "@/layouts/Base.astro";
+import Button from "@/layouts/components/Button.astro";
+---
+
+<Base 
+  title="Unsubscribed - Rep5x" 
+  meta_title="Unsubscribed from Rep5x Updates" 
+  description="You have been unsubscribed from Rep5x newsletter updates"
+>
+  <section class="section">
+    <div class="container">
+      <div class="row justify-center">
+        <div class="col-10 lg:col-6">
+          <div class="unsubscribe-content">
+            <div class="unsubscribe-card">
+              <div class="text-center mb-8">
+                <svg class="w-16 h-16 mx-auto mb-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h1 class="h2 mb-4">Successfully unsubscribed</h1>
+              </div>
+              
+              <div class="space-y-4 text-center text-text-dark">
+                <p class="text-lg">You have been successfully unsubscribed from Rep5x updates.</p>
+                <p>You will no longer receive newsletter emails from us.</p>
+                <p class="text-sm text-text-dark/70">
+                  If you have any questions, feel free to contact us at 
+                  <a href="mailto:hello@rep5x.com" class="text-primary hover:underline">hello@rep5x.com</a>
+                </p>
+              </div>
+
+              <div class="text-center mt-8 space-y-4">
+                <Button href="/" label="Back to Rep5x" variant="primary" />
+                <p class="text-sm text-text-dark/70">
+                  Want to stay connected? Join our 
+                  <a href="https://discord.gg/75Hy5dMwTJ" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                    Discord community
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .unsubscribe-content {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+
+  .unsubscribe-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 500px;
+  }
+
+</style>
+

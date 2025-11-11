@@ -63,6 +63,7 @@ Rep5x/
 │   └── printer-specific/    # Printer-specific adaptations
 │       ├── ender-5-pro/     # Ender 5 Pro retrofit (working)
 │       └── ender-3-v3-se/   # Ender 3 V3 SE retrofit (working)
+├── website/                 # Official Rep5x website (rep5x.com)
 └── README.md               # This file
 ```
 

@@ -1,0 +1,43 @@
+{
+  "site": {
+    "title": "Rep5x",
+    "base_url": "https://rep5x.com",
+    "base_path": "/",
+    "trailing_slash": true,
+    "favicon": "/images/favicon.png",
+    "logo": "",
+    "logo_footer": "",
+    "logo_width": "170",
+    "logo_height": "40",
+    "logo_text": "Rep5x"
+  },
+
+  "settings": {
+    "pagination": 2,
+    "summary_length": 200,
+    "blog_folder": "blog"
+  },
+
+  "params": {
+    "contact_form_action": "#",
+    "footer_description": "Open-source 5-axis 3D printing retrofit system enabling support-free printing and improved part quality.",
+    "copyright": "Copyright © {year} Rep5x Project, University of Twente. &nbsp; GPL v3 Licensed"
+  },
+
+  "navigation_button": {
+    "enable": true,
+    "label": "Join Discord",
+    "link": "https://discord.gg/75Hy5dMwTJ"
+  },
+
+  "subscription": {
+    "enable": true,
+    "form_action": "/functions/subscribe"
+  },
+
+  "metadata": {
+    "meta_author": "Dennis Klappe, University of Twente",
+    "meta_image": "/images/rep5x-social.webp",
+    "meta_description": "Open-source 5-axis 3D printer retrofit system enabling support-free printing and complex geometries"
+  }
+}

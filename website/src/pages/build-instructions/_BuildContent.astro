@@ -1,0 +1,217 @@
+---
+interface Props {
+  printerDataHTML: Record<string, {
+    overview?: string;
+    bom: string;
+    instructions?: string;
+    displayName: string;
+  }>;
+  universalBOMHTML: string;
+  universalAssemblyHTML: string;
+}
+
+const { printerDataHTML, universalBOMHTML, universalAssemblyHTML } = Astro.props;
+---
+
+<!-- Main Content -->
+<div class="col-12 lg:col-8">
+  <!-- Printer-Specific Overview (initially hidden) -->
+  <div id="printer-specific-overview" class="mb-8 hidden">
+    <div class="bg-light border-l-4 border-primary p-6 rounded-r-lg">
+      <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-h2:text-[1.65rem]">
+        {
+          Object.entries(printerDataHTML).map(([printer, data]) =>
+            data.overview ? (
+              <div
+                id={`overview-${printer}`}
+                class="printer-content hidden"
+                data-printer={printer}
+                set:html={data.overview}
+              />
+            ) : null
+          )
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Divider: BOM -->
+  <div class="mb-8">
+    <div class="flex items-center gap-4">
+      <div class="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
+      <h2 class="text-2xl font-bold text-gray-800">BOM</h2>
+      <div class="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
+    </div>
+  </div>
+
+  <!-- Printer-Specific BOM (initially hidden) -->
+  <div id="printer-specific-bom" class="mb-12 hidden">
+    <h2 id="printer-bom-heading" class="text-3xl font-bold text-gray-800 mb-8"></h2>
+    <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-lg prose-h2:text-[1.65rem]">
+      {
+        Object.entries(printerDataHTML).map(([printer, data]) => (
+          <div
+            id={`bom-${printer}`}
+            class="printer-content hidden"
+            data-printer={printer}
+            set:html={data.bom}
+          />
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- Universal BOM -->
+  <div class="mb-12">
+    <h2 id="universal-bom-heading" class="text-3xl font-bold text-gray-800 mb-8">Universal BOM</h2>
+    <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-lg prose-h2:text-[1.65rem]">
+      <div id="universal-bom" set:html={universalBOMHTML} />
+    </div>
+  </div>
+
+  <!-- Section Divider: Assembly Instructions -->
+  <div class="mb-8 mt-16">
+    <div class="flex items-center gap-4">
+      <div class="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
+      <h2 class="text-2xl font-bold text-gray-800">Assembly Instructions</h2>
+      <div class="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
+    </div>
+  </div>
+
+  <!-- Printer-Specific Instructions (initially hidden) -->
+  <div id="printer-specific-instructions" class="mb-12 hidden">
+    <h2 id="printer-instructions-heading" class="text-3xl font-bold text-gray-800 mb-8"></h2>
+    <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-lg prose-h2:text-[1.65rem]">
+      {
+        Object.entries(printerDataHTML).map(([printer, data]) =>
+          data.instructions ? (
+            <div
+              id={`instructions-${printer}`}
+              class="printer-content hidden"
+              data-printer={printer}
+              set:html={data.instructions}
+            />
+          ) : null
+        )
+      }
+    </div>
+  </div>
+
+  <!-- Universal Assembly Instructions -->
+  <div class="mb-12">
+    <h2 id="universal-assembly-heading" class="text-3xl font-bold text-gray-800 mb-8">Universal Assembly Instructions</h2>
+    <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-lg prose-h2:text-[1.65rem]">
+      <div id="universal-assembly" set:html={universalAssemblyHTML} />
+    </div>
+  </div>
+
+  <!-- Note about printer-specific content -->
+  <div id="no-printer-instructions" class="hidden">
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+      <p class="text-yellow-800">
+        <strong>Note:</strong> Detailed printer-specific assembly
+        instructions are being written. Please follow the universal instructions
+        above and refer to the printer-specific BOM for additional
+        components needed.
+      </p>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  /* Clickable BOM table rows - simple strikethrough on click */
+  .prose table tbody tr.bom-row {
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+  }
+
+  .prose table tbody tr.bom-row:hover {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+  }
+
+  .prose table tbody tr.bom-row.completed {
+    color: #9ca3af !important;
+    text-decoration: line-through !important;
+    background-color: rgba(156, 163, 175, 0.1) !important;
+    opacity: 0.6 !important;
+  }
+
+  .prose table tbody tr.bom-row.completed td {
+    color: #9ca3af !important;
+    text-decoration: line-through !important;
+  }
+</style>
+
+<script>
+  function setupInteractiveCheckboxes() {
+    const bomSections = document.querySelectorAll(
+      "#printer-specific-bom, #universal-bom"
+    );
+
+    // Handle table rows in BOM sections
+    bomSections.forEach((section) => {
+      const tables = section.querySelectorAll("table");
+
+      tables.forEach((table, tableIndex) => {
+        const rows = table.querySelectorAll("tbody tr");
+
+        rows.forEach((row, rowIndex) => {
+          const sectionId = section.id || section.parentElement?.id || "unknown";
+          const storageKey = `checkbox-${sectionId}-table${tableIndex}-row${rowIndex}`;
+
+          // Add checkbox styling class
+          row.classList.add("bom-row");
+          (row as HTMLElement).dataset.storageKey = storageKey;
+
+          // Restore state from localStorage
+          if (localStorage.getItem(storageKey) === "completed") {
+            row.classList.add("completed");
+          }
+
+          // Remove any existing click handlers to prevent duplicates
+          const newRow = row.cloneNode(true) as HTMLElement;
+          row.parentNode?.replaceChild(newRow, row);
+
+          // Add click handler to the new row
+          newRow.addEventListener("click", (e) => {
+            const target = e.target as HTMLElement;
+            // Only toggle if clicking on the row itself, not on links
+            if (target.tagName !== "A" && target.tagName !== "CODE") {
+              newRow.classList.toggle("completed");
+
+              // Save state
+              const key = newRow.dataset.storageKey;
+              if (newRow.classList.contains("completed")) {
+                localStorage.setItem(key!, "completed");
+              } else {
+                localStorage.removeItem(key!);
+              }
+            }
+          });
+        });
+      });
+    });
+  }
+
+  // Setup checkboxes on initial load - wait for page to be fully loaded
+  function initializeCheckboxes() {
+    if (document.readyState === 'complete') {
+      // Page already loaded
+      setTimeout(setupInteractiveCheckboxes, 100);
+    } else {
+      // Wait for page to load
+      window.addEventListener('load', () => {
+        setTimeout(setupInteractiveCheckboxes, 100);
+      });
+    }
+  }
+
+  initializeCheckboxes();
+
+  // Re-setup when content changes (printer selection)
+  window.addEventListener("content-updated", () => {
+    requestAnimationFrame(() => {
+      setTimeout(setupInteractiveCheckboxes, 50);
+    });
+  });
+</script>

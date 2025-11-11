@@ -1,0 +1,336 @@
+<!-- Table of Contents sidebar with scroll spy -->
+<div class="hidden lg:block lg:col-3">
+  <div id="toc-sidebar">
+    <h3 class="text-lg font-bold mb-4">On this page</h3>
+    <nav id="toc-nav"></nav>
+  </div>
+</div>
+
+<style>
+  #toc-sidebar {
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  #toc-nav {
+    display: flex;
+    flex-direction: column;
+  }
+</style>
+
+<style is:global>
+  #toc-sidebar a {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0;
+    padding-left: 0.75rem;
+    color: #6b7280;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  #toc-sidebar a:hover {
+    color: var(--color-primary);
+    padding-left: 1rem;
+  }
+
+  #toc-sidebar a.toc-section {
+    font-weight: 500;
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    color: #374151;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  #toc-sidebar a.toc-section:first-child {
+    margin-top: 0;
+  }
+
+  #toc-sidebar a.toc-part {
+    margin-top: 0.1rem;
+    margin-bottom: 0.1rem;
+    margin-left: 0.75rem;
+    font-weight: 400;
+    font-size: 0.875rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  /* Active state - must come after other rules for proper specificity */
+  #toc-sidebar a.active {
+    color: var(--color-primary) !important;
+    padding-left: 1rem !important;
+  }
+</style>
+
+<script>
+  function generateTOC() {
+    const content = document.querySelector(".col-12.lg\\:col-8");
+    if (!content) return;
+
+    // Get currently selected printer
+    const activeButton = document.querySelector(".printer-select-btn.active");
+    const selectedPrinter = activeButton?.getAttribute("data-printer");
+    const printerDisplayName = activeButton?.textContent?.trim() || "";
+
+    // Only include major headings: "BOM", "Assembly Instructions", and "Part X" headings
+    const allHeadings = content.querySelectorAll("h1, h2, h3");
+    const tocNav = document.getElementById("toc-nav");
+    if (!tocNav) return;
+
+    tocNav.innerHTML = "";
+
+    const filteredHeadings: HTMLElement[] = [];
+    const headingMetadata: Array<{element: HTMLElement, customLabel?: string, sectionType?: string}> = [];
+
+    allHeadings.forEach((heading) => {
+      const text = heading.textContent || "";
+
+      // Check if heading is visible (not inside a hidden parent)
+      let parent = heading.parentElement;
+      let isVisible = true;
+      let isInPrinterSpecific = false;
+
+      while (parent) {
+        if (parent.classList.contains("hidden")) {
+          isVisible = false;
+          break;
+        }
+        if (parent.id === "printer-specific-instructions") {
+          isInPrinterSpecific = true;
+        }
+        if (parent.classList.contains("lg:col-8")) {
+          break; // Stop at main content container
+        }
+        parent = parent.parentElement;
+      }
+
+      // Include Part headings from universal assembly
+      const isPartHeading = text.startsWith("Part ");
+
+      // Include h2 headings from printer-specific instructions
+      const isPrinterSpecificHeading = isInPrinterSpecific && heading.tagName === "H2";
+
+      if (isVisible && (isPartHeading || isPrinterSpecificHeading)) {
+        // Ensure heading has an ID
+        if (!heading.id) {
+          const idBase = text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          heading.id = isPartHeading ? `part-${idBase}` : `printer-${idBase}`;
+        }
+        filteredHeadings.push(heading as HTMLElement);
+        headingMetadata.push({
+          element: heading,
+          customLabel: text,
+          sectionType: isPrinterSpecificHeading ? "printer-step" : "part"
+        });
+      }
+    });
+
+    // Build custom TOC structure
+    const customEntries: Array<{element: HTMLElement, customLabel: string, sectionType: string}> = [];
+
+    // Get references to main sections
+    const printerBOMSection = document.getElementById("printer-specific-bom");
+    const universalBOMSection = document.getElementById("universal-bom");
+    const printerInstructionsSection = document.getElementById("printer-specific-instructions");
+    const universalAssemblySection = document.getElementById("universal-assembly");
+
+    // Add printer name at top if printer is selected
+    if (selectedPrinter && selectedPrinter !== "universal") {
+      const printerOverview = document.getElementById("printer-specific-overview");
+      if (printerOverview && !printerOverview.classList.contains("hidden")) {
+        customEntries.push({
+          element: printerOverview as HTMLElement,
+          customLabel: printerDisplayName,
+          sectionType: "printer-name"
+        });
+      }
+    }
+
+    // Add BOM entries
+    if (selectedPrinter && selectedPrinter !== "universal" && printerBOMSection && !printerBOMSection.classList.contains("hidden")) {
+      customEntries.push({
+        element: printerBOMSection as HTMLElement,
+        customLabel: `BOM - ${printerDisplayName}`,
+        sectionType: "bom-section"
+      });
+    }
+    if (universalBOMSection) {
+      customEntries.push({
+        element: universalBOMSection as HTMLElement,
+        customLabel: "BOM - Universal",
+        sectionType: "bom-section"
+      });
+    }
+
+    // Add Assembly Instructions entries
+    if (selectedPrinter && selectedPrinter !== "universal" && printerInstructionsSection && !printerInstructionsSection.classList.contains("hidden")) {
+      customEntries.push({
+        element: printerInstructionsSection as HTMLElement,
+        customLabel: `Assembly Instructions - ${printerDisplayName}`,
+        sectionType: "assembly-section"
+      });
+
+      // Add printer-specific headings right after the section
+      const printerSpecificHeadings = headingMetadata.filter(item => item.sectionType === "printer-step");
+      customEntries.push(...printerSpecificHeadings);
+    }
+
+    if (universalAssemblySection) {
+      customEntries.push({
+        element: universalAssemblySection as HTMLElement,
+        customLabel: "Assembly Instructions - Universal",
+        sectionType: "assembly-section"
+      });
+
+      // Add Part headings right after the universal section
+      const partHeadings = headingMetadata.filter(item => item.sectionType === "part");
+      customEntries.push(...partHeadings);
+    }
+
+    // Use custom entries instead
+    const finalMetadata = customEntries;
+
+    finalMetadata.forEach((item, index) => {
+      const element = item.element;
+
+      // Ensure element has an ID
+      if (!element.id) {
+        element.id = `toc-item-${index}`;
+      }
+      const id = element.id;
+
+      const link = document.createElement("a");
+      link.href = `#${id}`;
+      link.textContent = item.customLabel || "";
+      link.dataset.sectionType = item.sectionType; // Store for debugging
+      link.dataset.targetId = id; // Store the target ID
+
+      // Add appropriate classes based on heading type
+      if (item.sectionType === "printer-name" || item.sectionType === "bom-section" || item.sectionType === "assembly-section") {
+        link.className = "toc-section";
+      } else if (item.sectionType === "part" || item.sectionType === "printer-step") {
+        link.className = "toc-part";
+      } else {
+        link.className = "toc-part";
+      }
+
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+        const offsetPosition = elementPosition - 120; // 120px offset for header and spacing
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+
+        // Manually trigger active state
+        tocNav.querySelectorAll("a").forEach((a) => a.classList.remove("active"));
+        link.classList.add("active");
+      });
+
+      tocNav.appendChild(link);
+    });
+
+    // Scroll spy - track which section is currently visible
+    const observerOptions = {
+      rootMargin: "-10% 0px -85% 0px",
+      threshold: [0, 0.25, 0.5, 0.75, 1]
+    };
+
+    let isManualScroll = false;
+    const observer = new IntersectionObserver((entries) => {
+      if (isManualScroll) return;
+
+      // Find the most visible entry
+      let mostVisible = null;
+      let maxRatio = 0;
+
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+          maxRatio = entry.intersectionRatio;
+          mostVisible = entry;
+        }
+      });
+
+      if (mostVisible) {
+        const id = mostVisible.target.id;
+        tocNav.querySelectorAll("a").forEach((a) => a.classList.remove("active"));
+        const activeLink = tocNav.querySelector(`a[data-target-id="${id}"]`);
+        if (activeLink) {
+          activeLink.classList.add("active");
+        }
+      }
+    }, observerOptions);
+
+    // Observe all elements in the TOC (skip printer name which is just a label)
+    finalMetadata.forEach((item) => {
+      if (item.sectionType !== "printer-name" && item.element.id) {
+        observer.observe(item.element);
+      }
+    });
+
+    // Handle manual clicks
+    tocNav.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        isManualScroll = true;
+        tocNav.querySelectorAll("a").forEach((a) => a.classList.remove("active"));
+        link.classList.add("active");
+        setTimeout(() => { isManualScroll = false; }, 1500);
+      });
+    });
+
+    // Detect initial visible element after a short delay
+    setTimeout(() => {
+      let foundVisible = false;
+
+      finalMetadata.forEach((item) => {
+        if (item.sectionType === "printer-name") return; // Skip printer name
+
+        const rect = item.element.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const isInViewport = rect.top < viewportHeight * 0.5 && rect.bottom > viewportHeight * 0.1;
+
+        if (isInViewport && !foundVisible) {
+          const activeLink = tocNav.querySelector(`a[data-target-id="${item.element.id}"]`);
+          if (activeLink) {
+            activeLink.classList.add("active");
+            foundVisible = true;
+          }
+        }
+      });
+    }, 200);
+  }
+
+  // Generate TOC on initial load - wait for page to be fully loaded
+  function initializeTOC() {
+    if (document.readyState === 'complete') {
+      // Page already loaded
+      setTimeout(generateTOC, 100);
+    } else {
+      // Wait for page to load
+      window.addEventListener('load', () => {
+        setTimeout(generateTOC, 100);
+      });
+    }
+  }
+
+  initializeTOC();
+
+  // Regenerate TOC when content changes (printer selection)
+  window.addEventListener("content-updated", () => {
+    requestAnimationFrame(() => {
+      setTimeout(generateTOC, 50);
+    });
+  });
+</script>

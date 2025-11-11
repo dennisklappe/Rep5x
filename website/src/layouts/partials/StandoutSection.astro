@@ -1,0 +1,146 @@
+---
+import ImageMod from "@/components/ImageMod.astro";
+import { markdownify, plainify } from "@/lib/utils/textConverter";
+import { Icon } from "astro-icon/components";
+import type { CollectionEntry } from "astro:content";
+import { getEntry } from "astro:content";
+
+const features = (await getEntry(
+  "projectOverview",
+  "project-overview"
+)) as CollectionEntry<"projectOverview">;
+
+const { list_columns, title, description, badge } = features.data;
+---
+
+<section class="section pt-0">
+  <div class="container">
+    <div class="section-title">
+      <div class="col-10 xl:col-8" data-aos="fade-up-sm">
+        <p set:html={markdownify(badge)} />
+        <h2 set:html={markdownify(title)} />
+        <p set:html={markdownify(description)} />
+      </div>
+    </div>
+
+    <div class="row justify-center">
+      <div class="col-11 lg:col-12">
+        <div class="flex flex-col gap-y-16 section-sm pb-0">
+          {
+            list_columns?.map((item, index: number) => (
+              <div class={`row gx-0 gy-5 space-y-14 items-center`}>
+                <div
+                  class={`${index % 2 === 0 ? "lg:pe-16" : "lg:order-2 lg:ps-16"} lg:col-6 relative`}
+                  data-aos="fade-up-sm"
+                  data-aos-delay={100}
+                >
+                  <div
+                    class={`hidden lg:block absolute bg-dark/5 opacity-40 w-[180px] lg:w-[336px] -z-10 rounded-3xl ${index % 2 === 0 ? "left-0 h-[347px]" : "md:right-[40%] lg:right-0 bottom-0 h-40 lg:h-[250px]"}`}
+                    data-aos={`${index % 2 === 0 ? "fade-up-left" : "fade-down-right"}`}
+                    data-aos-delay={100}
+                  />
+                  <div class={`rounded-2xl p-8 pl-24 pb-8`}>
+                    {item.images &&
+                      item.images.map((image: string, imageIndex: number) => (
+                        <ImageMod
+                          class={`drop-shadow-xl rounded-xl ${imageIndex === 1 ? "h-[412px] object-cover object-top" : ""}`}
+                          src={image}
+                          alt={`image related to ${plainify(item.title)}`}
+                          width={396}
+                          height={424}
+                        />
+                      ))}
+                  </div>
+                </div>
+
+                <div
+                  class={`lg:col-6`}
+                  data-aos="fade-up-sm"
+                  data-aos-delay={300}
+                >
+                  {item.title && (
+                    <h3
+                      class="h4 mb-6 has-highlight-text"
+                      set:html={markdownify(item.title)}
+                    />
+                  )}
+                  {item.description && (
+                    <p
+                      class="text-lg/inherit"
+                      set:html={markdownify(item.description)}
+                    />
+                  )}
+
+                  {item.list && (
+                    <div class="mt-10 flex flex-col gap-10 sm:flex-row xl:mt-20">
+                      {item.list.map((point: any, i: number) => (
+                        <div class="flex flex-col gap-5">
+                          <div
+                            class={`border w-[60px] h-[60px] rounded-full flex items-center justify-center ${i % 2 === 0 ? "bg-primary text-white" : "text-primary"}`}
+                          >
+                            <Icon name={point.icon} class="w-8 h-8" />
+                          </div>
+                          <div>
+                            {point.title && (
+                              <h3
+                                class="h6 mb-2"
+                                set:html={markdownify(point.title)}
+                              />
+                            )}
+                            {point.description && (
+                              <p set:html={markdownify(point.description)} />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {item.list_check && (
+                    <ul class="md:columns-2 mt-3">
+                      {item.list_check.map((point: string) => (
+                        <li class="flex items-center gap-2 space-y-5">
+                          <Icon
+                            name="lucide:check-circle"
+                            class="w-6 h-6 mt-5"
+                          />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {item.button && item.button.enable && (
+                    <button class="flex items-start mt-10">
+                      <a
+                        class={`btn btn-dark`}
+                        href={item.button.link}
+                        target={
+                          item.button.link.startsWith("http")
+                            ? "_blank"
+                            : "_self"
+                        }
+                        rel="noopener"
+                      >
+                        {item.button.label}
+                        <span class="sr-only">Details</span>
+                        <span class="icon-wrapper">
+                          <span class="icon">
+                            <Icon name="lucide:arrow-right" width="19" height="12" />
+                          </span>
+                          <span class="icon" aria-hidden="true">
+                            <Icon name="lucide:arrow-right" width="19" height="12" />
+                          </span>
+                        </span>
+                      </a>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,30 @@
+<!-- Reading progress bar that fills as user scrolls -->
+<div id="progress-bar"></div>
+
+<style>
+  #progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background-color: var(--color-primary);
+    width: 0%;
+    transition: width 0.2s;
+    z-index: 100;
+  }
+</style>
+
+<script>
+  const progressBar = document.getElementById("progress-bar");
+
+  window.addEventListener("scroll", () => {
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+    const scrollTop = window.scrollY;
+    const scrollPercent = (scrollTop / (documentHeight - windowHeight)) * 100;
+
+    if (progressBar) {
+      progressBar.style.width = `${scrollPercent}%`;
+    }
+  });
+</script>

@@ -1,0 +1,52 @@
+---
+interface Accomplishment {
+  number: number;
+  prefix: string;
+  subtitle: string;
+}
+
+export interface IAccomplishments {
+  enable: boolean;
+  title: string;
+  subtitle: string;
+  list: Accomplishment[];
+}
+
+const { accomplishments } = Astro.props as {
+  accomplishments: IAccomplishments;
+};
+---
+
+{
+  accomplishments.enable && (
+    <section class="section pt-0">
+      <div class="container">
+        <div class="row g-4 justify-center text-center">
+          {accomplishments.list.map((item, index) => (
+            <div
+              class="md:col-4 lg:col-4"
+              data-aos="fade-up-sm"
+              data-aos-delay={++index * 150}
+            >
+              <h3 class="h2 lg:h1 mb-3">
+                <span
+                  data-countup
+                  data-countup-number={item.number}
+                  data-countup-duration="1500"
+                  data-countup-easing="ease-in-out"
+                />
+                <span>{item.prefix}</span>
+              </h3>
+              <p class="lg:text-lg/[inherit]" set:html={item.subtitle} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+<script>
+  import { countUp } from "@/lib/utils/countup";
+
+  document.addEventListener("astro:page-load", countUp);
+</script>

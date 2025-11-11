@@ -1,0 +1,32 @@
+---
+export interface Props {
+  href?: string;
+  label: string;
+  variant?: "primary" | "outline" | "light" | "dark";
+  type?: "button" | "submit";
+  id?: string;
+  onClick?: string;
+}
+
+const { href, label, variant = "primary", type = "button", id, onClick } = Astro.props;
+
+const baseClasses = "inline-flex items-center gap-3 px-6 py-3 rounded-full font-medium transition-all duration-300 text-xl";
+const variantClasses = {
+  primary: "bg-primary text-white hover:opacity-80",
+  outline: "border border-primary text-primary hover:bg-primary hover:text-white",
+  light: "bg-white border border-gray-200 text-gray-700 hover:border-primary hover:bg-primary hover:text-white",
+  dark: "bg-dark text-white hover:bg-primary"
+};
+
+const Element = href ? 'a' : 'button';
+const linkProps = href ? { href, target: "_blank", rel: "noopener noreferrer" } : {};
+const buttonProps = !href ? { type, id, onClick } : {};
+---
+
+<Element
+  class={`${baseClasses} ${variantClasses[variant]}`}
+  {...linkProps}
+  {...buttonProps}
+>
+  <span>{label}</span>
+</Element>

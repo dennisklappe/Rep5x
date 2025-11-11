@@ -1,0 +1,168 @@
+---
+import ImageMod from "@/components/ImageMod.astro";
+import Base from "@/layouts/Base.astro";
+import { markdownify } from "@/lib/utils/textConverter";
+import CallToAction from "@/partials/CallToAction.astro";
+import PageHeader from "@/partials/PageHeader.astro";
+
+// This will be replaced by Cloudflare function in production
+// The function at /functions/github-changelog.js will handle the dynamic content
+const list = [{
+  version: "Loading...",
+  title: "Dynamic content will load via Cloudflare Functions", 
+  date: "November 2025",
+  image: "/blog/cad-model-rw2-print-head.webp",
+  content: "This page will show live GitHub PRs with AI-selected images when deployed.",
+  type: "info"
+}];
+
+// Static page metadata
+const title = "Changelog";
+const description = "Rep5x project development changelog and version history";
+const meta_title = "Rep5x Development Changelog";
+const image = "";
+const hero = {
+  title: "Rep5x Development Changelog",
+  description: "Track the development progress of Rep5x open-source 5-axis printing technology through GitHub commits and pull requests."
+};
+---
+
+<Base
+  title={title}
+  meta_title={meta_title}
+  description={description}
+  image={image}
+>
+  <PageHeader
+    title={hero.title}
+    description={hero.description}
+    hasSmallHeight={true}
+  />
+
+  <section class="section">
+    <div class="container">
+      <div class="row">
+        <div
+          class="lg:col-8 mx-auto"
+          data-aos="fade-up-sm"
+          data-aos-delay="200"
+          id="changelog-content"
+        >
+          <div class="text-center p-8">
+            <p>Loading changelog...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <CallToAction />
+</Base>
+
+<script>
+  async function loadChangelog() {
+    try {
+      const response = await fetch('/github-changelog');
+      const data = await response.json();
+      const changelogItems = data.changelogItems || [];
+      const availableImages = data.availableImages || ['/images/blog/cad-model-rw2-print-head.webp'];
+
+      const container = document.getElementById('changelog-content');
+      if (!container) return;
+
+      // Fisher-Yates shuffle for truly random order
+      const shuffledImages = [...availableImages];
+      for (let i = shuffledImages.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledImages[i], shuffledImages[j]] = [shuffledImages[j], shuffledImages[i]];
+      }
+
+      console.log('Available images:', availableImages);
+      console.log('Shuffled images:', shuffledImages);
+
+      container.innerHTML = changelogItems.map((item, i) => {
+        const imageUrl = shuffledImages[i % shuffledImages.length];
+        console.log(`Item ${i}: Using image ${imageUrl}`);
+
+        const contentLines = item.content.split('\n').filter(line => line.trim());
+        const isBulletList = contentLines.every(line => line.trim().startsWith('*'));
+
+        let contentHtml;
+        if (isBulletList) {
+          const listItems = contentLines
+            .map(line => line.trim().replace(/^\*\s*/, ''))
+            .map(text => `<li>${text}</li>`)
+            .join('');
+          contentHtml = `<ul class="list-disc list-inside space-y-1">${listItems}</ul>`;
+        } else {
+          contentHtml = contentLines
+            .map(line => `<p>${line}</p>`)
+            .join('');
+        }
+
+        return `
+        <div
+          class="rounded-3xl border-t border-border/90 shadow-md p-5 mb-14 last:mb-0"
+          data-aos="fade-up-sm"
+          data-aos-delay="${i * 100}"
+        >
+          <div class="row">
+            <div class="md:col-4">
+              <div class="mb-2.5 md:mb-0 relative">
+                <p class="absolute top-3 left-3 bg-body px-3 py-1 rounded-full text-sm">
+                  ${item.date}
+                </p>
+                <img
+                  src="${imageUrl}"
+                  alt="changelog"
+                  width="200"
+                  height="200"
+                  class="object-cover rounded-2xl w-full"
+                />
+              </div>
+            </div>
+            <div class="md:col-8">
+              <div class="flex items-center gap-3 mb-4">
+                <h3 class="h6 font-medium text-base border px-2 py-1 inline-block rounded-full">
+                  ${item.version}
+                </h3>
+                ${item.url ? `
+                  <a
+                    href="${item.url}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    View on GitHub →
+                  </a>
+                ` : ''}
+              </div>
+              <h2 class="text-lg font-medium mb-3">
+                ${item.title}
+              </h2>
+              <div class="content prose-p:text-lg/inherit">
+                ${contentHtml}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      }).join('');
+      
+    } catch (error) {
+      const container = document.getElementById('changelog-content');
+      if (container) {
+        container.innerHTML = `
+          <div class="text-center p-8">
+            <p class="text-red-600">Error loading changelog. Please check console for details.</p>
+          </div>
+        `;
+      }
+    }
+  }
+  
+  // Load on initial page load
+  document.addEventListener('DOMContentLoaded', loadChangelog);
+  
+  // Also load when navigating via Astro's client-side routing
+  document.addEventListener('astro:page-load', loadChangelog);
+</script>

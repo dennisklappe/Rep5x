@@ -1,0 +1,184 @@
+---
+interface Props {
+  printers: string[];
+  printerData: Record<string, { displayName: string }>;
+}
+
+const { printers, printerData } = Astro.props;
+---
+
+<div class="mb-16">
+  <div class="row justify-center">
+    <div class="col-12 lg:col-10">
+      <div class="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+        <h3 class="h5 mb-4">Select Your Printer Model (Optional)</h3>
+        <p class="mb-4">
+          Below you'll find the universal build instructions that work for all
+          printers. To see printer-specific instructions and bill of materials,
+          select your printer model:
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="btn-universal"
+            class="printer-select-btn active px-6 py-3 rounded-lg font-medium transition-all border-2"
+            data-printer="universal"
+          >
+            Universal Only
+          </button>
+          {
+            printers.map((printer) => (
+              <button
+                class="printer-select-btn px-6 py-3 rounded-lg font-medium transition-all border-2"
+                data-printer={printer}
+              >
+                {printerData[printer].displayName}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .printer-select-btn {
+    border-color: #e5e7eb;
+    background-color: white;
+    color: #374151;
+    transition: all 0.2s;
+  }
+
+  .printer-select-btn:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-light);
+  }
+
+  .printer-select-btn.active {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: white;
+  }
+</style>
+
+<script>
+  const buttons = document.querySelectorAll(".printer-select-btn");
+  const printerOverviewSection = document.getElementById("printer-specific-overview");
+  const printerBOMSection = document.getElementById("printer-specific-bom");
+  const printerInstructionsSection = document.getElementById("printer-specific-instructions");
+  const noInstructionsNote = document.getElementById("no-printer-instructions");
+  const printerBOMHeading = document.getElementById("printer-bom-heading");
+  const printerInstructionsHeading = document.getElementById("printer-instructions-heading");
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      // Remove active class from all buttons
+      buttons.forEach((btn) => btn.classList.remove("active"));
+      // Add active class to clicked button
+      button.classList.add("active");
+
+      const printer = button.getAttribute("data-printer");
+      const printerDisplayName = button.textContent?.trim() || "";
+
+      // Save selected printer to localStorage
+      localStorage.setItem("selectedPrinter", printer || "universal");
+
+      if (printer === "universal") {
+        // Hide all printer-specific content
+        printerOverviewSection?.classList.add("hidden");
+        printerBOMSection?.classList.add("hidden");
+        printerInstructionsSection?.classList.add("hidden");
+        noInstructionsNote?.classList.add("hidden");
+      } else {
+        // Hide all printer content first
+        document.querySelectorAll(".printer-content").forEach((content) => {
+          content.classList.add("hidden");
+        });
+
+        // Show selected printer's overview if it exists
+        const overviewElement = document.getElementById(`overview-${printer}`);
+        if (overviewElement) {
+          printerOverviewSection?.classList.remove("hidden");
+          overviewElement.classList.remove("hidden");
+        } else {
+          printerOverviewSection?.classList.add("hidden");
+        }
+
+        // Show selected printer's BOM
+        printerBOMSection?.classList.remove("hidden");
+        document.getElementById(`bom-${printer}`)?.classList.remove("hidden");
+
+        // Update BOM heading
+        if (printerBOMHeading) {
+          printerBOMHeading.textContent = `${printerDisplayName} BOM`;
+        }
+
+        // Show selected printer's instructions if they exist
+        const instructionsElement = document.getElementById(`instructions-${printer}`);
+        if (instructionsElement) {
+          printerInstructionsSection?.classList.remove("hidden");
+          instructionsElement.classList.remove("hidden");
+          noInstructionsNote?.classList.add("hidden");
+
+          // Update instructions heading
+          if (printerInstructionsHeading) {
+            printerInstructionsHeading.textContent = `${printerDisplayName} Assembly Instructions`;
+          }
+        } else {
+          printerInstructionsSection?.classList.add("hidden");
+          noInstructionsNote?.classList.remove("hidden");
+        }
+      }
+
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent("content-updated"));
+
+      // Scroll to the printer content area
+      setTimeout(() => {
+        let targetElement = null;
+
+        if (printer !== "universal") {
+          const overviewSection = document.getElementById("printer-specific-overview");
+          if (overviewSection && !overviewSection.classList.contains("hidden")) {
+            targetElement = overviewSection;
+          } else {
+            targetElement = document.querySelector(".col-12.lg\\:col-8 > div:nth-child(2)");
+          }
+        } else {
+          targetElement = document.querySelector(".col-12.lg\\:col-8 > div:nth-child(1)");
+        }
+
+        if (targetElement) {
+          const elementPosition = targetElement.getBoundingClientRect().top + window.scrollY;
+          const offsetPosition = elementPosition - 120;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+          });
+        }
+      }, 150);
+    });
+  });
+
+  // Restore selected printer from localStorage - wait for page to be fully loaded
+  function restoreSavedPrinter() {
+    const savedPrinter = localStorage.getItem("selectedPrinter");
+    if (savedPrinter && savedPrinter !== "universal") {
+      const savedButton = document.querySelector(`.printer-select-btn[data-printer="${savedPrinter}"]`);
+      if (savedButton) {
+        (savedButton as HTMLButtonElement).click();
+      }
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    // Page already loaded
+    setTimeout(restoreSavedPrinter, 200);
+  } else {
+    // Wait for page to load
+    window.addEventListener('load', () => {
+      setTimeout(restoreSavedPrinter, 200);
+    });
+  }
+</script>
