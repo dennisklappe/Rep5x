@@ -1,0 +1,62 @@
+{
+  "main": [
+    {
+      "name": "Home",
+      "url": "/"
+    },
+    {
+      "name": "About",
+      "url": "/about/"
+    },
+    {
+      "name": "Blog",
+      "url": "/blog/"
+    },
+    {
+      "name": "FAQ",
+      "url": "/faq/"
+    },
+    {
+      "name": "Contact",
+      "url": "/contact/"
+    }
+  ],
+  "footer": [
+    {
+      "name": "Privacy Policy",
+      "url": "/privacy-policy/"
+    }
+  ],
+  "footer_menu_links": [
+    {
+      "name": "Home",
+      "url": "/"
+    },
+    {
+      "name": "About",
+      "url": "/about/"
+    },
+    {
+      "name": "Blog",
+      "url": "/blog/"
+    },
+    {
+      "name": "FAQ",
+      "url": "/faq/"
+    }
+  ],
+  "footer_info_links": [
+    {
+      "name": "Changelog",
+      "url": "/changelog/"
+    },
+    {
+      "name": "Privacy Policy",
+      "url": "/privacy-policy/"
+    },
+    {
+      "name": "Terms & Conditions",
+      "url": "/terms-conditions/"
+    }
+  ]
+}

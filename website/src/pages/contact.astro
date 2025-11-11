@@ -1,0 +1,302 @@
+---
+import config from "@/config/config.json";
+import Base from "@/layouts/Base.astro";
+import { markdownify } from "@/lib/utils/textConverter";
+import CallToAction from "@/partials/CallToAction.astro";
+import Faq from "@/partials/Faq.astro";
+import PageHeader from "@/partials/PageHeader.astro";
+import { Icon } from "astro-icon/components";
+import type { CollectionEntry } from "astro:content";
+import { getEntry } from "astro:content";
+
+const contact = (await getEntry(
+  "contact",
+  "-index"
+)) as CollectionEntry<"contact">;
+
+const { contact_form_action }: { contact_form_action: string } = config.params;
+const { title, description, meta_title, contact_section } = contact.data;
+
+// Function to get color scheme based on icon type
+function getIconColors(icon: string) {
+  if (icon.includes('mail')) {
+    return {
+      bg: 'bg-purple-100',
+      text: 'text-purple-600'
+    };
+  } else if (icon.includes('message-circle')) {
+    return {
+      bg: 'bg-blue-100', 
+      text: 'text-blue-600'
+    };
+  } else if (icon.includes('map-pin')) {
+    return {
+      bg: 'bg-orange-100',
+      text: 'text-orange-600'
+    };
+  }
+  // Fallback
+  return {
+    bg: 'bg-gray-100',
+    text: 'text-gray-600'
+  };
+}
+---
+
+<Base title={title} meta_title={meta_title} description={description}>
+  <PageHeader
+    title={contact_section.title}
+    description={contact_section.description}
+  />
+
+  <section class="section-up">
+    <div class="container">
+      <div class="row g-5 space-x-4 justify-center">
+        <div
+          class="col-11 md:col-5 border border-dark/10 rounded-[30px] bg-light!"
+          data-aos="fade-left-sm"
+        >
+          <div class="p-7">
+            <h3 set:html={markdownify(contact_section.form.title)} />
+            <p
+              class="pt-5 pb-14"
+              set:html={markdownify(contact_section.form.description)}
+            />
+
+            <div class="space-y-4">
+              {
+                contact_section.list?.map(
+                  (item: {
+                    title: string;
+                    description: string;
+                    icon: string;
+                  }) => {
+                    const colors = getIconColors(item.icon);
+                    return (
+                    <div class="flex items-center gap-4 pt-5 first:pt-0">
+                      <div class={`w-[60px] h-[60px] rounded-full ${colors.bg} flex items-center justify-center`}>
+                        <Icon name={item.icon} class={`w-6 h-6 ${colors.text}`} />
+                      </div>
+
+                      <div>
+                        <h3
+                          class="h6 font-medium"
+                          set:html={markdownify(item.title)}
+                        />
+                        <p set:html={markdownify(item.description, true)} />
+                      </div>
+                    </div>
+                    );
+                  }
+                )
+              }
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="col-11 md:col-5 border rounded-[30px] bg-dark text-text-light"
+          data-aos="fade-left-sm"
+          data-aos-delay="200"
+        >
+          <form id="contact-form" name="Rep5x" action="/contact-form" method="POST" class="p-8">
+            <div class="mb-6">
+              <label for="name" class="form-label">
+                Full Name <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="name"
+                name="name"
+                class="form-input"
+                placeholder="Your Name"
+                type="text"
+                required
+              />
+            </div>
+            <div class="mb-6">
+              <label for="email" class="form-label">
+                Email Address <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="email"
+                name="email"
+                class="form-input"
+                placeholder="your.email@domain.com"
+                type="email"
+                required
+              />
+            </div>
+            <div class="mb-6">
+              <label for="message" class="form-label">
+                Tell us more about your inquiry <span class="text-red-500"
+                  >*</span
+                >
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                class="form-input"
+                placeholder="Message goes here..."
+                style={{ resize: "none" }}
+                required
+                rows="4"></textarea>
+            </div>
+            <!-- Cloudflare Turnstile -->
+            <div class="flex justify-center mb-6">
+              <div
+                id="turnstile-widget"
+                class="cf-turnstile"
+                data-sitekey="0x4AAAAAACATlWzlhbYXDvVW"
+                data-theme="auto"
+                data-appearance="interaction-only"
+                data-execution="execute"
+              ></div>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              id="submit-btn"
+              class="w-full text-center bg-primary py-3 rounded-full text-xl font-medium text-text-dark transition hover:opacity-80 cursor-pointer"
+              >Submit</button
+            >
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Faq />
+  <CallToAction />
+</Base>
+
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const form = document.getElementById('contact-form') as HTMLFormElement;
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    let isSubmitting = false;
+    let turnstileExecuted = false;
+    
+    // Execute Turnstile when user first interacts with form
+    const formInputs = form.querySelectorAll('input, textarea');
+    formInputs.forEach(input => {
+      input.addEventListener('focus', () => {
+        if (!turnstileExecuted && (window as any).turnstile) {
+          (window as any).turnstile.execute();
+          turnstileExecuted = true;
+        }
+      }, { once: true });
+    });
+    
+    if (form && submitBtn) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Prevent double submission
+        if (isSubmitting) {
+          return;
+        }
+        
+        // Rate limiting - prevent spam
+        const now = Date.now();
+        if (now - lastSubmissionTime < RATE_LIMIT_MS) {
+          const remaining = Math.ceil((RATE_LIMIT_MS - (now - lastSubmissionTime)) / 1000);
+          submitBtn.textContent = `Wait ${remaining}s`;
+          submitBtn.style.backgroundColor = '#f59e0b';
+          submitBtn.style.color = '#ffffff';
+          setTimeout(() => {
+            submitBtn.textContent = 'Submit';
+            submitBtn.style.backgroundColor = '';
+            submitBtn.style.color = '';
+          }, 2000);
+          return;
+        }
+        
+        // Basic spam detection
+        const formData = new FormData(form);
+        const name = formData.get('name') as string;
+        const email = formData.get('email') as string;
+        const message = formData.get('message') as string;
+        
+        // Check for spam patterns
+        const spamKeywords = ['crypto', 'bitcoin', 'investment', 'loan', 'casino', 'viagra', 'click here', 'free money'];
+        const hasSpam = spamKeywords.some(keyword => 
+          message.toLowerCase().includes(keyword) || 
+          name.toLowerCase().includes(keyword)
+        );
+        
+        // Check for suspicious patterns
+        const hasUrls = /https?:\/\//.test(message);
+        const tooManyCapitals = (message.match(/[A-Z]/g) || []).length > message.length * 0.3;
+        const tooShort = message.length < 10;
+        const tooLong = message.length > 2000;
+        
+        if (hasSpam || tooManyCapitals || tooShort || tooLong || (hasUrls && message.length < 50)) {
+          submitBtn.textContent = 'Invalid message';
+          submitBtn.style.backgroundColor = '#ef4444';
+          submitBtn.style.color = '#ffffff';
+          setTimeout(() => {
+            submitBtn.textContent = 'Submit';
+            submitBtn.style.backgroundColor = '';
+            submitBtn.style.color = '';
+          }, 3000);
+          return;
+        }
+        
+        // Set submission state
+        isSubmitting = true;
+        lastSubmissionTime = now;
+        
+        // Show loading state
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Sending...';
+        submitBtn.disabled = true;
+        
+        try {
+          const response = await fetch('/contact-form', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            // Success message
+            submitBtn.textContent = 'Sent!';
+            submitBtn.style.backgroundColor = '#10b981';
+            submitBtn.style.color = '#ffffff';
+            form.reset();
+            
+            // Reset button after 5 seconds
+            setTimeout(() => {
+              submitBtn.textContent = originalText;
+              submitBtn.disabled = false;
+              submitBtn.style.backgroundColor = '';
+              submitBtn.style.color = '';
+              isSubmitting = false;
+            }, 5000);
+          } else {
+            throw new Error(result.error || 'Failed to send message');
+          }
+        } catch (error) {
+          // Error state
+          submitBtn.textContent = 'Failed to send';
+          submitBtn.style.backgroundColor = '#ef4444';
+          submitBtn.style.color = '#ffffff';
+          
+          // Reset button after 3 seconds
+          setTimeout(() => {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            submitBtn.style.backgroundColor = '';
+            submitBtn.style.color = '';
+            isSubmitting = false;
+          }, 3000);
+          
+        }
+      });
+    }
+  });
+</script>

@@ -1,0 +1,374 @@
+---
+import ArrowBtn from "@/components/ArrowBtn.astro";
+import Logo from "@/components/Logo.astro";
+import config from "@/config/config.json";
+import menu from "@/config/menu.json";
+import social from "@/config/social.json";
+import { markdownify } from "@/lib/utils/textConverter";
+
+const { footer_menu_links, footer_info_links } = menu;
+
+// Function to replace {year} this from string to year
+function replaceYear(text: string) {
+  const year = new Date().getFullYear();
+
+  return text.replace("{year}", year.toString());
+}
+---
+
+<footer class="bg-dark section-sm pb-11">
+  <div class="container" data-aos="fade-up-sm">
+    <div class="row gy-5 md:gy-6">
+      <div class="lg:col-6 lg:pe-8">
+        <div class="sm:max-w-sm">
+          <Logo src={config.site.logo_footer} />
+          <p class="mt-10 text-text-light font-medium text-lg">
+            Subscribe to Our Newsletter!
+          </p>
+          {
+            config.params.footer_description && (
+              <p
+                class="mt-3 mb-6 text-text-light/80"
+                set:html={markdownify(config.params.footer_description)}
+              />
+            )
+          }
+          <form
+            id="newsletter-form"
+            class="flex justify-between rounded-full bg-body/5 px-3 py-2"
+          >
+            <input
+              id="newsletter-email"
+              type="email"
+              placeholder="Enter your email"
+              class="form-input text-text-light! w-full rounded-full !border-transparent bg-transparent py-2! pl-2! placeholder:!opacity-80 placeholder:!text-text-light focus:ring-0"
+              required
+            />
+            <button
+              id="newsletter-submit"
+              class="rounded-full bg-primary text-text-light px-4 py-1 font-medium transition hover:opacity-80 cursor-pointer"
+              type="submit"
+            >
+              Subscribe
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="lg:col-6">
+        <div
+          class="flex flex-col sm:flex-row gap-y-6 md:flex-nowrap flex-wrap justify-between"
+        >
+          <div>
+            <h3 class="mb-4 pt-2 text-lg font-medium text-text-light md:mb-6">
+              Menu
+            </h3>
+            <ul class="flex flex-col gap-3">
+              {
+                footer_menu_links.map((item) => (
+                  <li>
+                    <ArrowBtn label={item.name} link={item.url} />
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+          <div>
+            <h3 class="mb-4 pt-2 text-lg font-medium text-text-light md:mb-6">
+              Info
+            </h3>
+            <ul class="flex flex-col gap-3">
+              {
+                footer_info_links.map((item) => (
+                  <li>
+                    <ArrowBtn label={item.name} link={item.url} />
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+          <div>
+            <h3 class="mb-4 pt-2 text-lg font-medium text-text-light md:mb-6">
+              Community
+            </h3>
+            <ul class="flex flex-col gap-3">
+              {
+                social.main.map((item) => (
+                  <li>
+                    <ArrowBtn label={item.name} link={item.link} />
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {
+      config.params.copyright && (
+        <div
+          class="text-center text-sm text-white mt-10 md:mt-20 pt-4 border-t border-border/10 [&>a]:underline"
+          set:html={markdownify(replaceYear(config.params.copyright))}
+        />
+      )
+    }
+  </div>
+</footer>
+
+<!-- Newsletter Name Modal -->
+<div id="newsletter-modal" class="fixed inset-0 bg-black bg-opacity-0 z-50 hidden items-center justify-center transition-all duration-300 ease-out">
+  <div id="modal-content" class="bg-white rounded-[20px] p-8 max-w-md w-full mx-4 relative transform scale-75 opacity-0 transition-all duration-300 ease-out">
+    <button id="modal-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+    
+    <h3 class="text-2xl font-semibold mb-4 text-gray-800">Almost there!</h3>
+    <p class="text-gray-600 mb-6">Please tell us your name to complete your subscription to Rep5x blog updates.</p>
+    
+    <form id="name-form">
+      <div class="mb-4">
+        <label for="subscriber-name" class="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+        <input
+          id="subscriber-name"
+          type="text"
+          placeholder="Enter your name"
+          class="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+          required
+        />
+      </div>
+      
+      <!-- Cloudflare Turnstile -->
+      <div class="flex justify-center mb-4">
+        <div
+          id="newsletter-turnstile"
+          class="cf-turnstile"
+          data-sitekey="0x4AAAAAACATlWzlhbYXDvVW"
+          data-theme="auto"
+          data-appearance="interaction-only"
+          data-execution="execute"
+        ></div>
+      </div>
+      
+      <div class="flex gap-3">
+        <button
+          type="button"
+          id="modal-cancel"
+          class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          id="modal-submit"
+          class="flex-1 px-4 py-3 bg-primary text-white rounded-full font-medium hover:opacity-80 transition-opacity"
+        >
+          Subscribe
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const form = document.getElementById('newsletter-form');
+    const emailInput = document.getElementById('newsletter-email');
+    const submitBtn = document.getElementById('newsletter-submit');
+    const modal = document.getElementById('newsletter-modal');
+    const modalContent = document.getElementById('modal-content');
+    const nameForm = document.getElementById('name-form');
+    const nameInput = document.getElementById('subscriber-name');
+    const modalSubmit = document.getElementById('modal-submit');
+    const modalClose = document.getElementById('modal-close');
+    const modalCancel = document.getElementById('modal-cancel');
+    
+    let currentEmail = '';
+    let isSubmitting = false;
+    let turnstileExecuted = false;
+
+    // Handle initial email submission
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      if (isSubmitting) return;
+      
+      const email = emailInput?.value?.trim();
+      if (!email) return;
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showMessage('Please enter a valid email address', 'error');
+        return;
+      }
+      
+      currentEmail = email;
+      openModal();
+      
+      // Execute Turnstile when modal opens
+      setTimeout(() => {
+        if (!turnstileExecuted && (window as any).turnstile) {
+          (window as any).turnstile.execute();
+          turnstileExecuted = true;
+        }
+      }, 100);
+    });
+
+    // Handle name form submission
+    nameForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (isSubmitting) return;
+      
+      const name = nameInput?.value?.trim();
+      if (!name) return;
+      
+      isSubmitting = true;
+      
+      // Update button state
+      const originalText = modalSubmit?.textContent;
+      if (modalSubmit) {
+        modalSubmit.textContent = 'Subscribing...';
+        modalSubmit.disabled = true;
+      }
+      
+      try {
+        // Get Turnstile token
+        const turnstileToken = (document.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement)?.value;
+        if (!turnstileToken) {
+          throw new Error('Security verification required');
+        }
+
+        const response = await fetch('/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: currentEmail,
+            name: name,
+            'cf-turnstile-response': turnstileToken
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          // Success
+          closeModal();
+          if (emailInput) emailInput.value = '';
+          showMessage(result.message || 'Successfully subscribed!', 'success');
+        } else {
+          throw new Error(result.error || 'Failed to subscribe');
+        }
+      } catch (error) {
+        showMessage(error.message || 'Failed to subscribe. Please try again.', 'error');
+      } finally {
+        isSubmitting = false;
+        if (modalSubmit) {
+          modalSubmit.textContent = originalText;
+          modalSubmit.disabled = false;
+        }
+      }
+    });
+
+    // Modal animation functions
+    function openModal() {
+      if (!modal || !modalContent) return;
+      
+      // Reset modal state first
+      modal.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+      modalContent.style.transform = 'scale(0.75)';
+      modalContent.style.opacity = '0';
+      
+      // Show modal
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      
+      // Force a reflow to ensure initial state is applied
+      modal.offsetHeight;
+      
+      // Trigger animations
+      requestAnimationFrame(() => {
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        modalContent.style.transform = 'scale(1)';
+        modalContent.style.opacity = '1';
+      });
+      
+      // Focus name input after animation
+      setTimeout(() => {
+        nameInput?.focus();
+      }, 150);
+    }
+    
+    function closeModal() {
+      if (!modal || !modalContent) return;
+      
+      // Start exit animation
+      modal.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+      modalContent.style.transform = 'scale(0.95)';
+      modalContent.style.opacity = '0';
+      
+      // Hide modal after animation completes
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        if (nameInput) nameInput.value = '';
+        currentEmail = '';
+        
+        // Reset for next time
+        modalContent.style.transform = 'scale(0.75)';
+      }, 300);
+    }
+    
+    modalClose?.addEventListener('click', closeModal);
+    modalCancel?.addEventListener('click', closeModal);
+    
+    // Close modal on outside click
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+    
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Show message function
+    function showMessage(message, type) {
+      // Create and show a toast notification
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 z-50 px-6 py-3 rounded-full font-medium transition-all duration-300 shadow-lg ${
+        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+      }`;
+      toast.style.right = '-100%'; // Start completely off-screen
+      toast.textContent = message;
+      
+      document.body.appendChild(toast);
+      
+      // Animate in smoothly
+      requestAnimationFrame(() => {
+        toast.style.right = '16px'; // Slide to 1rem from right edge
+      });
+      
+      // Remove after 4 seconds with smooth animation
+      setTimeout(() => {
+        toast.style.right = '-100%';
+        toast.style.opacity = '0';
+        setTimeout(() => {
+          if (document.body.contains(toast)) {
+            document.body.removeChild(toast);
+          }
+        }, 300);
+      }, 4000);
+    }
+  });
+</script>
+
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

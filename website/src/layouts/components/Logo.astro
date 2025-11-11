@@ -1,0 +1,11 @@
+---
+const { src } = Astro.props;
+// If src prop is passed (footer), use white text, otherwise use dark text
+const textColor = src ? "text-white" : "text-dark";
+---
+
+<a href="/" class="navbar-brand inline-block">
+  <span class={`text-3xl font-bold ${textColor}`} style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    Rep5x
+  </span>
+</a>

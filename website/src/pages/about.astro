@@ -1,0 +1,133 @@
+---
+import ImageMod from "@/components/ImageMod.astro";
+import Social from "@/components/Social.astro";
+import Base from "@/layouts/Base.astro";
+import { markdownify } from "@/lib/utils/textConverter";
+import Accomplishments from "@/partials/Accomplishments.astro";
+import CallToAction from "@/partials/CallToAction.astro";
+import FoundationsSection from "@/partials/FoundationsSection.astro";
+import Faq from "@/partials/Faq.astro";
+import PageHeader from "@/partials/PageHeader.astro";
+import Solution from "@/partials/Solution.astro";
+import { Icon } from "astro-icon/components";
+import type { CollectionEntry } from "astro:content";
+import { getEntry } from "astro:content";
+
+const about = (await getEntry("about", "-index")) as CollectionEntry<"about">;
+const { title, description, meta_title, image, hero, accomplishments, card } =
+  about.data;
+
+const team = (await getEntry(
+  "teamSection",
+  "team"
+)) as CollectionEntry<"teamSection">;
+---
+
+<Base
+  title={title}
+  meta_title={meta_title}
+  description={description}
+  image={image}
+>
+  <PageHeader title={hero.title} description={hero.description} />
+  <section class="section-up">
+    <div class="container">
+      <div class="min-h-[400px]">
+        <div class="row g-4 justify-center">
+          <div class="col-10 lg:col-5" data-aos="fade-left-sm">
+            <ImageMod
+              src={hero.image}
+              alt={title}
+              width={522}
+              height={400}
+              class="rounded-[30px] h-full w-full object-cover object-center"
+            />
+          </div>
+
+          <div
+            class="col-10 lg:col-5"
+            data-aos="fade-left-sm"
+            data-aos-delay="200"
+          >
+            <div class="bg-primary/35 rounded-[30px] py-11 px-8 h-full">
+              <div class="flex items-center gap-4 pt-5 first:pt-0">
+                <div class="w-[60px] h-[60px] rounded-full">
+                  <Icon name={card.icon} class={"w-full h-full"} />
+                </div>
+
+                <div>
+                  <h3
+                    class="h6 font-medium"
+                    set:html={markdownify(card.title)}
+                  />
+                  <p set:html={markdownify(card.subtitle, true)} />
+                </div>
+              </div>
+
+              <p
+                class="pt-12 lg:pt-24"
+                set:html={markdownify(card.description)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <FoundationsSection isGrayscale={true} sectionGap="section" />
+  <Accomplishments accomplishments={accomplishments} />
+  <Solution />
+
+  <section class="section pt-0">
+    <div class="container">
+      <div class="section-title">
+        <div class="col-10 xl:col-8" data-aos="fade-up-sm">
+          <p set:html={markdownify(team.data.badge)} />
+          <h2 set:html={markdownify(team.data.title)} />
+          <p set:html={markdownify(team.data.description)} />
+        </div>
+      </div>
+
+      <div class="row justify-center g-4">
+        {
+          team?.data?.members?.map(
+            (
+              item: {
+                name: string;
+                position: string;
+                image: string;
+                social: { name: string; icon: string; link: string }[];
+              },
+              index: number
+            ) => (
+              <div
+                class="col-10 md:col-6 lg:col-4"
+                data-aos="fade-up-sm"
+                data-aos-delay={index * 100}
+              >
+                <div class="border border-dark/10 p-8 flex flex-col text-center rounded-3xl">
+                  <ImageMod
+                    src={item.image}
+                    class="w-[166px] h-[166px] rounded-full mx-auto"
+                    width={166}
+                    height={166}
+                    alt={item.name}
+                  />
+                  <div class="pt-3 pb-6 space-y-1">
+                    <h5 set:html={markdownify(item.name)} />
+                    <p set:html={markdownify(item.position)} />
+                  </div>
+                  <Social source={item.social} className="social-icons" />
+                </div>
+              </div>
+            )
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  <Faq />
+  <CallToAction />
+</Base>

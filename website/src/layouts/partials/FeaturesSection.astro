@@ -1,0 +1,75 @@
+---
+import FeatureCard from "@/components/FeatureCard.astro";
+import { getSinglePage } from "@/lib/contentParser.astro";
+import { markdownify } from "@/lib/utils/textConverter";
+
+const allBlogs = await getSinglePage("blog");
+// Sort by date (latest first) and take the first 3
+const blogs = allBlogs
+  .sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime())
+  .slice(0, 3);
+
+// Static section data for the blog section
+const blogSection = {
+  enable: true,
+  title: "Latest Development Updates",
+  description: "Follow the progress of Rep5x development through detailed blog posts covering hardware improvements, calibration methods, and community releases.",
+  badge: "Blog",
+  buttons: [
+    {
+      enable: true,
+      label: "View All Posts",
+      link: "/blog"
+    },
+    {
+      enable: true,
+      label: "Changelog", 
+      link: "/changelog"
+    }
+  ]
+};
+---
+
+{
+  blogSection.enable && (
+    <section class="section pt-0">
+      <div class="container">
+        <div class="section-title mb-14">
+          <div class="col-10 xl:col-8" data-aos="fade-up-sm">
+            <p set:html={markdownify(blogSection.badge)} />
+            <h2 set:html={markdownify(blogSection.title)} />
+            <p set:html={markdownify(blogSection.description)} />
+            {blogSection.buttons && (
+              <div class="mt-6 flex gap-3 flex-wrap justify-center">
+                {blogSection.buttons.map((button) => 
+                  button.enable && (
+                    <a 
+                      href={button.link} 
+                      class="btn btn-light text-sm py-2 px-4 rounded-lg border border-gray-200 hover:border-primary hover:bg-primary hover:text-white transition-all"
+                      target={button.link.startsWith("http") ? "_blank" : "_self"}
+                      rel={button.link.startsWith("http") ? "noopener noreferrer" : undefined}
+                    >
+                      {button.label}
+                    </a>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {blogs.map((blog, index) => (
+            <div
+              class="feature-card-bgcolor max-w-[450px] md:max-w-full mx-auto"
+              data-aos="fade-up-sm"
+              data-aos-delay={index * 100}
+            >
+              <FeatureCard data={blog} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}

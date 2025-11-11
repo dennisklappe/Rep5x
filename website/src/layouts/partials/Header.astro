@@ -1,0 +1,299 @@
+---
+import ImageMod from "@/components/ImageMod.astro";
+import Logo from "@/components/Logo.astro";
+import config from "@/config/config.json";
+import menu from "@/config/menu.json";
+import { Icon } from "astro-icon/components";
+
+export interface ChildNavigationLink {
+  name: string;
+  url: string;
+}
+
+export interface NavigationLink {
+  name: string;
+  url: string;
+  hasChildren?: boolean;
+  children?: ChildNavigationLink[];
+}
+
+const { main }: { main: NavigationLink[] } = menu;
+const { navigation_button } = config;
+const { pathname } = Astro.url;
+---
+
+<div class="relative">
+  <div class="container">
+    <header class={`header`}>
+      <!-- Add the grainy background -->
+      <div class="absolute inset-0 z-0">
+        <img
+          src="/images/grainy.svg"
+          alt="Grainy background"
+          class="w-full h-full object-cover opacity-[.08]"
+        />
+      </div>
+      <nav class="navbar container relative z-20">
+        <!-- logo -->
+        <div class="order-0">
+          <Logo />
+        </div>
+        <!-- navbar toggler -->
+        <input id="nav-toggle" type="checkbox" class="hidden" />
+        <label
+          for="nav-toggle"
+          class="order-3 cursor-pointer flex items-center lg:hidden text-text-dark lg:order-1"
+        >
+          <svg
+            id="show-button"
+            class="h-6 fill-current block"
+            viewBox="0 0 20 20"
+          >
+            <title>Menu Open</title>
+            <path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V0z"></path>
+          </svg>
+          <svg
+            id="hide-button"
+            class="h-6 fill-current hidden"
+            viewBox="0 0 20 20"
+          >
+            <title>Menu Close</title>
+            <polygon
+              points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2"
+              transform="rotate(45 10 10)"></polygon>
+          </svg>
+        </label>
+        <!-- /navbar toggler -->
+        <ul
+          id="nav-menu"
+          class="navbar-nav order-3 hidden min-w-[300px] pb-6 lg:order-1 lg:flex lg:w-auto lg:space-x-2 lg:pb-0 xl:space-x-8 max-lg:absolute max-lg:top-20 max-lg:right-0 rounded-lg border lg:border-none max-lg:bg-light"
+        >
+          {
+            main.map((menu, index) => (
+              <>
+                {menu.hasChildren ? (
+                  <li class="nav-item nav-dropdown group relative">
+                    <span
+                      class={`nav-link inline-flex items-center cursor-pointer ${
+                        menu.children
+                          ?.map(({ url }) => url)
+                          .includes(pathname) ||
+                        menu.children
+                          ?.map(({ url }) => `${url}/`)
+                          .includes(pathname)
+                          ? "active"
+                          : ""
+                      }`}
+                      data-dropdown-toggle={`dropdown-${index}`}
+                    >
+                      {menu.name}
+                      <svg
+                        class="h-4 w-4 fill-current transition-transform duration-200 ease-in-out group-hover:rotate-180"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </span>
+
+                    <ul
+                      id={`dropdown-${index}`}
+                      class="nav-dropdown-content hidden p-8 mb-2 lg:mb-0 lg:transition-[opacity_transform] lg:duration-500 lg:fixed left-1/2 lg:invisible lg:group-hover:visible lg:opacity-0 lg:group-hover:opacity-100 lg:scale-95 lg:group-hover:scale-100 lg:group-hover:grid lg:grid lg:grid-cols-3 lg:gap-x-8 min-w-max nav-dropdown-list lg:-translate-x-1/2"
+                    >
+                      {menu.children?.map((child) => (
+                        <li class="nav-dropdown-item">
+                          <a
+                            href={child.url}
+                            aria-label={child.name}
+                            class={`nav-dropdown-link block ${
+                              (pathname === `${child.url}/` ||
+                                pathname === child.url) &&
+                              "active"
+                            }`}
+                          >
+                            {child.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ) : (
+                  <li class="nav-item">
+                    <a
+                      href={menu.url}
+                      class={`nav-link block ${
+                        (pathname === `${menu.url}/` ||
+                          pathname === menu.url) &&
+                        "active"
+                      }`}
+                    >
+                      {menu.name}
+                    </a>
+                  </li>
+                )}
+              </>
+            ))
+          }
+
+          {
+            navigation_button.enable && (
+              <a
+                class="btn btn-dark mt-4 lg:hidden!"
+                href={navigation_button.link}
+              >
+                {navigation_button.label}
+                <span class="icon-wrapper">
+                  <span class="icon">
+                    <Icon name="lucide:arrow-right" width="19" height="12" />
+                  </span>
+                  <span class="icon" aria-hidden="true">
+                    <Icon name="lucide:arrow-right" width="19" height="12" />
+                  </span>
+                </span>
+              </a>
+            )
+          }
+        </ul>
+        <div class="order-1 ml-auto flex items-center md:order-2 lg:ml-0">
+          {
+            navigation_button.enable && (
+              <a
+                class="btn btn-dark hidden lg:flex"
+                href={navigation_button.link}
+              >
+                {navigation_button.label}
+                <span class="icon-wrapper">
+                  <span class="icon">
+                    <Icon name="lucide:arrow-right" width="19" height="12" />
+                  </span>
+                  <span class="icon" aria-hidden="true">
+                    <Icon name="lucide:arrow-right" width="19" height="12" />
+                  </span>
+                </span>
+              </a>
+            )
+          }
+        </div>
+      </nav>
+    </header>
+    <!-- background image  -->
+    {
+      Astro.url.pathname === "/" && (
+        <div
+          class="absolute top-80 sm:top-44 right-1/2 translate-x-1/2 z-10 rotate-6"
+          aria-hidden="true"
+        >
+          <ImageMod
+            src="/images/hero_background.svg"
+            class="mx-auto"
+            loading="eager"
+            style="max-width: 100vw; width: 100%; height: auto;"
+            alt="banner.background_image"
+            format="webp"
+            width={1200}
+            height={1000}
+          />
+        </div>
+      )
+    }
+  </div>
+  <!-- Add the grainy background -->
+  {
+    Astro.url.pathname !== "/404" && (
+      <div class="absolute inset-0 z-0">
+        <img
+          src="/images/grainy.svg"
+          alt="Grainy background"
+          class="w-full h-full object-cover opacity-[.08]"
+        />
+      </div>
+    )
+  }
+</div>
+
+<script>
+  function initializeNavigation() {
+    const navToggle = document.getElementById("nav-toggle") as HTMLInputElement;
+    const navMenu = document.getElementById("nav-menu");
+    const dropdownToggles = document.querySelectorAll("[data-dropdown-toggle]");
+
+    // Reset nav toggle state
+    if (navToggle) {
+      navToggle.checked = false;
+    }
+
+    // Reset menu visibility
+    if (navMenu) {
+      navMenu.classList.add("hidden");
+    }
+
+    // Handle nav toggle
+    if (navToggle && navMenu) {
+      navToggle.addEventListener("change", () => {
+        navMenu.classList.toggle("hidden", !navToggle.checked);
+      });
+    }
+
+    // Handle dropdowns
+    dropdownToggles.forEach((toggle) => {
+      toggle.addEventListener("click", (e) => {
+        const dropdownId = toggle.getAttribute("data-dropdown-toggle");
+        const dropdown = document.getElementById(dropdownId as string);
+
+        if (window.innerWidth < 1024) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Close all other dropdowns first
+          document.querySelectorAll(".nav-dropdown-content").forEach((el) => {
+            if (el.id !== dropdownId) {
+              el.classList.add("hidden");
+            }
+          });
+
+          // Toggle the clicked dropdown
+          dropdown?.classList.toggle("hidden");
+        }
+      });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener("click", (e) => {
+      if (window.innerWidth < 1024) {
+        const target = e.target as HTMLElement;
+        if (!target.closest(".nav-dropdown")) {
+          document
+            .querySelectorAll(".nav-dropdown-content")
+            .forEach((dropdown) => {
+              dropdown.classList.add("hidden");
+            });
+        }
+      }
+    });
+
+    // Handle window resize
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        dropdownToggles.forEach((toggle) => {
+          const dropdownId = toggle.getAttribute("data-dropdown-toggle");
+          const dropdown = document.getElementById(dropdownId as string);
+          if (dropdown) {
+            dropdown.classList.remove("hidden");
+          }
+        });
+      } else {
+        dropdownToggles.forEach((toggle) => {
+          const dropdownId = toggle.getAttribute("data-dropdown-toggle");
+          const dropdown = document.getElementById(dropdownId as string);
+          if (dropdown) {
+            dropdown.classList.add("hidden");
+          }
+        });
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+  }
+
+  // Initialize on page load
+  document.addEventListener("astro:page-load", initializeNavigation);
+</script>

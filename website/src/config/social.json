@@ -1,0 +1,14 @@
+{
+  "main": [
+    {
+      "name": "Discord",
+      "icon": "FaDiscord",
+      "link": "https://discord.gg/75Hy5dMwTJ"
+    },
+    {
+      "name": "GitHub",
+      "icon": "FaGithub",
+      "link": "https://github.com/dennisklappe/rep5x"
+    }
+  ]
+}

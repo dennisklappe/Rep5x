@@ -1,0 +1,89 @@
+---
+import BlogCard from "@/layouts/components/BlogCard.astro";
+import { getSinglePage } from "@/lib/contentParser.astro";
+import similarItems from "@/lib/utils/similarItems";
+import type { CollectionEntry } from "astro:content";
+import { render } from "astro:content";
+import ImageMod from "./components/ImageMod.astro";
+import Share from "./components/Share.astro";
+import CallToAction from "./partials/CallToAction.astro";
+import PageHeader from "./partials/PageHeader.astro";
+
+type Props = {
+  post: CollectionEntry<"blog">;
+};
+
+const COLLECTION_FOLDER = "blog";
+const { post } = Astro.props;
+
+const posts = await getSinglePage(COLLECTION_FOLDER);
+const similarPosts = similarItems(post, posts);
+const { Content } = await render(post);
+const { title, description, image, date, author } = post.data;
+
+const blogData = { author, date };
+---
+
+<PageHeader title={title} blogData={blogData} />
+
+<section class="section-up">
+  <div class="container">
+    <div class="row justify-center">
+      <div class="col-12" data-aos="fade-up-sm" data-aos-delay="200">
+        {
+          image && (
+            <div class="mb-10">
+              <ImageMod
+                src={image}
+                height={500}
+                width={1200}
+                alt={title}
+                class="h-auto w-full rounded-3xl object-cover md:h-[550px]"
+                format="webp"
+              />
+            </div>
+          )
+        }
+      </div>
+      <article
+        class="pb-10 lg:col-8"
+        data-aos="fade-up-sm"
+        data-aos-delay="200"
+      >
+        <div class="content">
+          <Content />
+        </div>
+
+        <div class="flex items-center mt-10" data-aos="fade-left-sm">
+          <h5 class="mr-3">Share :</h5>
+          <Share
+            className="social-icons"
+            title={title}
+            description={description}
+            slug={post.id}
+          />
+        </div>
+      </article>
+    </div>
+  </div>
+  <!-- Related posts -->
+  {
+    similarPosts.length > 0 && (
+      <section class="mt-20">
+        <h2 class="text-center mb-14">Similar Posts</h2>
+        <div class="row justify-center">
+          {similarPosts.map((post, i) => (
+            <div
+              class="mb-14 md:col-6"
+              data-aos="fade-up-sm"
+              data-aos-delay={i * 100}
+            >
+              <BlogCard data={post} />
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+</section>
+<CallToAction />

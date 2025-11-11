@@ -1,0 +1,184 @@
+---
+import BlogCard from "@/layouts/components/BlogCard.astro";
+import DiscordBtn from "@/layouts/components/DiscordBtn.astro";
+import GitHubBtn from "@/layouts/components/GitHubBtn.astro";
+import ImageMod from "@/components/ImageMod.astro";
+import Pagination from "@/components/Pagination.astro";
+import config from "@/config/config.json";
+import { Icon } from "astro-icon/components";
+import Base from "@/layouts/Base.astro";
+import { getSinglePage } from "@/lib/contentParser.astro";
+import dateFormat from "@/lib/utils/dateFormat";
+import { sortByDate } from "@/lib/utils/sortFunctions";
+import { markdownify } from "@/lib/utils/textConverter";
+import PageHeader from "@/partials/PageHeader.astro";
+import type { CollectionEntry } from "astro:content";
+import { getEntry } from "astro:content";
+
+const BLOG_FOLDER = "blog";
+
+const postIndex = (await getEntry(
+  BLOG_FOLDER,
+  "-index"
+)) as CollectionEntry<"blog">;
+const posts = await getSinglePage(BLOG_FOLDER);
+const sortedPosts = sortByDate(posts);
+const totalPages: number = Math.ceil(posts.length / config.settings.pagination);
+const currentPosts = sortedPosts.slice(0, config.settings.pagination);
+
+const featuredPost = posts.filter((post) => post.data.featured).slice(0, 1);
+---
+
+<Base
+  title={postIndex.data.title}
+  meta_title={postIndex.data.meta_title}
+  image={postIndex.data.image}
+  description={postIndex.data.description}
+>
+  <PageHeader
+    title={postIndex.data.hero?.title}
+    description={postIndex.data.hero?.description}
+  />
+
+  <section class="section-up">
+    <div class="container">
+      <div class="row justify-center">
+        <div class="col-10">
+          {
+            featuredPost.map((post) => (
+              <div
+                class="rounded-[32px] border border-dark/10 p-5 bg-body"
+                data-aos="fade-up-sm"
+                data-aos-delay="200"
+              >
+                <div class="row">
+                  <div class="md:col-6">
+                    <div class="relative group overflow-hidden rounded-[20px]">
+                      <ImageMod
+                        src={post.data.image!}
+                        alt={post.data.title}
+                        width={500}
+                        height={460}
+                        class="object-cover rounded-[20px] w-full group-hover:scale-110 transition duration-700"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="md:col-6">
+                    {post.data.date && (
+                      <p class="text-text-dark text-sm">
+                        {dateFormat(`${post.data.date}`)}
+                      </p>
+                    )}
+
+                    {post.data.title && (
+                      <h2
+                        class="h3 my-6"
+                        set:html={markdownify(post.data.title)}
+                      />
+                    )}
+                    {post.body && (
+                      <div
+                        class="line-clamp-3"
+                        set:html={markdownify(post.body, true)}
+                      />
+                    )}
+
+                    <a
+                      class="btn btn-dark mt-14"
+                      href={`/${BLOG_FOLDER}/${post.id}/`}
+                      rel="noopener"
+                      data-aos="fade-up-sm"
+                      data-aos-delay="200"
+                    >
+                      {"Read More"}
+                      <span class="icon-wrapper">
+                        <span class="icon">
+                          <Icon name="lucide:arrow-right" />
+                        </span>
+                        <span class="icon" aria-hidden="true">
+                          <Icon name="lucide:arrow-right" />
+                        </span>
+                      </span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Community contribution CTA -->
+  <section class="section pt-0">
+    <div class="container">
+      <div class="row justify-center">
+        <div class="lg:col-10">
+          <div class="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-[30px] p-8 lg:p-12 mb-16 relative overflow-hidden" data-aos="fade-up-sm">
+            <!-- Background decoration -->
+            <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-8 translate-x-8"></div>
+            <div class="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full translate-y-4 -translate-x-4"></div>
+            
+            <div class="relative z-10 text-center">
+              <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-6">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+              </div>
+              
+              <h3 class="text-2xl lg:text-3xl font-semibold mb-4">Share Your Rep5x Build!</h3>
+              
+              <p class="text-lg mb-6 max-w-2xl mx-auto">
+                Built your own Rep5x system? We'd love to feature your build, modifications, or experiences on this blog! 
+                The entire website is open-source and contributions are welcome.
+              </p>
+              
+              <div class="bg-body/50 rounded-2xl p-6 mb-8 max-w-3xl mx-auto">
+                <p class="text-text/80 mb-4">
+                  <strong>Contributing is easy:</strong> Just open a pull request with your blog post as a markdown file to our GitHub repository. 
+                  Not sure how? No worries! Our community is here to help.
+                </p>
+                
+                <div class="flex flex-wrap justify-center gap-4">
+                  <GitHubBtn href="https://github.com/dennisklappe/rep5x" label="View Repository" />
+                  <DiscordBtn href="https://discord.gg/75Hy5dMwTJ" label="Get Help on Discord" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section pt-0" data-aos="fade-up-sm">
+    <div class="container">
+      <h2 class="text-center mb-14">Latest Blog Posts</h2>
+      <div class="row gx-5 justify-center">
+        <!-- blog posts -->
+        <div class="lg:col-10">
+          <div class="row">
+            {
+              currentPosts.map((post, i) => (
+                <div
+                  class="mb-14 md:col-6"
+                  data-aos="fade-up-sm"
+                  data-aos-delay={i * 100}
+                >
+                  <BlogCard data={post} />
+                </div>
+              ))
+            }
+          </div>
+          <Pagination
+            section={BLOG_FOLDER}
+            currentPage={1}
+            totalPages={totalPages}
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

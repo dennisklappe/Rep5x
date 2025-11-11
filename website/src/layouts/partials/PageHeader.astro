@@ -1,0 +1,103 @@
+---
+import ImageMod from "@/components/ImageMod.astro";
+import LineAnimation from "@/components/LineAnimation.astro";
+import dateFormat from "@/lib/utils/dateFormat";
+import { humanize, markdownify } from "@/lib/utils/textConverter";
+import { Icon } from "astro-icon/components";
+
+const {
+  title = "",
+  description = "",
+  hasSmallHeight = false,
+  blogData,
+}: {
+  title?: string;
+  description?: string;
+  hasSmallHeight?: boolean | string;
+  blogData?: { author: { name: string; avatar: string }; date: Date };
+} = Astro.props;
+---
+
+<section
+  class={`section-sm pb-0 relative z-10 overflow-hidden  ${typeof hasSmallHeight === "string" ? hasSmallHeight : hasSmallHeight ? "h-[400px]" : "h-[685px]"}
+`}
+>
+  <!-- Add the grainy background -->
+  <div class="absolute inset-0 z-0">
+    <img
+      src="/images/grainy.svg"
+      alt="Grainy background"
+      class="w-full h-full object-cover opacity-[.08] pointer-events-none"
+    />
+  </div>
+
+  <div class="container relative z-20">
+    <div class="row justify-center">
+      <div class="lg:col-7 md:col-9 col-10 text-center">
+        <h1
+          set:html={markdownify(title)}
+          class="mb-4 text-h3 lg:text-h1"
+          data-aos="fade-up-sm"
+        />
+        {
+          description && (
+            <p
+              set:html={markdownify(description)}
+              class="mb-8 text-balance"
+              data-aos="fade-up-sm"
+            />
+          )
+        }
+
+        {
+          blogData && (
+            <ul class="flex flex-col md:flex-row items-center justify-center gap-4 mt-8">
+              <li class="text-lg/[inherit]">
+                <p class="flex gap-2 font-medium items-center">
+                  {blogData.author.avatar ? (
+                    <ImageMod
+                      class="h-10 w-10 object-cover inline-block rounded-full"
+                      src={blogData.author.avatar}
+                      alt={`avatar of the ${blogData.author.name}`}
+                      width={40}
+                      height={40}
+                    />
+                  ) : (
+                    <Icon name="lucide:user" class={"text-primary"} />
+                  )}
+
+                  {humanize(blogData.author.name)}
+                </p>
+              </li>
+              <li class="flex items-center gap-x-2">
+                <Icon name="lucide:calendar" class={"text-primary"} />
+                <p class="inline-block font-medium text-primary">
+                  {dateFormat(blogData.date, "iiii, MMM dd, yyyy")}
+                </p>
+              </li>
+            </ul>
+          )
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- background image  -->
+  <div
+    class="absolute top-[30%] sm:top-[15%] md:top-0 right-1/2 translate-x-1/2 z-10 max-md:scale-150 rotate-6"
+    aria-hidden="true"
+  >
+    <ImageMod
+      src="/images/hero_background.svg"
+      class="mx-auto"
+      loading="eager"
+      style="max-width: 100vw; width: 100%; height: auto;"
+      alt="banner.background_image.alt"
+      format="webp"
+      width={1200}
+      height={1000}
+    />
+  </div>
+
+  <LineAnimation />
+</section>

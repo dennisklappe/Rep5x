@@ -1,0 +1,56 @@
+---
+import Base from "@/layouts/Base.astro";
+import { getSinglePage } from "@/lib/contentParser.astro";
+import CallToAction from "@/partials/CallToAction.astro";
+import PageHeader from "@/partials/PageHeader.astro";
+import { render } from "astro:content";
+
+// get static paths for all pages
+export async function getStaticPaths() {
+  const COLLECTION_FOLDER = "pages";
+
+  const pages = await getSinglePage(COLLECTION_FOLDER);
+
+  const paths = pages.map((page) => ({
+    params: {
+      regular: page.id,
+    },
+    props: { page },
+  }));
+  return paths;
+}
+
+const { page } = Astro.props;
+const { title, meta_title, description, image, hero } = page.data;
+const { Content } = await render(page);
+---
+
+<Base
+  title={title}
+  meta_title={meta_title}
+  description={description}
+  image={image}
+>
+  <PageHeader
+    title={hero.title}
+    description={hero.description}
+    hasSmallHeight={"h-[600px]"}
+  />
+  <section class="section-up">
+    <div class="container">
+      <div class="row justify-center">
+        <div class="lg:col-10">
+          <div
+            class="content bg-body p-5 first:rounded-t-[30px]"
+            data-aos="fade-up-sm"
+            data-aos-delay="200"
+          >
+            <Content />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <CallToAction />
+</Base>

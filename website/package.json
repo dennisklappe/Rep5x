@@ -1,0 +1,51 @@
+{
+  "name": "rep5x",
+  "version": "1.0.0",
+  "description": "Rep5x - Open-source 5-axis 3D printing retrofit system website",
+  "author": "Dennis Klappe <dennis@rep5x.com>",
+  "license": "GPL-3.0",
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "format": "prettier -w ./src"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/mdx": "4.1.1",
+    "@astrojs/rss": "4.0.11",
+    "@astrojs/sitemap": "^3.2.1",
+    "@iconify-json/lucide": "^1.2.73",
+    "@iconify-json/material-symbols": "^1.2.43",
+    "@iconify-json/simple-icons": "^1.2.56",
+    "@tailwindcss/vite": "^4.0.13",
+    "aos": "^2.3.4",
+    "astro": "^5.15.3",
+    "astro-auto-import": "^0.4.4",
+    "astro-font": "^1.0.0",
+    "astro-icon": "^1.1.5",
+    "date-fns": "^4.1.0",
+    "github-slugger": "^2.0.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^15.0.7",
+    "shiki": "^3.2.1",
+    "vite": "^6.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "@types/aos": "^3.0.7",
+    "@types/node": "22.13.10",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.22.0",
+    "postcss": "^8.5.3",
+    "prettier": "^3.5.3",
+    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "sass": "^1.85.1",
+    "sharp": "0.33.5",
+    "tailwindcss": "^4.0.13",
+    "typescript": "^5.8.2"
+  }
+}
