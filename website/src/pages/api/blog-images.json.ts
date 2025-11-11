@@ -1,11 +1,16 @@
 import type { APIRoute } from 'astro';
 
 export const GET: APIRoute = async () => {
-  // Get all blog images using Astro's glob
-  const blogImages = import.meta.glob('/public/blog/*.{png,jpg,jpeg,gif,svg,webp}');
-  const imagePaths = Object.keys(blogImages).map(path => path.replace('/public', ''));
-  
-  return new Response(JSON.stringify({ images: imagePaths }), {
+  const images = [
+    '/images/blog/cad-model-rw2-print-head.webp',
+    '/images/blog/ender-5-pro-rw2-retrofit.webp',
+    '/images/blog/github-repo-screenshot.webp',
+    '/images/blog/offset-cone.webp',
+    '/images/blog/offset-graph-a-axis.webp',
+    '/images/blog/offset-graph-b-axis.webp'
+  ];
+
+  return new Response(JSON.stringify({ images }), {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*'

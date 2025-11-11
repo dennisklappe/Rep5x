@@ -64,11 +64,42 @@ const hero = {
       const response = await fetch('/github-changelog');
       const data = await response.json();
       const changelogItems = data.changelogItems || [];
-      
+      const availableImages = data.availableImages || ['/images/blog/cad-model-rw2-print-head.webp'];
+
       const container = document.getElementById('changelog-content');
       if (!container) return;
-      
-      container.innerHTML = changelogItems.map((item, i) => `
+
+      // Fisher-Yates shuffle for truly random order
+      const shuffledImages = [...availableImages];
+      for (let i = shuffledImages.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledImages[i], shuffledImages[j]] = [shuffledImages[j], shuffledImages[i]];
+      }
+
+      console.log('Available images:', availableImages);
+      console.log('Shuffled images:', shuffledImages);
+
+      container.innerHTML = changelogItems.map((item, i) => {
+        const imageUrl = shuffledImages[i % shuffledImages.length];
+        console.log(`Item ${i}: Using image ${imageUrl}`);
+
+        const contentLines = item.content.split('\n').filter(line => line.trim());
+        const isBulletList = contentLines.every(line => line.trim().startsWith('*'));
+
+        let contentHtml;
+        if (isBulletList) {
+          const listItems = contentLines
+            .map(line => line.trim().replace(/^\*\s*/, ''))
+            .map(text => `<li>${text}</li>`)
+            .join('');
+          contentHtml = `<ul class="list-disc list-inside space-y-1">${listItems}</ul>`;
+        } else {
+          contentHtml = contentLines
+            .map(line => `<p>${line}</p>`)
+            .join('');
+        }
+
+        return `
         <div
           class="rounded-3xl border-t border-border/90 shadow-md p-5 mb-14 last:mb-0"
           data-aos="fade-up-sm"
@@ -81,7 +112,7 @@ const hero = {
                   ${item.date}
                 </p>
                 <img
-                  src="${item.image}"
+                  src="${imageUrl}"
                   alt="changelog"
                   width="200"
                   height="200"
@@ -95,9 +126,9 @@ const hero = {
                   ${item.version}
                 </h3>
                 ${item.url ? `
-                  <a 
-                    href="${item.url}" 
-                    target="_blank" 
+                  <a
+                    href="${item.url}"
+                    target="_blank"
                     rel="noopener noreferrer"
                     class="text-sm text-blue-600 hover:text-blue-800 underline"
                   >
@@ -109,12 +140,13 @@ const hero = {
                 ${item.title}
               </h2>
               <div class="content prose-p:text-lg/inherit">
-                <p>${item.content.substring(0, 300)}${item.content.length > 300 ? '...' : ''}</p>
+                ${contentHtml}
               </div>
             </div>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
       
     } catch (error) {
       const container = document.getElementById('changelog-content');
