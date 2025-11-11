@@ -16,12 +16,12 @@ Universal 3D printed components compatible with all printer models:
 
 ### Assembly documentation  
 Complete step-by-step assembly guide:
-- **[Assembly instructions](../assembly-instructions-universal.md)** - Complete build instructions
+- **[Assembly guide](../assembly-guide.md)** - Complete build instructions
 - Phase-by-phase approach from planning to testing
 
-### Bill of materials - Component specifications
+### [`bill-of-materials/`](bill-of-materials/) - Component specifications
 Universal component requirements:
-- **[Universal BOM](bom-universal.md)** - Complete parts list with specifications
+- **[Shared BOM](bill-of-materials/bom-shared.md)** - Complete parts list with specifications
 - Electronics, fasteners, and mechanical components
 - Vendor suggestions and sourcing
 
@@ -77,11 +77,11 @@ Current version: **v1.1**
 ## Support and resources
 
 ### Documentation hierarchy
-1. **Start here** - [Assembly instructions](../assembly-instructions-universal.md)
-2. **Components** - [Universal BOM](bom-universal.md) for parts specifications
+1. **Start here** - [Assembly guide](../assembly-guide.md)
+2. **Components** - [Shared BOM](bill-of-materials/bom-shared.md) for parts specifications
 3. **Electronics** - [Wiring diagrams](electronics/control-boards/) for control board setup
 4. **Printer-specific** - [`../printer-specific/`](../printer-specific/) for adaptations
 
 ---
 
-**Ready to build?** Start with the [assembly instructions](../assembly-instructions-universal.md) for complete step-by-step instructions. Join our [Discord community](https://discord.gg/GNdah82VBg) for support.
+**Ready to build?** Start with the [assembly guide](../assembly-guide.md) for complete step-by-step instructions. Join our [Discord community](https://discord.gg/GNdah82VBg) for support.

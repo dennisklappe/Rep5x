@@ -98,5 +98,5 @@ The Rep5x firmware configurations include these key modifications:
 
 ## Support
 
-- **Assembly instructions**: [assembly-instructions-universal.md](../../assembly-instructions-universal.md)
+- **Assembly guide**: [assembly-guide.md](../../assembly-guide.md)
 - **Community support**: [Discord](https://discord.gg/GNdah82VBg)
