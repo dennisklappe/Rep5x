@@ -1,0 +1,123 @@
+<!-- Image lightbox for viewing images in full screen -->
+<div id="lightbox" class="lightbox">
+  <span class="lightbox-close">&times;</span>
+  <img id="lightbox-img" src="" alt="" />
+  <div id="lightbox-caption"></div>
+</div>
+
+<style is:global>
+  .lightbox {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  .lightbox.active {
+    display: flex;
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 2rem;
+    right: 3rem;
+    color: white;
+    font-size: 3rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .lightbox-close:hover {
+    color: #bbb;
+  }
+
+  #lightbox-img {
+    max-width: 90%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 0.5rem;
+  }
+
+  #lightbox-caption {
+    color: #ccc;
+    padding: 1rem;
+    text-align: center;
+    max-width: 90%;
+  }
+
+  /* Make images clickable */
+  .prose img {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .prose img:hover {
+    transform: scale(1.02);
+  }
+</style>
+
+<script>
+  function setupImageLightbox() {
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightbox-img") as HTMLImageElement;
+    const lightboxCaption = document.getElementById("lightbox-caption");
+    const lightboxClose = document.querySelector(".lightbox-close");
+
+    const images = document.querySelectorAll(".prose img");
+
+    images.forEach((img) => {
+      img.addEventListener("click", () => {
+        if (lightbox && lightboxImg && lightboxCaption) {
+          lightbox.classList.add("active");
+          lightboxImg.src = (img as HTMLImageElement).src;
+          lightboxCaption.textContent = img.getAttribute("alt") || "";
+        }
+      });
+    });
+
+    lightboxClose?.addEventListener("click", () => {
+      lightbox?.classList.remove("active");
+    });
+
+    lightbox?.addEventListener("click", (e) => {
+      if (e.target === lightbox) {
+        lightbox.classList.remove("active");
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && lightbox?.classList.contains("active")) {
+        lightbox.classList.remove("active");
+      }
+    });
+  }
+
+  // Setup on initial load - wait for page to be fully loaded
+  function initializeLightbox() {
+    if (document.readyState === 'complete') {
+      // Page already loaded
+      setTimeout(setupImageLightbox, 100);
+    } else {
+      // Wait for page to load
+      window.addEventListener('load', () => {
+        setTimeout(setupImageLightbox, 100);
+      });
+    }
+  }
+
+  initializeLightbox();
+
+  // Listen for content changes (when printer selection changes)
+  window.addEventListener("content-updated", () => {
+    setupImageLightbox();
+  });
+</script>

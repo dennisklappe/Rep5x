@@ -15,7 +15,7 @@ const { data } = homepage;
 const { banner } = data;
 ---
 
-<section class="section-sm pb-0 relative z-10 overflow-hidden">
+<section class="section-sm pb-0 relative z-10 overflow-visible">
   <!-- Add the grainy background -->
   <div class="absolute inset-0 z-0">
     <img
@@ -58,14 +58,16 @@ const { banner } = data;
         {
           banner.main_image && (
             <div class="col-12">
-              <ImageMod
-                src={banner.main_image.src}
-                height={718}
-                width={1010}
-                alt={banner.main_image.alt}
-                format="webp"
-                class="mx-auto mt-20 rounded-[20px]"
-              />
+              <div class="relative z-20 mt-20 mb-[-120px] max-w-[1010px] mx-auto">
+                <ImageMod
+                  src={banner.main_image.src}
+                  height={718}
+                  width={1010}
+                  alt={banner.main_image.alt}
+                  format="webp"
+                  class="w-full rounded-[20px] shadow-2xl"
+                />
+              </div>
             </div>
           )
         }

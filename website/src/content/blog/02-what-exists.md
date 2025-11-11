@@ -2,7 +2,7 @@
 title: 'Current state printer'
 description: 'Understanding the existing Rep5x hardware and building on previous research achievements'
 date: 2025-09-15
-image: '/images/blog/cad-model-rw2-print-head.png'
+image: '/images/blog/cad-model-rw2-print-head.webp'
 categories: ['hardware', 'history']
 author:
   name: 'Dennis Klappe'
@@ -16,14 +16,14 @@ In 2023, my supervisor Janis Andersons built the first version of this 5-axis pr
 
 Janis designed what he called the "robot wrist" (RW2), a print-head that adds two rotational axes to a standard printer. The A-axis rotates around the vertical Z-axis (like turning your head left and right), while the B-axis tilts the nozzle forward and back.
 
-![CAD model of RW2 print-head](/images/blog/cad-model-rw2-print-head.png)
+![CAD model of RW2 print-head](/images/blog/cad-model-rw2-print-head.webp)
 *CAD model of RW2 print-head (Andersons, 2023)*
 
 He kept it simple. The design uses standard NEMA17 stepper motors with 3 to 1 belt reduction for both axes. Everything can be 3D printed except for some bearings, belts, and electronics. The whole retrofit costs under €150.
 
 His test prints proved the concept. He printed tubes with 90-degree overhangs without any supports. Surface quality on angled surfaces improved compared to standard printing. The dimensional accuracy stayed within 0.6mm, which is decent for a first prototype.
 
-![Ender 5 Pro with retrofit RW2 print-head, executing a large print](/images/blog/ender-5-pro-rw2-retrofit.png)
+![Ender 5 Pro with retrofit RW2 print-head, executing a large print](/images/blog/ender-5-pro-rw2-retrofit.webp)
 *Ender 5 Pro with retrofit RW2 print-head, executing a large print (Andersons, 2023)*
 
 ## Hardware details

@@ -2,7 +2,7 @@
 title: 'The journey begins'
 description: 'Introduction to the Rep5x 5-axis printing project and thesis journey at University of Twente'
 date: 2025-09-01
-image: '/images/blog/ender-5-pro-rw2-retrofit.png'
+image: '/images/blog/ender-5-pro-rw2-retrofit.webp'
 categories: ['project', 'introduction']
 author:
   name: 'Dennis Klappe'

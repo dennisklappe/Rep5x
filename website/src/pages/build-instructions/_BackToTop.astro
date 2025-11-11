@@ -1,0 +1,53 @@
+<!-- Back to top button that appears when scrolling down -->
+<button id="back-to-top" aria-label="Back to top">
+  ↑
+</button>
+
+<style>
+  #back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background-color: var(--color-primary);
+    color: white;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 50;
+  }
+
+  #back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  #back-to-top:hover {
+    background-color: var(--color-primary);
+    filter: brightness(0.9);
+    transform: translateY(-2px);
+  }
+</style>
+
+<script>
+  const backToTop = document.getElementById("back-to-top");
+
+  window.addEventListener("scroll", () => {
+    if (window.scrollY > 300) {
+      backToTop?.classList.add("visible");
+    } else {
+      backToTop?.classList.remove("visible");
+    }
+  });
+
+  backToTop?.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+</script>

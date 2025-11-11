@@ -6,12 +6,12 @@ Complete build documentation for converting 3D printers to 5-axis capability usi
 
 1. **Check compatibility** - Verify your printer model in [`printer-specific/`](printer-specific/) (if not available, most printers need only minimal adaptations)
 2. **Review requirements** - Universal components in [`universal-parts/`](universal-parts/)
-3. **Follow assembly guide** - Complete instructions in [`assembly-guide.md`](assembly-guide.md)
+3. **Follow assembly instructions** - Complete instructions in [`assembly-instructions-universal.md`](assembly-instructions-universal.md)
 4. **Join community** - Get support on [Discord](https://discord.gg/GNdah82VBg)
 
 ## Folder structure
 
-### [`assembly-guide.md`](assembly-guide.md) - Main build instructions
+### [`assembly-instructions-universal.md`](assembly-instructions-universal.md) - Main build instructions
 Complete step-by-step assembly guide for converting any compatible printer to 5-axis capability.
 
 ### [`universal-parts/`](universal-parts/) - Universal build components
@@ -67,7 +67,7 @@ Contains files specific to individual printer models:
 Print all required components using provided files
 
 ### Step 4: Begin build
-1. Follow the complete guide in [`assembly-guide.md`](assembly-guide.md)
+1. Follow the complete instructions in [`assembly-instructions-universal.md`](assembly-instructions-universal.md)
 2. Assemble mechanical components following step-by-step instructions
 3. Install and configure electronics and firmware
 

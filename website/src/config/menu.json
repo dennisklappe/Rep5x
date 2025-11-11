@@ -9,12 +9,12 @@
       "url": "/about/"
     },
     {
-      "name": "Blog",
-      "url": "/blog/"
+      "name": "Build Instructions",
+      "url": "/build-instructions/"
     },
     {
-      "name": "FAQ",
-      "url": "/faq/"
+      "name": "Blog",
+      "url": "/blog/"
     },
     {
       "name": "Contact",
@@ -37,12 +37,12 @@
       "url": "/about/"
     },
     {
-      "name": "Blog",
-      "url": "/blog/"
+      "name": "Build Instructions",
+      "url": "/build-instructions/"
     },
     {
-      "name": "FAQ",
-      "url": "/faq/"
+      "name": "Blog",
+      "url": "/blog/"
     }
   ],
   "footer_info_links": [

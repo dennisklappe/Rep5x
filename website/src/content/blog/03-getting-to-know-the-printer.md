@@ -2,7 +2,7 @@
 title: 'Getting to know the printer & simple calibration'
 description: 'Initial testing and calibration work on the 5-axis printer system and discovering accuracy issues'
 date: 2025-09-18
-image: '/images/blog/offset-cone.jpg'
+image: '/images/blog/offset-cone.webp'
 categories: ['hardware', 'calibration']
 author:
   name: 'Dennis Klappe'
@@ -22,11 +22,11 @@ I needed a way to measure and correct these errors. Here's what I did:
 
 I printed a cone and positioned the print-head where the tip should be according to the G-code. Then I manually moved it to where the tip actually was and noted the offset. I did this for different angles on both the A-axis (rotation around Z) and B-axis (tilt).
 
-![Nozzle positioned at cone tip showing offset error](/images/blog/offset-cone.jpg)
+![Nozzle positioned at cone tip showing offset error](/images/blog/offset-cone.webp)
 
 The A-axis showed cyclic errors, which makes sense for rotational movement. X corrections ranged from +0.3mm to -3.7mm, Y corrections from +2.2mm to -2.4mm. The pattern repeated every 360 degrees, as you'd expect.
 
-![A-axis position errors showing cyclic pattern](/images/blog/offset-graph-a-axis.png)
+![A-axis position errors showing cyclic pattern](/images/blog/offset-graph-a-axis.webp)
 
 <details>
 <summary>View A-axis measurement data</summary>
@@ -46,7 +46,7 @@ The A-axis showed cyclic errors, which makes sense for rotational movement. X co
 
 The B-axis had different error patterns. Since it only tilts from 0 to 90 degrees, the errors were more linear.
 
-![B-axis position errors showing different error patterns](/images/blog/offset-graph-b-axis.png)
+![B-axis position errors showing different error patterns](/images/blog/offset-graph-b-axis.webp)
 
 <details>
 <summary>View B-axis measurement data</summary>
