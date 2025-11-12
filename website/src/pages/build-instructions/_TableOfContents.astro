@@ -333,4 +333,18 @@
       setTimeout(generateTOC, 50);
     });
   });
+
+  // Handle Astro page transitions - reinitialize TOC on navigation
+  document.addEventListener('astro:page-load', () => {
+    requestAnimationFrame(() => {
+      setTimeout(generateTOC, 100);
+    });
+  });
+
+  // Also handle the newer astro:after-swap event for better compatibility
+  document.addEventListener('astro:after-swap', () => {
+    requestAnimationFrame(() => {
+      setTimeout(generateTOC, 50);
+    });
+  });
 </script>
