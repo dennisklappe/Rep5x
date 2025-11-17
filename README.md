@@ -2,6 +2,7 @@
 
 [![Beta](https://img.shields.io/badge/status-beta-yellow)](https://github.com/dennisklappe/Rep5x)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Website](https://img.shields.io/badge/Website-Rep5x.com-green)](https://rep5x.com)
 
 ![5-axis printing demonstration](5axis-printing-demo.gif)
 
@@ -18,6 +19,8 @@ Rep5x democratises 5-axis 3D printing by creating an **affordable retrofit syste
 
 ## Quick start
 
+**For easier navigation, visit [Rep5x.com](https://rep5x.com) for the same guides in a more user-friendly format.**
+
 ### 1. Check hardware support
 Currently supported printers:
 - **Ender 5 Pro** - Working prototype
@@ -26,11 +29,13 @@ Currently supported printers:
 ### 2. Get the files
 - **3D printed parts**: `build-guide/printer-specific/[your-printer]/3d-printed-parts/`
 - **Parts list**: `build-guide/universal-parts/bill-of-materials/bom-shared.md`
-- **Assembly guide**: `build-guide/assembly-guide.md`
+- **Assembly guide**: `build-guide/assembly-instructions-universal.md`
 - **Firmware**: `build-guide/printer-specific/[your-printer]/firmware/`
 
 ### 3. Join the community
 **Discord**: https://discord.gg/GNdah82VBg for build support and discussions
+
+⭐ **Star this repo** to support open-source 5-axis printing development!
 
 ## Hardware support
 
