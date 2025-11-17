@@ -11,6 +11,7 @@ export function processMarkdownForWeb(content: string, printerFolder?: string): 
   processed = processed.replace(/^# Rep5x - Universal BOM\s*$/gmi, "");
   processed = processed.replace(/^# Rep5x - [A-Za-z0-9\s]+ assembly instructions\s*$/gmi, "");
   processed = processed.replace(/^# Rep5x - [A-Za-z0-9\s]+ BOM\s*$/gmi, "");
+  processed = processed.replace(/^# [A-Za-z0-9\s]+ - Printer-specific bill of materials\s*$/gmi, "");
 
   processed = processed.replace(/^#+ Rep5x - /gm, "# ");
   processed = processed.replace(/^#+ Rep5x$/gm, "");
@@ -33,6 +34,22 @@ export function processMarkdownForWeb(content: string, printerFolder?: string): 
   processed = processed.replace(
     /See \[assembly instructions\]\([^)]+\) for complete build instructions/gi,
     ""
+  );
+  processed = processed.replace(
+    /Follow the main \[assembly (?:guide|instructions)\]\([^)]+\) with these [^.]+\./gi,
+    ""
+  );
+
+  // Remove "Getting help" sections
+  processed = processed.replace(
+    /## Getting help\s*[\s\S]*?(?=##|$)/gi,
+    ""
+  );
+
+  // Ensure AliExpress and Amazon links open in new tabs
+  processed = processed.replace(
+    /\[([^\]]*(?:AliExpress|Amazon)[^\]]*)\]\((https?:\/\/[^)]+)\)/gi,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
   );
 
   // Convert local file paths to GitHub links
@@ -68,7 +85,9 @@ export function processMarkdownForWeb(content: string, printerFolder?: string): 
     (_match, text, path) => {
       const isFile = path.match(/\.(md|txt|json|h|cpp|ino)$/i);
       const viewType = isFile ? "blob" : "tree";
-      const githubPath = `${GITHUB_REPO}/${viewType}/${GITHUB_BRANCH}/build-guide/${path}`;
+      // If no printerFolder specified, assume we're processing universal content
+      const basePath = printerFolder ? `build-guide/${path}` : `build-guide/universal-parts/${path}`;
+      const githubPath = `${GITHUB_REPO}/${viewType}/${GITHUB_BRANCH}/${basePath}`;
       return `<a href="${githubPath}" target="_blank" rel="noopener noreferrer"><code>${text}</code></a>`;
     }
   );
@@ -79,7 +98,9 @@ export function processMarkdownForWeb(content: string, printerFolder?: string): 
       if (path.startsWith("http") || path.startsWith("#")) return _match; // Already a URL or anchor
       const isFile = path.match(/\.(md|txt|json|h|cpp|ino)$/i);
       const viewType = isFile ? "blob" : "tree";
-      const githubPath = `${GITHUB_REPO}/${viewType}/${GITHUB_BRANCH}/build-guide/${path}`;
+      // If no printerFolder specified, assume we're processing universal content
+      const basePath = printerFolder ? `build-guide/${path}` : `build-guide/universal-parts/${path}`;
+      const githubPath = `${GITHUB_REPO}/${viewType}/${GITHUB_BRANCH}/${basePath}`;
       return `<a href="${githubPath}" target="_blank" rel="noopener noreferrer">${text}</a>`;
     }
   );

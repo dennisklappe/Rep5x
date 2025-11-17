@@ -20,7 +20,7 @@ const { printerDataHTML, universalBOMHTML, universalAssemblyHTML } = Astro.props
     <div class="bg-light border-l-4 border-primary p-6 rounded-r-lg">
       <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-h2:text-[1.65rem]">
         {
-          Object.entries(printerDataHTML).map(([printer, data]) =>
+          Object.entries(printerDataHTML).map(([printer, data]: [string, any]) =>
             data.overview ? (
               <div
                 id={`overview-${printer}`}
@@ -38,18 +38,18 @@ const { printerDataHTML, universalBOMHTML, universalAssemblyHTML } = Astro.props
   <!-- Section Divider: BOM -->
   <div class="mb-8">
     <div class="flex items-center gap-4">
-      <div class="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
-      <h2 class="text-2xl font-bold text-gray-800">BOM</h2>
-      <div class="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
+      <div class="h-px bg-linear-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
+      <h2 class="text-3xl font-bold text-gray-800">BOM</h2>
+      <div class="h-px bg-linear-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
     </div>
   </div>
 
   <!-- Printer-Specific BOM (initially hidden) -->
   <div id="printer-specific-bom" class="mb-12 hidden">
-    <h2 id="printer-bom-heading" class="text-3xl font-bold text-gray-800 mb-8"></h2>
+    <h2 id="printer-bom-heading" class="text-4xl font-bold text-gray-800 mb-8"></h2>
     <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-lg prose-h2:text-[1.65rem]">
       {
-        Object.entries(printerDataHTML).map(([printer, data]) => (
+        Object.entries(printerDataHTML).map(([printer, data]: [string, any]) => (
           <div
             id={`bom-${printer}`}
             class="printer-content hidden"
@@ -63,7 +63,7 @@ const { printerDataHTML, universalBOMHTML, universalAssemblyHTML } = Astro.props
 
   <!-- Universal BOM -->
   <div class="mb-12">
-    <h2 id="universal-bom-heading" class="text-3xl font-bold text-gray-800 mb-8">Universal BOM</h2>
+    <h2 id="universal-bom-heading" class="text-4xl font-bold text-gray-800 mb-8">Universal BOM</h2>
     <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-lg prose-h2:text-[1.65rem]">
       <div id="universal-bom" set:html={universalBOMHTML} />
     </div>
@@ -72,9 +72,9 @@ const { printerDataHTML, universalBOMHTML, universalAssemblyHTML } = Astro.props
   <!-- Section Divider: Assembly Instructions -->
   <div class="mb-8 mt-16">
     <div class="flex items-center gap-4">
-      <div class="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
-      <h2 class="text-2xl font-bold text-gray-800">Assembly Instructions</h2>
-      <div class="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
+      <div class="h-px bg-linear-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
+      <h2 class="text-3xl font-bold text-gray-800">Assembly instructions</h2>
+      <div class="h-px bg-linear-to-r from-transparent via-primary/30 to-transparent flex-1"></div>
     </div>
   </div>
 
@@ -83,7 +83,7 @@ const { printerDataHTML, universalBOMHTML, universalAssemblyHTML } = Astro.props
     <h2 id="printer-instructions-heading" class="text-3xl font-bold text-gray-800 mb-8"></h2>
     <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-lg prose-h2:text-[1.65rem]">
       {
-        Object.entries(printerDataHTML).map(([printer, data]) =>
+        Object.entries(printerDataHTML).map(([printer, data]: [string, any]) =>
           data.instructions ? (
             <div
               id={`instructions-${printer}`}
@@ -99,7 +99,7 @@ const { printerDataHTML, universalBOMHTML, universalAssemblyHTML } = Astro.props
 
   <!-- Universal Assembly Instructions -->
   <div class="mb-12">
-    <h2 id="universal-assembly-heading" class="text-3xl font-bold text-gray-800 mb-8">Universal Assembly Instructions</h2>
+    <h2 id="universal-assembly-heading" class="text-4xl font-bold text-gray-800 mb-8">Universal assembly instructions</h2>
     <div class="prose prose-lg max-w-none prose-headings:font-bold prose-a:text-primary prose-img:rounded-lg prose-h2:text-[1.65rem]">
       <div id="universal-assembly" set:html={universalAssemblyHTML} />
     </div>
