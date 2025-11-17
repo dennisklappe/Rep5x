@@ -2,6 +2,8 @@
 
 Complete build instructions for converting any compatible 3D printer to 5-axis capability. Based on proven build process from working prototypes.
 
+Throughout this guide you'll find affiliate links to components. Purchases through these links support the Rep5x project development and help keep the project open source.
+
 ## Before you start
 
 **Important: Read through this entire document before beginning assembly.** This will help you understand the complete process, identify any missing components, and plan your build timeline effectively.
