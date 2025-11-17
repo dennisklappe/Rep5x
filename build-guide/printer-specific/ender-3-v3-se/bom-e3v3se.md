@@ -1,6 +1,6 @@
-# Ender 3 V3 SE - Printer-specific bill of materials
+# Rep5x - Ender 3 V3 SE BOM
 
-This BOM covers components specific to the Ender 3 V3 SE conversion. See the [universal BOM](../../universal-parts/bill-of-materials/bom-shared.md) for common components required across all printer models.
+This BOM covers components specific to the Ender 3 V3 SE conversion. See the [universal BOM](../../universal-parts/bom-universal.md) for common components required across all printer models.
 
 ## Printer-specific 3D printed components
 
@@ -14,15 +14,15 @@ All files available in [`3d-printed-parts/3mf/`](3d-printed-parts/3mf/) and [`3d
 
 ## Printer-specific COTS components
 
-| Item | Qty | Part Number | Description | Notes |
-|------|-----|-------------|-------------|-------|
-| 1 | 2 | Microswitch | Endstop switches for Y and Z axes | 2-pin micro limit switch |
-| 2 | 1 | BTT Mini 12864 Display (optional) | LCD display | V3 SE stock screen not compatible - other compatible screens or headless operation also work |
-| 3 | 1 | External Bowden extruder | Remote extruder assembly | Stock is direct drive |
-| 4 | 1 | Bowden-compatible hotend | Replacement hotend with PTFE coupling | Stock V3 SE hotend lacks Bowden retention |
-| 5 | 1 | PTFE Bowden tube | ~500mm PTFE tube | 4mm OD, 2mm ID |
+| Qty | Part Number | Description | Notes | Purchase links |
+|-----|-------------|-------------|-------|----------------|
+| 2 | Microswitch | Endstop switches for Y and Z axes | 2-pin micro limit switch | [AliExpress](https://s.click.aliexpress.com/e/_c4MonxZx)<br>[Amazon](https://amzn.to/47VtY08) |
+| 1 | BTT Mini 12864 Display (optional) | LCD display | V3 SE stock screen not compatible - other compatible screens or headless operation also work | [AliExpress](https://s.click.aliexpress.com/e/_c36wGfe9)<br>[Amazon](https://amzn.to/3JDvGeD) |
+| 1 | External Bowden extruder | Remote extruder assembly | Stock is direct drive | [AliExpress](https://s.click.aliexpress.com/e/_c38c2EU9)<br>[Amazon](https://amzn.to/49ikoqu) |
+| 1 | Bowden-compatible hotend | Replacement hotend with PTFE coupling | Stock V3 SE hotend lacks Bowden retention | [AliExpress](https://s.click.aliexpress.com/e/_c2yOJW0z)<br>[Amazon](https://amzn.to/4o3crsJ) |
+| 1 | PTFE Bowden tube | ~500mm PTFE tube | 4mm OD, 2mm ID | [AliExpress](https://s.click.aliexpress.com/e/_c3sghXBJ)<br>[Amazon](https://amzn.to/3X3DRns) |
 
-**Alternative to item 4**: Modify stock hotend to retain Bowden tube.
+**Alternative to hotend**: Modify stock hotend to retain Bowden tube.
 
 ## Firmware
 
@@ -35,6 +35,6 @@ See [firmware README](firmware/octopus-v1.1/README.md) for installation instruct
 
 ## Getting help
 
-- **Assembly guide**: Follow main [assembly guide](../../assembly-guide.md)
+- **Assembly guide**: Follow main [assembly guide](../../assembly-instructions-universal.md)
 - **V3 SE specifics**: See [README.md](README.md) for detailed differences
 - **Discord**: Join our [Discord community](https://discord.gg/GNdah82VBg) for support
