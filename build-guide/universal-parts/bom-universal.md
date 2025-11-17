@@ -19,30 +19,30 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 
 ## Universal COTS components
 
-| Item | Qty | Part Number | Description | Notes |
-|------|-----|-------------|-------------|-------|
-| 1 | 2 | Nema17 stepper motor | Stepper motors for A and B axis | Standard 42mm body |
-| 2 | 2 | GT2 20T 5mm bore | Drive pulleys for A and B axis | 20 teeth, 5mm bore |
-| 3 | 1 | GT2 timing belt 6x188mm | Drive belt for A-axis | 6mm wide, 188mm length |
-| 4 | 1 | GT2 timing belt 6x158mm | Drive belt for B-axis | 6mm wide, 158mm length |
-| 5 | 2 | 608 2RS bearing DIN625 | Ball bearings for B-axis rotation | Standard skateboard bearings |
-| 6 | 2 | 61804 bearing | Thin section bearing for carriage mount | For A-axis rotation |
-| 7 | 1 | Microswitch | Endstop switch for B-axis | 2-pin micro limit switch |
-| 8 | 1 | Optical sensor | A-axis homing sensor | 3-pin optical endstop sensor |
-| 9 | 1 | Control board | 6+ stepper driver board | See tested control boards section|
-| 10 | 6 | TMC2208 | Stepper drivers | UART mode, for all 6 axes |
-| 11 | 1 | MST-005-12A slipring | Slipring assembly | 12 channels, 2A each, 5mm bore |
-| 12 | 1 | Wire/cables | Connection wires | For slip ring and stepper connections |
-| 13 | 1 | JST connectors (optional) | Removable connectors | For easy maintenance |
-| 14 | 1 | Cable organizers (optional) | Zip ties, cable clips, or spiral wrap | For clean wire routing |
+| Qty | Part Number | Description | Notes | Purchase links |
+|-----|-------------|-------------|-------|----------------|
+| 2 | Nema17 stepper motor | Stepper motors for A and B axis | Standard 42mm body | [AliExpress](https://s.click.aliexpress.com/e/_c4c2iJMv)<br>[Amazon](https://amzn.to/4i9SpMc) |
+| 2 | GT2 20T 5mm bore | Drive pulleys for A and B axis | 20 teeth, 5mm bore | [AliExpress](https://s.click.aliexpress.com/e/_c4c25zbJ)<br>[Amazon](https://amzn.to/3XxPq6t) |
+| 1 | GT2 timing belt 6x188mm | Drive belt for A-axis | 6mm wide, 188mm length | [AliExpress](https://s.click.aliexpress.com/e/_c3iFUMNX)<br>[Amazon](https://amzn.to/3LBjJXs) |
+| 1 | GT2 timing belt 6x158mm | Drive belt for B-axis | 6mm wide, 158mm length | [AliExpress](https://s.click.aliexpress.com/e/_c4EfUQFx)<br>[Amazon](https://amzn.to/3K1CsuB) |
+| 2 | 608 2RS bearing DIN625 | Ball bearings for B-axis rotation | Standard skateboard bearings | [AliExpress](https://s.click.aliexpress.com/e/_c4TmSNYv)<br>[Amazon](https://amzn.to/4p7kIwW) |
+| 2 | 61804 bearing | Thin section bearing for carriage mount | For A-axis rotation | [AliExpress](https://s.click.aliexpress.com/e/_c3f9UJ2d)<br>[Amazon](https://amzn.to/47YWRs9) |
+| 1 | Microswitch | Endstop switch for B-axis | 2-pin micro limit switch | [AliExpress](https://s.click.aliexpress.com/e/_c3jaHbCv)<br>[Amazon](https://amzn.to/47Vp3w5) |
+| 1 | Optical sensor | A-axis homing sensor | 3-pin optical endstop sensor | [AliExpress](https://s.click.aliexpress.com/e/_c2xizb7R)<br>[Amazon](https://amzn.to/3LGSqed) |
+| 1 | Control board | 6+ stepper driver board | See tested control boards section| [AliExpress](https://s.click.aliexpress.com/e/_c4ahdz8D)<br>[Amazon](https://amzn.to/44cmTHi) |
+| 6 | TMC2208 | Stepper drivers | UART mode, for all 6 axes | [AliExpress](https://s.click.aliexpress.com/e/_c3kOJ4tX)<br>[Amazon](https://amzn.to/444ykkm) |
+| 1 | MST-005-12A slipring | Slipring assembly | 12 channels, 2A each, 5mm bore | [AliExpress](https://s.click.aliexpress.com/e/_c4bPjNQN)<br>[Amazon](https://amzn.to/3JRFemi) |
+| 1 | Wire/cables | Connection wires | For slip ring and stepper connections | - |
+| 1 | JST connectors (optional) | Removable connectors | For easy maintenance | [AliExpress](https://s.click.aliexpress.com/e/_c4TqCjzL)<br>[Amazon](https://amzn.to/4i4tx8f) |
+| 1 | Cable organizers (optional) | Zip ties, cable clips, or spiral wrap | For clean wire routing | - |
 
 ## Universal fasteners
 
-| Item | Qty | Description |
-|------|-----|-------------|
-| DIN912 M3x6mm | 8 | Socket head cap bolt |
-| DIN912 M3x10mm | 8 | Socket head cap bolt |
-| M3 heat-set insert | 2 | Threaded insert for plastic |
+| Qty | Description | Purchase links |
+|-----|-------------|----------------|
+| 8 | DIN912 M3x6mm socket head cap bolt | [AliExpress](https://s.click.aliexpress.com/e/_c3Ylz0Rb)<br>[Amazon](https://amzn.to/4i7uBZa) |
+| 8 | DIN912 M3x10mm socket head cap bolt | [AliExpress](https://s.click.aliexpress.com/e/_c3Y7jvop)<br>[Amazon](https://amzn.to/49SUXvN) |
+| 2 | M3 heat-set insert for plastic | [AliExpress](https://s.click.aliexpress.com/e/_c3xF4D6N)<br>[Amazon](https://amzn.to/4pkGLjX) |
 
 ## Electronics requirements
 
