@@ -214,7 +214,8 @@ class GcodePreviewerApp {
                 console.log('IK enabled, setting up reverser...');
                 this.ikReverser = new InverseKinematicsReverser(
                     parseResult.metadata.laParameter,
-                    parseResult.metadata.lbParameter
+                    parseResult.metadata.lbParameter,
+                    parseResult.metadata.ikFormulas
                 );
                 
                 // Reverse the IK to get original coordinates
@@ -565,7 +566,8 @@ class GcodePreviewerApp {
             console.log('Applying IK with manual settings...');
             this.ikReverser = new InverseKinematicsReverser(
                 metadata.laParameter,
-                metadata.lbParameter
+                metadata.lbParameter,
+                metadata.ikFormulas
             );
             
             // Reverse the IK to get original coordinates

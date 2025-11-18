@@ -446,14 +446,24 @@ function generateGcode() {
             const speed = parseFloat(document.getElementById('speed').value) * 60; // mm/min
             const tilt = parseFloat(document.getElementById('tilt').value);
             const wall = parseFloat(document.getElementById('wall').value);
-            
+
             // Get bed size
             const bedWidth = parseFloat(document.getElementById('bedWidth').value);
             const bedDepth = parseFloat(document.getElementById('bedDepth').value);
-            
-            // Get custom G-code
-            const startGcode = document.getElementById('startGcode').value;
-            const endGcode = document.getElementById('endGcode').value;
+
+            // Get temperature settings
+            const nozzleTemp = parseFloat(document.getElementById('nozzleTemp').value);
+            const bedTemp = parseFloat(document.getElementById('bedTemp').value);
+
+            // Get custom G-code and replace temperature placeholders
+            let startGcode = document.getElementById('startGcode').value;
+            let endGcode = document.getElementById('endGcode').value;
+
+            // Replace temperature placeholders in start/end G-code
+            startGcode = startGcode.replace(/M104 S\d+/g, `M104 S${nozzleTemp}`);
+            startGcode = startGcode.replace(/M109 S\d+/g, `M109 S${nozzleTemp}`);
+            startGcode = startGcode.replace(/M140 S\d+/g, `M140 S${bedTemp}`);
+            startGcode = startGcode.replace(/M190 S\d+/g, `M190 S${bedTemp}`);
             
             // Get kinematic settings
             const enableKinematics = document.getElementById('enableKinematics').checked;
@@ -627,10 +637,93 @@ document.getElementById('enableKinematics').addEventListener('change', (e) => {
     }
 });
 
+// Tab switching functionality
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+
+    // Remove active state from all tabs
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('border-primary', 'text-primary');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+
+    // Show selected tab content
+    document.getElementById('content' + tabName).classList.remove('hidden');
+
+    // Activate selected tab button
+    const activeButton = document.getElementById('tab' + tabName);
+    activeButton.classList.add('border-primary', 'text-primary');
+    activeButton.classList.remove('border-transparent', 'text-gray-500');
+}
+
+// Tab button event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('tabShape').addEventListener('click', () => switchTab('Shape'));
+    document.getElementById('tabPrintSettings').addEventListener('click', () => switchTab('PrintSettings'));
+    document.getElementById('tabAdvanced').addEventListener('click', () => switchTab('Advanced'));
+});
+
+// Material preset configurations
+const materialPresets = {
+    pla: {
+        nozzleTemp: 210,
+        bedTemp: 60,
+        speed: 50
+    },
+    petg: {
+        nozzleTemp: 240,
+        bedTemp: 80,
+        speed: 40
+    },
+    abs: {
+        nozzleTemp: 245,
+        bedTemp: 100,
+        speed: 45
+    }
+};
+
+// Material preset selector
+document.addEventListener('DOMContentLoaded', () => {
+    const materialSelect = document.getElementById('materialPreset');
+    const nozzleTempSlider = document.getElementById('nozzleTemp');
+    const bedTempSlider = document.getElementById('bedTemp');
+    const speedSlider = document.getElementById('speed');
+    const nozzleTempValue = document.getElementById('nozzleTempValue');
+    const bedTempValue = document.getElementById('bedTempValue');
+    const speedValue = document.getElementById('speedValue');
+
+    materialSelect.addEventListener('change', (e) => {
+        const preset = materialPresets[e.target.value];
+        if (preset) {
+            // Update sliders
+            nozzleTempSlider.value = preset.nozzleTemp;
+            bedTempSlider.value = preset.bedTemp;
+            speedSlider.value = preset.speed;
+
+            // Update display values
+            nozzleTempValue.textContent = preset.nozzleTemp;
+            bedTempValue.textContent = preset.bedTemp;
+            speedValue.textContent = preset.speed;
+        }
+    });
+
+    // Update material preset to 'custom' when sliders change
+    function setCustomPreset() {
+        materialSelect.value = 'custom';
+    }
+
+    nozzleTempSlider.addEventListener('input', setCustomPreset);
+    bedTempSlider.addEventListener('input', setCustomPreset);
+    speedSlider.addEventListener('input', setCustomPreset);
+});
+
 // Handle window resize
 window.addEventListener('resize', () => {
     if (!camera || !renderer) return;
-    
+
     const canvas = document.getElementById('canvas3d');
     camera.aspect = canvas.offsetWidth / canvas.offsetHeight;
     camera.updateProjectionMatrix();
