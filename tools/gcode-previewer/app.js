@@ -100,7 +100,7 @@ class GcodePreviewerApp {
         document.getElementById('manualMode').addEventListener('change', (e) => {
             this.toggleManualMode(e.target.checked);
         });
-        
+
         document.getElementById('applyManual').addEventListener('click', () => {
             this.applyManualSettings();
         });
@@ -214,8 +214,7 @@ class GcodePreviewerApp {
                 console.log('IK enabled, setting up reverser...');
                 this.ikReverser = new InverseKinematicsReverser(
                     parseResult.metadata.laParameter,
-                    parseResult.metadata.lbParameter,
-                    parseResult.metadata.ikFormulas
+                    parseResult.metadata.lbParameter
                 );
                 
                 // Reverse the IK to get original coordinates
@@ -230,7 +229,28 @@ class GcodePreviewerApp {
                 // Load commands directly - no IK processing needed
                 this.animationEngine.loadCommands(parseResult.commands);
             }
-            
+
+            // Calculate average feedrate from G-code commands (only movement, not extrusion)
+            const feedrates = parseResult.commands
+                .filter(cmd => cmd.f && cmd.f > 0 && cmd.hasMovement && (cmd.x !== null || cmd.y !== null || cmd.z !== null))
+                .map(cmd => cmd.f);
+
+            let calculatedPrintSpeed = null;
+            let defaultSpeed = 1.0;
+
+            if (feedrates.length > 0) {
+                const avgFeedrate = feedrates.reduce((a, b) => a + b, 0) / feedrates.length;
+                calculatedPrintSpeed = avgFeedrate / 60; // Convert mm/min to mm/s
+                defaultSpeed = calculatedPrintSpeed / 20; // Normalize to 20mm/s = 1x
+
+                // Store calculated speed in metadata for display
+                parseResult.metadata.calculatedPrintSpeed = calculatedPrintSpeed;
+            }
+
+            document.getElementById('speed').value = defaultSpeed;
+            document.getElementById('speedValue').textContent = defaultSpeed.toFixed(1);
+            this.animationEngine.setSpeed(defaultSpeed);
+
             // Enable controls
             document.getElementById('playPause').disabled = false;
             document.getElementById('reset').disabled = false;
@@ -399,6 +419,7 @@ class GcodePreviewerApp {
         if (metadata.diameter) html += `<div><strong>Diameter:</strong> ${metadata.diameter}mm</div>`;
         if (metadata.height) html += `<div><strong>Height:</strong> ${metadata.height}mm</div>`;
         if (metadata.layerHeight) html += `<div><strong>Layer Height:</strong> ${metadata.layerHeight}mm</div>`;
+        if (metadata.calculatedPrintSpeed) html += `<div><strong>Print Speed:</strong> ${metadata.calculatedPrintSpeed.toFixed(1)}mm/s</div>`;
         
         // Print statistics
         html += '<div class="mt-2 pt-2 border-t border-gray-300">';
@@ -523,51 +544,42 @@ class GcodePreviewerApp {
     
     applyManualSettings() {
         console.log('Applying manual settings...');
-        
+
         if (!this.currentData) {
             alert('Please load a G-code file first');
             return;
         }
-        
+
         // Get manual settings
         const manualMetadata = {
             ...this.currentData.metadata,
             inverseKinematics: document.getElementById('manualIK').checked,
-            laParameter: parseFloat(document.getElementById('manualLA').value) ?? 0,
-            lbParameter: parseFloat(document.getElementById('manualLB').value) ?? 46,
-            ikFormulas: {
-                x: document.getElementById('manualFormulaX').value.trim() || "X' + sin(A') × LA + cos(A') × sin(B') × LB",
-                y: document.getElementById('manualFormulaY').value.trim() || "Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB",
-                z: document.getElementById('manualFormulaZ').value.trim() || "Z' + cos(B') × LB - LB"
-            }
+            laParameter: parseFloat(document.getElementById('manualLA').value) || 0,
+            lbParameter: parseFloat(document.getElementById('manualLB').value) || 46
         };
-        
-        // Update current data
-        this.currentData.metadata = manualMetadata;
-        
+
         // Reprocess with new settings
         this.processWithSettings(manualMetadata);
-        
+
         // Update display
         this.displayFileInfo(manualMetadata, this.parser.getStatistics());
     }
-    
+
     applyFileSettings() {
         if (!this.currentData) return;
-        
+
         // Use original file metadata
         this.processWithSettings(this.currentData.metadata);
         this.displayFileInfo(this.currentData.metadata, this.parser.getStatistics());
     }
-    
+
     processWithSettings(metadata) {
         // Process commands with specified settings
         if (metadata.inverseKinematics) {
             console.log('Applying IK with manual settings...');
             this.ikReverser = new InverseKinematicsReverser(
                 metadata.laParameter,
-                metadata.lbParameter,
-                metadata.ikFormulas
+                metadata.lbParameter
             );
             
             // Reverse the IK to get original coordinates
@@ -588,22 +600,10 @@ class GcodePreviewerApp {
     }
     
     prefillAdvancedOptions(metadata) {
-        // Always prefill the advanced options with current metadata
+        // Prefill the advanced options with current metadata
         document.getElementById('manualIK').checked = metadata.inverseKinematics || false;
-        document.getElementById('manualLA').value = metadata.laParameter ?? 0;
-        document.getElementById('manualLB').value = metadata.lbParameter ?? 46;
-        
-        // Prefill formulas
-        if (metadata.ikFormulas) {
-            document.getElementById('manualFormulaX').value = metadata.ikFormulas.x || "";
-            document.getElementById('manualFormulaY').value = metadata.ikFormulas.y || "";
-            document.getElementById('manualFormulaZ').value = metadata.ikFormulas.z || "";
-        } else {
-            // Set default formulas if none found
-            document.getElementById('manualFormulaX').value = "X' + sin(A') × LA + cos(A') × sin(B') × LB";
-            document.getElementById('manualFormulaY').value = "Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB";
-            document.getElementById('manualFormulaZ').value = "Z' + cos(B') × LB - LB";
-        }
+        document.getElementById('manualLA').value = metadata.laParameter || 0;
+        document.getElementById('manualLB').value = metadata.lbParameter || 46;
     }
 }
 

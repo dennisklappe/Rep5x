@@ -2,106 +2,31 @@
 // Takes IK-corrected G-code and reverses it back to original coordinates
 
 class InverseKinematicsReverser {
-    constructor(laParameter = 0, lbParameter = 46, ikFormulas = null) {
+    constructor(laParameter = 0, lbParameter = 46) {
         this.la = laParameter;
         this.lb = lbParameter;
-        this.customFormulas = ikFormulas;
-    }
-
-    // Parse and evaluate IK formula
-    evaluateFormula(formula, x, y, z, a, b) {
-        // Convert angles to radians
-        const aRad = a * Math.PI / 180;
-        const bRad = b * Math.PI / 180;
-
-        // Replace mathematical notation with JavaScript
-        let jsFormula = formula
-            .replace(/X'/g, x)
-            .replace(/Y'/g, y)
-            .replace(/Z'/g, z)
-            .replace(/A'/g, a)
-            .replace(/B'/g, b)
-            .replace(/LA/g, this.la)
-            .replace(/LB/g, this.lb)
-            .replace(/sin\(/g, 'Math.sin(')
-            .replace(/cos\(/g, 'Math.cos(')
-            .replace(/tan\(/g, 'Math.tan(')
-            .replace(/×/g, '*')
-            .replace(/÷/g, '/')
-            // Convert degree angles in trig functions to radians
-            .replace(/Math\.sin\(([AB])\)/g, (match, angle) => {
-                return angle === 'A' ? `Math.sin(${aRad})` : `Math.sin(${bRad})`;
-            })
-            .replace(/Math\.cos\(([AB])\)/g, (match, angle) => {
-                return angle === 'A' ? `Math.cos(${aRad})` : `Math.cos(${bRad})`;
-            });
-
-        try {
-            return eval(jsFormula);
-        } catch (e) {
-            console.error('Formula evaluation error:', e, 'Formula:', jsFormula);
-            return 0;
-        }
     }
 
     // Reverse the Rep5x inverse kinematics to get original coordinates
     reverseIK(x, y, z, a, b) {
-        let originalX, originalY, originalZ;
-
-        if (this.customFormulas) {
-            // Use custom formulas to calculate forward IK, then reverse it
-            // Forward IK formulas give us: X_ik, Y_ik, Z_ik
-            // We need to reverse them to get original X', Y', Z'
-
-            // Since the formulas are: X = X' + corrections
-            // We need to solve for X' by subtracting the corrections
-            // We'll evaluate the correction part only
-
-            // Parse formulas to extract correction terms
-            // Default approach: assume formulas are in form "X' + corrections"
-            // Reverse by computing: X' = X - corrections
-
-            // For X formula: evaluate everything except X'
-            const xCorrection = this.evaluateFormula(
-                this.customFormulas.x.replace(/X'\s*\+?\s*/g, '').replace(/^\+\s*/, ''),
-                0, 0, 0, a, b
-            );
-            originalX = x - xCorrection;
-
-            // For Y formula
-            const yCorrection = this.evaluateFormula(
-                this.customFormulas.y.replace(/Y'\s*\+?\s*/g, '').replace(/^\+\s*/, '').replace(/^-\s*/, '+'),
-                0, 0, 0, a, b
-            );
-            originalY = y - yCorrection;
-
-            // For Z formula
-            const zCorrection = this.evaluateFormula(
-                this.customFormulas.z.replace(/Z'\s*\+?\s*/g, '').replace(/^\+\s*/, ''),
-                0, 0, 0, a, b
-            );
-            originalZ = z - zCorrection;
-
-        } else {
-            // Use default hard-coded formulas
-            const aRad = a * Math.PI / 180;
-            const bRad = b * Math.PI / 180;
-
-            // Reverse the Rep5x inverse kinematics formulas:
-            // Original: X = X' + sin(A') × LA + cos(A') × sin(B') × LB
-            // Reversed: X' = X - sin(A') × LA - cos(A') × sin(B') × LB
-
-            originalX = x - Math.sin(aRad) * this.la - Math.cos(aRad) * Math.sin(bRad) * this.lb;
-
-            // Original: Y = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB
-            // Reversed: Y' = Y + LA - cos(A') × LA + sin(A') × sin(B') × LB
-            originalY = y + this.la - Math.cos(aRad) * this.la + Math.sin(aRad) * Math.sin(bRad) * this.lb;
-
-            // Original: Z = Z' + cos(B') × LB - LB
-            // Reversed: Z' = Z - cos(B') × LB + LB = Z + LB × (1 - cos(B'))
-            originalZ = z + this.lb * (1 - Math.cos(bRad));
-        }
-
+        // Convert angles from degrees to radians
+        const aRad = a * Math.PI / 180;
+        const bRad = b * Math.PI / 180;
+        
+        // Reverse the Rep5x inverse kinematics formulas:
+        // Original: X = X' + sin(A') × LA + cos(A') × sin(B') × LB
+        // Reversed: X' = X - sin(A') × LA - cos(A') × sin(B') × LB
+        
+        const originalX = x - Math.sin(aRad) * this.la - Math.cos(aRad) * Math.sin(bRad) * this.lb;
+        
+        // Original: Y = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB  
+        // Reversed: Y' = Y + LA - cos(A') × LA + sin(A') × sin(B') × LB
+        const originalY = y + this.la - Math.cos(aRad) * this.la + Math.sin(aRad) * Math.sin(bRad) * this.lb;
+        
+        // Original: Z = Z' + cos(B') × LB - LB
+        // Reversed: Z' = Z - cos(B') × LB + LB = Z + LB × (1 - cos(B'))
+        const originalZ = z + this.lb * (1 - Math.cos(bRad));
+        
         return {
             x: originalX,
             y: originalY,

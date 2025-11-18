@@ -5,7 +5,7 @@ let animationId;
 
 // Shape information
 const shapeInfo = {
-    cylinder: "Elbow pipe demonstrates true 5-axis capability by printing curved geometries - impossible with conventional 3-axis printers without support material."
+    "elbow-pipe": "Elbow pipe demonstrates true 5-axis capability by printing curved geometries - impossible with conventional 3-axis printers without support material."
 };
 
 function initThreeJS() {
@@ -392,7 +392,7 @@ function createPrintPath(shape, radius, verticalHeight, horizontalLength, tilt) 
     let pathPoints = [];
     
     // Let the shape module handle the path generation
-    if (shape === 'cylinder') {
+    if (shape === 'elbow-pipe') {
         pathPoints = createElbowPipePath(radius, verticalHeight, horizontalLength, tilt);
     } else {
         // Fallback for other shapes (if any)
@@ -445,7 +445,6 @@ function generateGcode() {
             const layerHeight = parseFloat(document.getElementById('layerHeight').value);
             const speed = parseFloat(document.getElementById('speed').value) * 60; // mm/min
             const tilt = parseFloat(document.getElementById('tilt').value);
-            const wall = parseFloat(document.getElementById('wall').value);
 
             // Get bed size
             const bedWidth = parseFloat(document.getElementById('bedWidth').value);
@@ -454,12 +453,26 @@ function generateGcode() {
             // Get temperature settings
             const nozzleTemp = parseFloat(document.getElementById('nozzleTemp').value);
             const bedTemp = parseFloat(document.getElementById('bedTemp').value);
+            const nozzleDiameter = getNozzleDiameter();
 
             // Get custom G-code and replace temperature placeholders
             let startGcode = document.getElementById('startGcode').value;
             let endGcode = document.getElementById('endGcode').value;
 
+            // Calculate bed center
+            const bedCenterX = bedWidth / 2;
+            const bedCenterY = bedDepth / 2;
+
             // Replace temperature placeholders in start/end G-code
+            // Handle OrcaSlicer/BambuStudio style placeholders
+            startGcode = startGcode.replace(/\[nozzle_temperature_initial_layer\]/g, nozzleTemp);
+            startGcode = startGcode.replace(/\[bed_temperature_initial_layer_single\]/g, bedTemp);
+            startGcode = startGcode.replace(/\[bed_center_x\]/g, bedCenterX);
+            startGcode = startGcode.replace(/\[bed_center_y\]/g, bedCenterY);
+            endGcode = endGcode.replace(/\[nozzle_temperature_initial_layer\]/g, nozzleTemp);
+            endGcode = endGcode.replace(/\[bed_temperature_initial_layer_single\]/g, bedTemp);
+
+            // Handle hardcoded M-codes (fallback for older start/end gcode)
             startGcode = startGcode.replace(/M104 S\d+/g, `M104 S${nozzleTemp}`);
             startGcode = startGcode.replace(/M109 S\d+/g, `M109 S${nozzleTemp}`);
             startGcode = startGcode.replace(/M140 S\d+/g, `M140 S${bedTemp}`);
@@ -474,7 +487,7 @@ function generateGcode() {
             const enableAAxisOptimization = document.getElementById('enableAAxisOptimization').checked;
             
 
-            let gcode = generateShapeGcode(shape, diameter, vertical, horizontal, layerHeight, speed, tilt, wall, startGcode, endGcode, enableKinematics, laParam, lbParam, enableAAxisOptimization);
+            let gcode = generateShapeGcode(shape, diameter, vertical, horizontal, layerHeight, speed, tilt, nozzleDiameter, startGcode, endGcode, enableKinematics, laParam, lbParam, enableAAxisOptimization);
             
             // Apply inverse kinematics if enabled
             if (enableKinematics) {
@@ -509,7 +522,7 @@ function generateGcode() {
     }, 100);
 }
 
-function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt, wall, startGcode = '', endGcode = '', enableKinematics = false, laParam = 0, lbParam = 46, enableAAxisOptimization = false) {
+function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt, nozzleDiameter, startGcode = '', endGcode = '', enableKinematics = false, laParam = 0, lbParam = 46, enableAAxisOptimization = false) {
     const gcode = [];
     const radius = diameter / 2;
     const totalHeight = verticalHeight + horizontalLength; // Approximate total height
@@ -523,9 +536,9 @@ function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, l
     gcode.push(`; Vertical Section: ${verticalHeight}mm`);
     gcode.push(`; Horizontal Section: ${horizontalLength}mm`);
     gcode.push(`; Bend Angle: ${tilt}°`);
+    gcode.push(`; Nozzle Diameter: ${nozzleDiameter}mm`);
     gcode.push(`; Layer Height: ${layerHeight}mm`);
     gcode.push(`; Print Speed: ${speed/60}mm/s`);
-    gcode.push(`; Wall Thickness: ${wall}mm`);
     gcode.push(`; Generated on: ${new Date().toISOString()}`);
     gcode.push('');
     
@@ -536,9 +549,9 @@ function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, l
         gcode.push(`; LA Parameter: ${laParam}`);
         gcode.push(`; LB Parameter: ${lbParam}`);
         gcode.push('; IK Formulas:');
-        gcode.push('; X = X\' + sin(A\') × LA + cos(A\') × sin(B\') × LB');
-        gcode.push('; Y = Y\' - LA + cos(A\') × LA - sin(A\') × sin(B\') × LB'); 
-        gcode.push('; Z = Z\' + cos(B\') × LB - LB');
+        gcode.push("; X = X' + sin(A') × LA + cos(A') × sin(B') × LB");
+        gcode.push("; Y = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB");
+        gcode.push("; Z = Z' + cos(B') × LB - LB");
     }
     gcode.push(`; A-axis Optimization: ${enableAAxisOptimization ? 'enabled' : 'disabled'}`);
     gcode.push('');
@@ -567,7 +580,7 @@ function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, l
     let lastX = 0, lastY = 0, lastZ = 0;
     
     // Generate elbow pipe G-code
-    const shapeGcode = generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt, wall);
+    const shapeGcode = generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt);
     gcode.push(...shapeGcode);
     
     // End sequence
@@ -596,7 +609,12 @@ document.querySelectorAll('input[type="range"]').forEach(input => {
     input.addEventListener('input', (e) => {
         const valueSpan = document.getElementById(e.target.id + 'Value');
         if (valueSpan) {
-            valueSpan.textContent = e.target.value;
+            // Special handling for nozzle diameter (uses mapped values)
+            if (e.target.id === 'nozzleDiameter') {
+                // Skip - handled by dedicated listener
+            } else {
+                valueSpan.textContent = e.target.value;
+            }
         }
         updatePreview();
     });
@@ -685,6 +703,42 @@ const materialPresets = {
     }
 };
 
+// Map slider value to actual nozzle diameter
+const nozzleSizes = [0.2, 0.3, 0.4, 0.6, 0.8, 1.0];
+
+function getNozzleDiameter() {
+    const slider = document.getElementById('nozzleDiameter');
+    if (!slider) return 0.4; // Default fallback
+    const sliderValue = parseInt(slider.value);
+    return nozzleSizes[sliderValue] || 0.4;
+}
+
+// Update nozzle diameter display
+function updateNozzleDiameterDisplay() {
+    const diameter = getNozzleDiameter();
+    const displayElement = document.getElementById('nozzleDiameterValue');
+    if (displayElement) {
+        displayElement.textContent = diameter;
+    }
+}
+
+// Validate layer height against nozzle diameter
+function validateLayerHeight() {
+    const nozzleDiameter = getNozzleDiameter();
+    const layerHeight = parseFloat(document.getElementById('layerHeight').value);
+    const warning = document.getElementById('layerHeightWarning');
+
+    const minLayerHeight = nozzleDiameter * 0.2;
+    const maxLayerHeight = nozzleDiameter * 0.8;
+
+    if (layerHeight < minLayerHeight || layerHeight > maxLayerHeight) {
+        warning.textContent = `⚠ Recommended layer height for ${nozzleDiameter}mm nozzle: ${minLayerHeight.toFixed(2)}-${maxLayerHeight.toFixed(2)}mm`;
+        warning.classList.remove('hidden');
+    } else {
+        warning.classList.add('hidden');
+    }
+}
+
 // Material preset selector
 document.addEventListener('DOMContentLoaded', () => {
     const materialSelect = document.getElementById('materialPreset');
@@ -718,6 +772,17 @@ document.addEventListener('DOMContentLoaded', () => {
     nozzleTempSlider.addEventListener('input', setCustomPreset);
     bedTempSlider.addEventListener('input', setCustomPreset);
     speedSlider.addEventListener('input', setCustomPreset);
+
+    // Validate layer height when either slider changes
+    document.getElementById('nozzleDiameter').addEventListener('input', () => {
+        updateNozzleDiameterDisplay();
+        validateLayerHeight();
+    });
+    document.getElementById('layerHeight').addEventListener('input', validateLayerHeight);
+
+    // Initial setup
+    updateNozzleDiameterDisplay();
+    validateLayerHeight();
 });
 
 // Handle window resize

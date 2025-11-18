@@ -271,26 +271,23 @@
                 
                 <!-- IK Formulas -->
                 <div class="space-y-3">
-                    <h4 class="text-sm font-medium text-gray-900">Inverse Kinematics Formulas</h4>
-                    <div class="space-y-2">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">X =</label>
-                            <input type="text" id="manualFormulaX" class="w-full px-3 py-1 text-sm border border-gray-300 rounded-md font-mono" 
-                                   placeholder="X' + sin(A') × LA + cos(A') × sin(B') × LB">
+                    <h4 class="text-sm font-medium text-gray-900">Rep5x Inverse Kinematics Formulas</h4>
+                    <div class="space-y-2 bg-gray-50 p-3 rounded-md">
+                        <div class="text-sm font-mono text-gray-700">
+                            <strong>X</strong> = X' + sin(A') × LA + cos(A') × sin(B') × LB
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Y =</label>
-                            <input type="text" id="manualFormulaY" class="w-full px-3 py-1 text-sm border border-gray-300 rounded-md font-mono" 
-                                   placeholder="Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB">
+                        <div class="text-sm font-mono text-gray-700">
+                            <strong>Y</strong> = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Z =</label>
-                            <input type="text" id="manualFormulaZ" class="w-full px-3 py-1 text-sm border border-gray-300 rounded-md font-mono" 
-                                   placeholder="Z' + cos(B') × LB - LB">
+                        <div class="text-sm font-mono text-gray-700">
+                            <strong>Z</strong> = Z' + cos(B') × LB - LB
                         </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            These formulas are applied automatically when inverse kinematics is enabled.
+                        </p>
                     </div>
                 </div>
-                
+
                 <div class="flex justify-end">
                     <button id="applyManual" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
                         Apply Settings

@@ -99,7 +99,7 @@ function createElbowPipe(radius, verticalHeight, horizontalLength, bendAngle = 9
 }
 
 // Generate G-code for elbow pipe using proper 3-section approach
-function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, layerHeight, speed, bendAngle, wall) {
+function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, layerHeight, speed, bendAngle) {
     const gcode = [];
     const pipeRadius = diameter / 2;
     const L1 = verticalHeight;
