@@ -4,8 +4,8 @@ Marlin 2.1.x firmware configuration for Ender 3 V3 SE with Rep5x 5-axis retrofit
 
 ## Files
 
-- `Configuration.h` - Main Marlin configuration
-- `Configuration_adv.h` - Advanced Marlin features
+- `configuration_rep5x_ender3v3se_octopus_v1.1.h` - Main Marlin configuration
+- `configuration_adv_rep5x_ender3v3se_octopus_v1.1.h` - Advanced Marlin features
 - `firmware_rep5x_ender3v3se_octopus_v1.1.bin` - Compiled firmware binary
 - `start_gcode_rep5x_ender3v3se_octopus_v1.1.gcode` - Start G-code for slicer
 - `end_gcode_rep5x_ender3v3se_octopus_v1.1.gcode` - End G-code for slicer
@@ -48,8 +48,8 @@ Marlin 2.1.x firmware configuration for Ender 3 V3 SE with Rep5x 5-axis retrofit
 - **Microstepping**: 16 microsteps (TMC2208 UART mode default)
 
 ### Axis Limits
-- **X-axis**: 0 to 200mm
-- **Y-axis**: 0 to 200mm (homes at Y=240mm, 40mm past bed)
+- **X-axis**: 0 to 200mm (homes at X_MAX)
+- **Y-axis**: -40 to 200mm (homes at Y_MIN, endstop at -40mm, bed 0-200mm)
 - **Z-axis**: 0 to 174.6mm (homes at Z_MAX)
 - **A-axis (I)**: -360° to 360° (homes at 177°)
 - **B-axis (J)**: -146° to 146° (homes at J_MIN)
@@ -82,9 +82,10 @@ If you want the exact same configuration as documented above:
 
 If you need to modify settings for your specific setup:
 
-1. Edit `Configuration.h` and `Configuration_adv.h`
-2. Compile using PlatformIO with environment `STM32F446ZE_btt`
-3. Flash resulting `.bin` file to board
+1. Copy `configuration_rep5x_ender3v3se_octopus_v1.1.h` to Marlin source as `Configuration.h`
+2. Copy `configuration_adv_rep5x_ender3v3se_octopus_v1.1.h` to Marlin source as `Configuration_adv.h`
+3. Compile using PlatformIO with environment `STM32F446ZE_btt`
+4. Flash resulting `.bin` file to board
 
 ## Getting help
 
