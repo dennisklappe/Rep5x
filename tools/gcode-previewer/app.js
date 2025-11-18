@@ -532,8 +532,8 @@ class GcodePreviewerApp {
         const manualMetadata = {
             ...this.currentData.metadata,
             inverseKinematics: document.getElementById('manualIK').checked,
-            laParameter: parseFloat(document.getElementById('manualLA').value) || 0,
-            lbParameter: parseFloat(document.getElementById('manualLB').value) || 46,
+            laParameter: parseFloat(document.getElementById('manualLA').value) ?? 0,
+            lbParameter: parseFloat(document.getElementById('manualLB').value) ?? 46,
             ikFormulas: {
                 x: document.getElementById('manualFormulaX').value.trim() || "X' + sin(A') × LA + cos(A') × sin(B') × LB",
                 y: document.getElementById('manualFormulaY').value.trim() || "Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB",
@@ -588,8 +588,8 @@ class GcodePreviewerApp {
     prefillAdvancedOptions(metadata) {
         // Always prefill the advanced options with current metadata
         document.getElementById('manualIK').checked = metadata.inverseKinematics || false;
-        document.getElementById('manualLA').value = metadata.laParameter || 0;
-        document.getElementById('manualLB').value = metadata.lbParameter || 46;
+        document.getElementById('manualLA').value = metadata.laParameter ?? 0;
+        document.getElementById('manualLB').value = metadata.lbParameter ?? 46;
         
         // Prefill formulas
         if (metadata.ikFormulas) {
