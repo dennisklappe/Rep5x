@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rep5x 5-Axis G-code Previewer</title>
+    <meta name="description" content="Preview and animate Rep5x 5-axis G-code files">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
+    <style>
+        /* CSS Custom Properties - will be populated by theme.js */
+        :root {
+            --color-primary: #32D74B;
+            --color-secondary: #1A1A1A;
+            --color-body: #FAFAFA;
+            --color-border: #E5E5E5;
+            --color-light: #F7FFF8;
+            --color-dark: #0D1117;
+            --color-text: #1F2937;
+            --color-text-dark: #111827;
+            --color-text-light: #fff;
+        }
+
+        body { 
+            background-color: var(--color-body); 
+            color: var(--color-text);
+        }
+        
+        .bg-primary { background-color: var(--color-primary) !important; }
+        .text-primary { color: var(--color-primary) !important; }
+        .border-primary { border-color: var(--color-primary) !important; }
+        
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+        }
+        .btn-primary:hover {
+            background-color: var(--color-primary);
+            opacity: 0.9;
+        }
+
+        /* Slider theming (same as vase generator) */
+        input[type="range"]::-webkit-slider-thumb {
+            background: var(--color-primary);
+        }
+        input[type="range"]::-moz-range-thumb {
+            background: var(--color-primary);
+        }
+        
+        .slider-container:hover .slider-value {
+            opacity: 1;
+        }
+        .slider-value {
+            transition: opacity 0.2s;
+        }
+
+        /* Drag and drop styling */
+        .drag-over {
+            border-color: var(--color-primary) !important;
+            background-color: var(--color-light) !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">Rep5x Tools</h1>
+                    <span class="ml-2 text-sm text-gray-500">5-Axis G-code Previewer</span>
+                </div>
+                <a href="https://rep5x.com" class="text-primary hover:opacity-80 text-sm">← Back to Rep5x.com</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Info Banner -->
+        <div class="border border-gray-300 rounded-lg p-4 mb-8 bg-blue-50">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">5-Axis G-code Animation</h3>
+                    <p class="mt-1 text-sm text-blue-700">
+                        Load Rep5x G-code files and see how they would print with full 5-axis movement simulation.
+                        Supports inverse kinematics reversal and A-axis optimization.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Controls -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Controls</h2>
+                
+                <div class="space-y-6">
+                    <!-- File Upload -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Load G-code File</label>
+                        <div id="dropZone" class="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer">
+                            <input type="file" id="gcodeFile" accept=".gcode,.nc,.txt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                            <div id="dropContent">
+                                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <p class="text-sm text-gray-600 mb-2">
+                                    <span class="font-medium text-primary">Click to upload</span> or drag and drop
+                                </p>
+                                <p class="text-xs text-gray-500">Rep5x G-code files (.gcode, .nc, .txt)</p>
+                            </div>
+                            <div id="fileSelected" class="hidden">
+                                <svg class="mx-auto h-12 w-12 text-primary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <p id="fileName" class="text-sm font-medium text-gray-700 mb-1"></p>
+                                <p id="fileSize" class="text-xs text-gray-500"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File Info -->
+                    <div id="fileInfo" class="hidden">
+                        <h3 class="text-sm font-medium text-gray-700 mb-2">File Information</h3>
+                        <div id="fileDetails" class="text-xs text-gray-600 space-y-1 bg-gray-50 p-3 rounded-lg">
+                            <!-- Will be populated with file details -->
+                        </div>
+                    </div>
+
+                    <!-- Animation Controls -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-3">Animation</h3>
+                        <div class="space-y-3">
+                            <button id="playPause" class="w-full btn-primary py-4 px-6 rounded-lg font-medium transition duration-200 flex items-center justify-center" disabled>
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1M9 16v-4a4 4 0 118 0v4M9 12V9a4 4 0 118 0v3"></path>
+                                </svg>
+                                Play Animation
+                            </button>
+                            <button id="reset" class="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition duration-200 border border-gray-300" disabled>
+                                Reset
+                            </button>
+                            
+                            <!-- Speed Control -->
+                            <div class="slider-container">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Speed: <span id="speedValue" class="font-semibold text-primary">1.0</span>x
+                                </label>
+                                <input type="range" id="speed" min="0.1" max="5.0" step="0.1" value="1.0" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>0.1x</span>
+                                    <span>5.0x</span>
+                                </div>
+                            </div>
+
+                            <!-- Progress -->
+                            <div class="slider-container">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Progress</label>
+                                <input type="range" id="progress" min="0" max="100" value="0" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
+                                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                    <span>Start</span>
+                                    <span id="progressText" class="font-semibold text-primary">0%</span>
+                                    <span>End</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View Controls -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 mb-3">View Options</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showPath" checked class="rounded text-primary">
+                                <span class="ml-2 text-sm">Show print path</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showPrinthead" checked class="rounded text-primary">
+                                <span class="ml-2 text-sm">Show printhead</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showAxes" checked class="rounded text-primary">
+                                <span class="ml-2 text-sm">Show axes orientation</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3D Preview -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">5-Axis Animation</h2>
+                <div class="bg-gray-100 rounded-lg relative overflow-hidden" style="height: 70vh; min-height: 500px;">
+                    <canvas id="canvas3d" class="w-full h-full"></canvas>
+                    <div class="absolute top-4 right-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg text-xs text-gray-600">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                            </svg>
+                            Drag to rotate • Scroll to zoom
+                        </div>
+                    </div>
+                    
+                    <!-- Loading indicator -->
+                    <div id="loading" class="absolute inset-0 flex items-center justify-center bg-gray-100">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                            <p class="mt-2 text-sm text-gray-600">Initializing 3D viewer...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Position Info -->
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="font-semibold text-gray-900 mb-2">Current Position</h3>
+                    <div id="positionInfo" class="text-sm text-gray-600 grid grid-cols-2 gap-4">
+                        <div>
+                            <div>X: <span id="posX">0.000</span>mm</div>
+                            <div>Y: <span id="posY">0.000</span>mm</div>
+                            <div>Z: <span id="posZ">0.000</span>mm</div>
+                        </div>
+                        <div>
+                            <div>A: <span id="posA">0.000</span>°</div>
+                            <div>B: <span id="posB">0.000</span>°</div>
+                            <div>Layer: <span id="layer">1</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Advanced Options -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mt-8 hidden" id="advancedOptions">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Advanced 5-Axis Options</h3>
+                <label class="flex items-center">
+                    <input type="checkbox" id="manualMode" class="mr-2">
+                    <span class="text-sm text-gray-600 font-medium">Manual Override</span>
+                </label>
+            </div>
+            
+            <div id="manualControls" class="space-y-4 hidden">
+                <!-- Inverse Kinematics -->
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="manualIK" class="mr-2">
+                        <span class="text-sm font-medium">Enable Inverse Kinematics</span>
+                    </label>
+                </div>
+                
+                <!-- IK Parameters -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">LA Parameter</label>
+                        <input type="number" id="manualLA" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">LB Parameter</label>
+                        <input type="number" id="manualLB" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="46">
+                    </div>
+                </div>
+                
+                <!-- IK Formulas -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-medium text-gray-900">Rep5x Inverse Kinematics Formulas</h4>
+                    <div class="space-y-2 bg-gray-50 p-3 rounded-md">
+                        <div class="text-sm font-mono text-gray-700">
+                            <strong>X</strong> = X' + sin(A') × LA + cos(A') × sin(B') × LB
+                        </div>
+                        <div class="text-sm font-mono text-gray-700">
+                            <strong>Y</strong> = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB
+                        </div>
+                        <div class="text-sm font-mono text-gray-700">
+                            <strong>Z</strong> = Z' + cos(B') × LB - LB
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            These formulas are applied automatically when inverse kinematics is enabled.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button id="applyManual" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                        Apply Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center text-sm text-gray-500">
+                <p>Part of the <a href="https://rep5x.com" class="text-primary hover:opacity-80">Rep5x</a> open-source 5-axis printer project</p>
+                <p class="mt-1">
+                    <a href="https://github.com/dennisklappe/Rep5x" class="text-primary hover:opacity-80">GitHub</a> · 
+                    <a href="https://discord.gg/pfTrx9uy8H" class="text-primary hover:opacity-80">Discord</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Load theme from parent directory -->
+    <script>
+        // Simplified theme for standalone operation
+        window.getTheme = function() {
+            return {
+                colors: {
+                    primary: '#32D74B',
+                    secondary: '#1A1A1A',
+                    body: '#FAFAFA',
+                    border: '#E5E5E5',
+                    light: '#F7FFF8',
+                    dark: '#0D1117',
+                    text: '#1F2937',
+                    textDark: '#111827',
+                    textLight: '#fff'
+                }
+            };
+        };
+    </script>
+    <!-- Core modules -->
+    <script src="gcode-parser.js"></script>
+    <script src="inverse-kinematics-reverser.js"></script>
+    <script src="animation-engine.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
