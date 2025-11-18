@@ -1,4 +1,4 @@
-// 5-Axis Animation Engine for Rep5x G-code Previewer
+// 5-axis animation engine for Rep5x G-code previewer
 // Handles 3D visualization and animation of the printing process
 
 class AnimationEngine {
@@ -301,14 +301,24 @@ class AnimationEngine {
     loadCommands(commands) {
         console.log('Loading commands into animation engine, total:', commands.length);
         
-        // Filter in chunks to avoid stack overflow
+        // Filter commands more efficiently for large arrays
         this.commands = [];
-        const chunkSize = 1000;
+        const chunkSize = 5000;
         
+        console.log('Filtering movement commands...');
         for (let i = 0; i < commands.length; i += chunkSize) {
             const chunk = commands.slice(i, i + chunkSize);
-            const filteredChunk = chunk.filter(cmd => cmd.hasMovement);
-            this.commands.push(...filteredChunk);
+            // Use simple for loop instead of filter to avoid stack issues
+            for (let j = 0; j < chunk.length; j++) {
+                if (chunk[j] && chunk[j].hasMovement) {
+                    this.commands.push(chunk[j]);
+                }
+            }
+            
+            // Progress feedback for large files
+            if (i % 10000 === 0) {
+                console.log(`Filtered ${i}/${commands.length} commands (${Math.round(i/commands.length*100)}%)`);
+            }
         }
         
         console.log('Filtered to movement commands:', this.commands.length);
@@ -321,7 +331,8 @@ class AnimationEngine {
             this.scene.remove(this.printPath);
         }
         
-        // Show complete model by default
+        // Always show complete model by default
+        this.currentStep = this.commands.length;
         this.rebuildPrintPath();
         
         // Reset position

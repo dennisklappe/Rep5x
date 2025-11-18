@@ -37,4 +37,4 @@ See [firmware README](firmware/octopus-v1.1/README.md) for installation instruct
 
 - **Assembly guide**: Follow main [assembly guide](../../assembly-instructions-universal.md)
 - **V3 SE specifics**: See [README.md](README.md) for detailed differences
-- **Discord**: Join our [Discord community](https://discord.gg/GNdah82VBg) for support
+- **Discord**: Join our [Discord community](https://discord.gg/pfTrx9uy8H) for support

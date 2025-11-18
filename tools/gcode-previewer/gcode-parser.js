@@ -15,50 +15,113 @@ class GcodeParser {
             inverseKinematics: false,
             laParameter: 0,
             lbParameter: 46,
-            aAxisOptimization: false
+            aAxisOptimization: false,
+            ikFormulas: {
+                x: "X' + sin(A') × LA + cos(A') × sin(B') × LB",
+                y: "Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB", 
+                z: "Z' + cos(B') × LB - LB"
+            }
         };
     }
 
     async parse(gcodeText) {
-        const lines = gcodeText.split('\n');
         this.commands = [];
         
-        console.log('Parsing G-code, lines:', lines.length);
+        console.log('Parsing G-code, size:', (gcodeText.length / 1024 / 1024).toFixed(2), 'MB');
         
-        // Process in chunks to avoid stack overflow
-        const chunkSize = 1000;
-        for (let start = 0; start < lines.length; start += chunkSize) {
-            const chunk = lines.slice(start, start + chunkSize);
+        // Manual line splitting to avoid regex stack overflow on large files
+        const lines = [];
+        let currentLine = '';
+        let lineCount = 0;
+        
+        console.log('Splitting into lines...');
+        
+        // Split manually in chunks to avoid memory issues
+        const chunkSize = 100000; // 100KB chunks
+        
+        for (let i = 0; i < gcodeText.length; i += chunkSize) {
+            const chunk = gcodeText.slice(i, Math.min(i + chunkSize, gcodeText.length));
             
-            for (let i = 0; i < chunk.length; i++) {
-                const line = chunk[i].trim();
-                const lineNumber = start + i;
+            for (let j = 0; j < chunk.length; j++) {
+                const char = chunk[j];
                 
-                if (line.startsWith(';')) {
-                    // Parse metadata from comments
-                    this.parseComment(line);
-                } else if (line.startsWith('G1') || line.startsWith('G0')) {
-                    // Parse movement command
-                    const command = this.parseMovementCommand(line, lineNumber);
-                    if (command) {
-                        this.commands.push(command);
+                if (char === '\n' || char === '\r') {
+                    if (currentLine.trim()) {
+                        lines.push(currentLine.trim());
+                        lineCount++;
                     }
+                    currentLine = '';
+                } else {
+                    currentLine += char;
                 }
             }
             
-            // Yield to browser to prevent blocking
-            if (start % (chunkSize * 10) === 0) {
+            // Yield occasionally during splitting
+            if (i % (chunkSize * 50) === 0) {
                 await new Promise(resolve => setTimeout(resolve, 1));
+                console.log(`Split ${Math.round(i/gcodeText.length*100)}% (${lineCount} lines found)`);
+            }
+        }
+        
+        // Add final line if exists
+        if (currentLine.trim()) {
+            lines.push(currentLine.trim());
+            lineCount++;
+        }
+        
+        console.log('Total lines found:', lineCount);
+        
+        // Smart decimation for large files
+        let decimation = 1;
+        if (lineCount > 300000) {
+            decimation = Math.ceil(lineCount / 100000); // Target ~100k commands max
+            console.log(`Large file detected. Using decimation factor: ${decimation}`);
+        }
+        
+        // Process lines in batches
+        const batchSize = 500;
+        
+        for (let i = 0; i < lineCount; i += batchSize) {
+            const endIndex = Math.min(i + batchSize, lineCount);
+            
+            // Process batch
+            for (let j = i; j < endIndex; j++) {
+                // Apply decimation for large files
+                if (j % decimation === 0) {
+                    this.processLine(lines[j], j);
+                }
+            }
+            
+            // Yield to browser every batch
+            if (i % (batchSize * 10) === 0) {
+                await new Promise(resolve => setTimeout(resolve, 1));
+                const progress = Math.round((i / lineCount) * 100);
+                console.log(`Parsed ${progress}% (${i}/${lineCount} lines)`);
             }
         }
 
         console.log('Parsed commands:', this.commands.length);
-        console.log('Metadata:', this.metadata);
+        if (decimation > 1) {
+            console.log(`Applied decimation factor ${decimation}`);
+        }
 
         return {
             commands: this.commands,
             metadata: this.metadata
         };
+    }
+    
+    processLine(line, lineNumber) {
+        if (line.startsWith(';')) {
+            // Parse metadata from comments
+            this.parseComment(line);
+        } else if (line.startsWith('G1') || line.startsWith('G0')) {
+            // Parse movement command
+            const command = this.parseMovementCommand(line, lineNumber);
+            if (command) {
+                this.commands.push(command);
+            }
+        }
     }
 
     parseComment(line) {
@@ -88,18 +151,34 @@ class GcodeParser {
             this.metadata.generatedOn = comment.substring(13).trim();
         }
         
-        // Parse 5-axis parameters
-        else if (comment.startsWith('Inverse Kinematics:')) {
-            this.metadata.inverseKinematics = comment.includes('enabled');
+        // Parse 5-axis parameters (flexible matching)
+        else if (comment.toLowerCase().includes('inverse kinematics')) {
+            this.metadata.inverseKinematics = comment.toLowerCase().includes('enabled');
         }
-        else if (comment.startsWith('LA Parameter:')) {
-            this.metadata.laParameter = parseFloat(comment.substring(13));
+        else if (comment.toLowerCase().includes('la parameter')) {
+            const match = comment.match(/la parameter\s*:\s*([+-]?\d*\.?\d+)/i);
+            if (match) {
+                this.metadata.laParameter = parseFloat(match[1]);
+            }
         }
-        else if (comment.startsWith('LB Parameter:')) {
-            this.metadata.lbParameter = parseFloat(comment.substring(13));
+        else if (comment.toLowerCase().includes('lb parameter')) {
+            const match = comment.match(/lb parameter\s*:\s*([+-]?\d*\.?\d+)/i);
+            if (match) {
+                this.metadata.lbParameter = parseFloat(match[1]);
+            }
         }
-        else if (comment.startsWith('A-axis Optimization:')) {
-            this.metadata.aAxisOptimization = comment.includes('enabled');
+        else if (comment.toLowerCase().includes('a-axis optimization')) {
+            this.metadata.aAxisOptimization = comment.toLowerCase().includes('enabled');
+        }
+        // Parse IK formulas
+        else if (comment.startsWith('X = ') || comment.startsWith('X= ')) {
+            this.metadata.ikFormulas.x = comment.substring(comment.indexOf('=') + 1).trim();
+        }
+        else if (comment.startsWith('Y = ') || comment.startsWith('Y= ')) {
+            this.metadata.ikFormulas.y = comment.substring(comment.indexOf('=') + 1).trim();
+        }
+        else if (comment.startsWith('Z = ') || comment.startsWith('Z= ')) {
+            this.metadata.ikFormulas.z = comment.substring(comment.indexOf('=') + 1).trim();
         }
     }
 
