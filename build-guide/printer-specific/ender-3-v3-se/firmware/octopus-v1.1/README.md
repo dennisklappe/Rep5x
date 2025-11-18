@@ -7,9 +7,8 @@ Marlin 2.1.x firmware configuration for Ender 3 V3 SE with Rep5x 5-axis retrofit
 - `configuration_rep5x_ender3v3se_octopus_v1.1.h` - Main Marlin configuration
 - `configuration_adv_rep5x_ender3v3se_octopus_v1.1.h` - Advanced Marlin features
 - `firmware_rep5x_ender3v3se_octopus_v1.1.bin` - Compiled firmware binary
-- `start_gcode_rep5x_ender3v3se_octopus_v1.1.gcode` - Start G-code for slicer
-- `end_gcode_rep5x_ender3v3se_octopus_v1.1.gcode` - End G-code for slicer
-- `orcaslicer_profile_rep5x_ender3v3se.json` - OrcaSlicer printer profile
+
+For slicer profiles and G-code, see the `slicing/` folder in the parent directory.
 
 ## Hardware configuration
 
