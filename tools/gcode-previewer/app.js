@@ -414,7 +414,6 @@ class GcodePreviewerApp {
             html += `<div><strong>LA Parameter:</strong> ${metadata.laParameter}</div>`;
             html += `<div><strong>LB Parameter:</strong> ${metadata.lbParameter}</div>`;
         }
-        html += `<div><strong>A-axis Optimization:</strong> ${metadata.aAxisOptimization ? 'Yes' : 'No'}</div>`;
         html += '</div>';
         
         html += '</div>';
@@ -502,18 +501,18 @@ class GcodePreviewerApp {
     toggleManualMode(enabled) {
         const advancedOptions = document.getElementById('advancedOptions');
         const manualControls = document.getElementById('manualControls');
-        
+
         if (enabled) {
             // Show advanced options if hidden
             advancedOptions.classList.remove('hidden');
-            // Enable manual controls
-            manualControls.classList.remove('opacity-50', 'pointer-events-none');
-            
+            // Show manual controls
+            manualControls.classList.remove('hidden');
+
             // Values are already prefilled by prefillAdvancedOptions when file loads
         } else {
-            // Disable manual controls
-            manualControls.classList.add('opacity-50', 'pointer-events-none');
-            
+            // Hide manual controls
+            manualControls.classList.add('hidden');
+
             // Revert to file-based settings if file is loaded
             if (this.currentData) {
                 this.applyFileSettings();
@@ -533,7 +532,6 @@ class GcodePreviewerApp {
         const manualMetadata = {
             ...this.currentData.metadata,
             inverseKinematics: document.getElementById('manualIK').checked,
-            aAxisOptimization: document.getElementById('manualAOpt').checked,
             laParameter: parseFloat(document.getElementById('manualLA').value) || 0,
             lbParameter: parseFloat(document.getElementById('manualLB').value) || 46,
             ikFormulas: {
@@ -590,7 +588,6 @@ class GcodePreviewerApp {
     prefillAdvancedOptions(metadata) {
         // Always prefill the advanced options with current metadata
         document.getElementById('manualIK').checked = metadata.inverseKinematics || false;
-        document.getElementById('manualAOpt').checked = metadata.aAxisOptimization || false;
         document.getElementById('manualLA').value = metadata.laParameter || 0;
         document.getElementById('manualLB').value = metadata.lbParameter || 46;
         
