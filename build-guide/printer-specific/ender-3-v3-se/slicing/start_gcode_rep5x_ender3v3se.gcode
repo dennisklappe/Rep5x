@@ -6,13 +6,13 @@ M190 S[bed_temperature_initial_layer_single] ;Set and wait for bed temp to stabi
 
 G28 X ;Home X to prevent cable blocking Z homing
 G28 ;Home all axes
-G0 Z154.6 F6000 ;Move Z down 20mm from top for bowden tube alignment
-G0 A0 B0 F6000
+G91 ;Relative positioning
+G0 Z-20 F3000 ;Move Z down 20mm from top for bowden tube alignment
+G90 ;Absolute positioning
+G0 A0 B0 F3000
 
 ; Post-homing positioning
-G0 Z66 F3000 ;Move Z to safe height (20mm down from max)
 G0 X110 Y110 F2400 ;Move to center
-G0 A0 B0 F3000 ;Set A and B to 0 degrees
 
 G92 E0 ;Reset Extruder
 G1 Z2.0 F3000 ;Move Z Axis up
