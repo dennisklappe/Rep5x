@@ -420,15 +420,13 @@ class AnimationEngine {
         if (command.a !== null) this.currentPosition.a = command.a;
         if (command.b !== null) this.currentPosition.b = command.b;
 
-        // Add to printed path if extruding - use direct coordinate mapping
         if (command.e !== null && command.e > 0) {
-            // Direct mapping: G-code X→Three.js X, G-code Y→Three.js Z, G-code Z→Three.js Y
             const printPos = new THREE.Vector3(
-                this.currentPosition.x,  // G-code X → Three.js X
-                this.currentPosition.z,  // G-code Z → Three.js Y (up)
-                this.currentPosition.y   // G-code Y → Three.js Z (depth)
+                this.currentPosition.x,
+                this.currentPosition.z,
+                -this.currentPosition.y
             );
-            
+
             this.printedPath.push(printPos);
             this.updatePrintPath();
         }
@@ -449,13 +447,12 @@ class AnimationEngine {
             if (command.b !== null) position.b = command.b;
 
             if (command.e !== null && command.e > 0) {
-                // Direct mapping: G-code X→Three.js X, G-code Y→Three.js Z, G-code Z→Three.js Y
                 const printPos = new THREE.Vector3(
-                    position.x,  // G-code X → Three.js X
-                    position.z,  // G-code Z → Three.js Y (up)
-                    position.y   // G-code Y → Three.js Z (depth)
+                    position.x,
+                    position.z,
+                    -position.y
                 );
-                
+
                 this.printedPath.push(printPos);
             }
         }
@@ -482,11 +479,10 @@ class AnimationEngine {
     updatePrinthead() {
         if (!this.printhead) return;
 
-        // Direct mapping - no offset needed since nozzle tip is at group origin
         this.printhead.position.set(
-            this.currentPosition.x,      // G-code X → Three.js X
-            this.currentPosition.z,      // G-code Z → Three.js Y (up) - NO OFFSET
-            this.currentPosition.y       // G-code Y → Three.js Z (depth)
+            this.currentPosition.x,
+            this.currentPosition.z,
+            -this.currentPosition.y
         );
 
         // Set 5-axis orientation with correct coordinate system mapping
