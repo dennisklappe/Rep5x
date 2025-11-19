@@ -109,7 +109,7 @@ function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, laye
     
     const resolution = 100; // segments per 360° rotation
     let prevPos = null;
-    let totalSpiralAngle = 0; // Track continuous spiral angle across all sections
+    let totalSpiralAngle = 0;
 
     // SECTION 1: Vertical part
     const rotations1 = L1 / layerHeight;
