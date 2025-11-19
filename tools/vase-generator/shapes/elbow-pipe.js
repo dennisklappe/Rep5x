@@ -108,41 +108,41 @@ function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, laye
     const L2 = horizontalLength;
     
     const resolution = 100; // segments per 360° rotation
-    let E = 0; // Extrusion counter
     let prevPos = null;
     let totalSpiralAngle = 0; // Track continuous spiral angle across all sections
-    
+
     // SECTION 1: Vertical part
     const rotations1 = L1 / layerHeight;
     const segments1 = Math.round(rotations1 * resolution);
-    
+
     gcode.push("; === SECTION 1: Vertical ===");
     gcode.push(`; Segments: ${segments1}, Rotations: ${rotations1.toFixed(2)}`);
     for (let i = 0; i <= segments1; i++) {
         const progress = segments1 > 0 ? i / segments1 : 0;
         const z = progress * L1;
         const spiralAngle = totalSpiralAngle + (i / resolution) * 2 * Math.PI;
-        
+
         const x = pipeRadius * Math.cos(spiralAngle);
         const y = pipeRadius * Math.sin(spiralAngle);
         const B = 0; // Vertical nozzle
         const A = 0; // No yaw needed
-        
+
+        let deltaE = 0;
         if (prevPos) {
             const distance = Math.sqrt(
-                Math.pow(x - prevPos.x, 2) + 
-                Math.pow(y - prevPos.y, 2) + 
+                Math.pow(x - prevPos.x, 2) +
+                Math.pow(y - prevPos.y, 2) +
                 Math.pow(z - prevPos.z, 2)
             );
-            E += distance * 0.05; // Extrusion multiplier
+            deltaE = distance * 0.05;
         }
-        
+
         if (i === 0) {
             gcode.push(`G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} ; move to start`);
         } else {
-            gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${E.toFixed(4)} F${speed}`);
+            gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${speed}`);
         }
-        
+
         prevPos = { x, y, z };
     }
     
@@ -154,56 +154,57 @@ function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, laye
     // Number of rotations needed for this arc length
     const rotations2 = arcLength / layerHeight;
     const segments2 = Math.round(rotations2 * resolution);
-    
+
     gcode.push("");
     gcode.push("; === SECTION 2: Elbow Curve ===");
     gcode.push(`; Arc length: ${arcLength.toFixed(2)}mm, Segments: ${segments2}, Rotations: ${rotations2.toFixed(2)}`);
-    
+
     for (let i = 0; i <= segments2; i++) {
         const progress = segments2 > 0 ? i / segments2 : 0;
         const alpha = progress * theta; // Current angle in the bend (radians)
-        
+
         // Continuous spiral angle
         const spiralAngle = totalSpiralAngle + (i / resolution) * 2 * Math.PI;
-        
+
         // Centerline position (in XZ plane, Y=0 for centerline)
         const centerX = R - R * Math.cos(alpha);
         const centerZ = L1 + R * Math.sin(alpha);
-        
+
         // B angle (nozzle tilt) follows the bend
         // Positive B rotates nozzle in direction of bend
         const B = alpha * 180 / Math.PI;
-        
+
         // Local coordinate system at this point on the curve:
         // Tangent direction (along the curve)
         const tangentX = Math.sin(alpha);
         const tangentZ = Math.cos(alpha);
-        
+
         // Binormal (perpendicular to tangent, in the XZ bend plane)
         const binormalX = Math.cos(alpha);
         const binormalZ = -Math.sin(alpha);
-        
+
         // Create circular cross-section by offsetting from centerline
         const offsetY = pipeRadius * Math.sin(spiralAngle);
         const offsetBinormal = pipeRadius * Math.cos(spiralAngle);
-        
+
         // Final position
         const x = centerX + offsetBinormal * binormalX;
         const y = offsetY;
         const z = centerZ + offsetBinormal * binormalZ;
-        
+
         const A = 0;
-        
+
+        let deltaE = 0;
         if (prevPos) {
             const distance = Math.sqrt(
-                Math.pow(x - prevPos.x, 2) + 
-                Math.pow(y - prevPos.y, 2) + 
+                Math.pow(x - prevPos.x, 2) +
+                Math.pow(y - prevPos.y, 2) +
                 Math.pow(z - prevPos.z, 2)
             );
-            E += distance * 0.05;
+            deltaE = distance * 0.05;
         }
-        
-        gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${E.toFixed(4)} F${Math.round(speed * 0.8)}`);
+
+        gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${Math.round(speed * 0.8)}`);
         prevPos = { x, y, z };
     }
     
@@ -212,52 +213,53 @@ function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, laye
     // SECTION 3: Angled section after elbow
     const rotations3 = L2 / layerHeight;
     const segments3 = Math.round(rotations3 * resolution);
-    
+
     gcode.push("");
     gcode.push("; === SECTION 3: Angled Section ===");
     gcode.push(`; Segments: ${segments3}, Rotations: ${rotations3.toFixed(2)}`);
-    
+
     // Final B angle matches the end of the elbow curve
     const BFinal = theta * 180 / Math.PI;
-    
+
     for (let i = 0; i <= segments3; i++) {
         const progress = segments3 > 0 ? i / segments3 : 0;
         const s = progress * L2;
-        
+
         const spiralAngle = totalSpiralAngle + (i / resolution) * 2 * Math.PI;
-        
+
         // Centerline continues from elbow at angle theta
         const centerX = R - R * Math.cos(theta) + s * Math.sin(theta);
         const centerZ = L1 + R * Math.sin(theta) + s * Math.cos(theta);
-        
+
         // Local coordinate system (similar to end of elbow)
         const tangentX = Math.sin(theta);
         const tangentZ = Math.cos(theta);
-        
+
         const binormalX = Math.cos(theta);
         const binormalZ = -Math.sin(theta);
-        
+
         // Circular cross-section
         const offsetY = pipeRadius * Math.sin(spiralAngle);
         const offsetBinormal = pipeRadius * Math.cos(spiralAngle);
-        
+
         const x = centerX + offsetBinormal * binormalX;
         const y = offsetY;
         const z = centerZ + offsetBinormal * binormalZ;
-        
+
         const B = BFinal;
         const A = 0;
-        
+
+        let deltaE = 0;
         if (prevPos) {
             const distance = Math.sqrt(
-                Math.pow(x - prevPos.x, 2) + 
-                Math.pow(y - prevPos.y, 2) + 
+                Math.pow(x - prevPos.x, 2) +
+                Math.pow(y - prevPos.y, 2) +
                 Math.pow(z - prevPos.z, 2)
             );
-            E += distance * 0.05;
+            deltaE = distance * 0.05;
         }
-        
-        gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${E.toFixed(4)} F${speed}`);
+
+        gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${speed}`);
         prevPos = { x, y, z };
     }
     
