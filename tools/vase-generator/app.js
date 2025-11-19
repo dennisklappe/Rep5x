@@ -522,7 +522,7 @@ function generateGcode() {
     }, 100);
 }
 
-function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt, nozzleDiameter, startGcode = '', endGcode = '', enableKinematics = false, laParam = 0, lbParam = 46, enableAAxisOptimization = false) {
+function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt, nozzleDiameter, startGcode = '', endGcode = '', enableKinematics = false, laParam = 0, lbParam = 47.9, enableAAxisOptimization = false) {
     const gcode = [];
     const radius = diameter / 2;
     const totalHeight = verticalHeight + horizontalLength; // Approximate total height
@@ -573,8 +573,8 @@ function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, l
         gcode.push('G92 E0 ; Reset extruder');
         gcode.push('G21 ; Set units to millimeters');
         gcode.push('G90 ; Use absolute coordinates');
-        gcode.push('M83 ; Use relative extrusion');
     }
+    gcode.push('M83 ; Use relative extrusion');
     gcode.push('');
     
     let lastX = 0, lastY = 0, lastZ = 0;
