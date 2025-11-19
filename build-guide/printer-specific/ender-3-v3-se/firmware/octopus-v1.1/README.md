@@ -1,91 +1,82 @@
-# Rep5x - Ender 3 V3 SE firmware configuration
+# Rep5x - Ender 3 V3 SE + BTT Octopus V1.1
 
-Marlin 2.1.x firmware configuration for Ender 3 V3 SE with Rep5x 5-axis retrofit using BTT Octopus V1.1 board.
+Marlin firmware configuration for Ender 3 V3 SE with Rep5x 5-axis retrofit using BTT Octopus V1.1 board.
+
+For general firmware installation instructions, building from source, and troubleshooting, see the [universal firmware installation guide](../../../../universal-parts/firmware/INSTALLATION.md).
 
 ## Files
 
-- `configuration_rep5x_ender3v3se_octopus_v1.1.h` - Main Marlin configuration
-- `configuration_adv_rep5x_ender3v3se_octopus_v1.1.h` - Advanced Marlin features
-- `firmware_rep5x_ender3v3se_octopus_v1.1.bin` - Compiled firmware binary
+| File | Description |
+|------|-------------|
+| `configuration_rep5x_ender3v3se_octopus_v1.1.h` | Marlin Configuration.h |
+| `configuration_adv_rep5x_ender3v3se_octopus_v1.1.h` | Marlin Configuration_adv.h |
+| `firmware_rep5x_ender3v3se_octopus_v1.1.bin` | Pre-compiled firmware binary |
 
-For slicer profiles and G-code, see the `slicing/` folder in the parent directory.
+## Quick install (pre-compiled)
 
-## Hardware configuration
+1. Copy `firmware_rep5x_ender3v3se_octopus_v1.1.bin` to SD card
+2. Rename to `firmware.bin`
+3. Insert SD card into Octopus board and power on
+4. After flashing, run `M502` then `M500` to load defaults
 
-### Board: BTT Octopus V1.1
-- **Stepper drivers**: TMC2208 (UART mode)
-- **Display**: BigTreeTech Mini 12864 Display
-- **Build volume**: 200 x 200 x 174.6mm
-- **Bowden length**: 600mm (extruder gear to nozzle tip)
+## Build from source
 
-### Stepper motor mapping (Marlin automatic pin assignment)
-- **X-axis**: Motor 0 (X endstop: microswitch)
-- **Y-axis**: Motor 1 (Y endstop: microswitch)
-- **Z-axis**: Motor 2 (Z endstop: microswitch on X gantry)
-- **A-axis (I)**: Motor 3 (yaw rotation, endstop on E0DET)
-- **B-axis (J)**: Motor 4 (tilt rotation, endstop on E1DET)
-- **E0 (Extruder)**: Motor 5
+```bash
+git clone https://github.com/MarlinFirmware/Marlin.git
+cd Marlin
+git checkout 2.1.3-b3
 
-### Temperature sensors
-- **Hotend**: TEMP_0 (thermistor type 1)
-- **Heated bed**: TB (thermistor type 1)
+# Copy configurations
+cp path/to/configuration_rep5x_ender3v3se_octopus_v1.1.h Marlin/Configuration.h
+cp path/to/configuration_adv_rep5x_ender3v3se_octopus_v1.1.h Marlin/Configuration_adv.h
 
-### Heaters
-- **Hotend**: HEATER_0 (max 270°C)
-- **Heated bed**: HEATER_BED (max 70°C)
+# Set build environment in platformio.ini
+# default_envs = STM32F446ZE_btt
 
-### Fans
-- **Hotend cooling**: FAN1 (always on)
-- **Controller fan**: FAN2 (auto-control)
+pio run
+```
 
-## Key Configuration Settings
+## Hardware specifics
 
-### Motion & Steps
-- **Steps per unit**: X=80, Y=80, Z=400, A=26.666, B=26.68, E=415
-- **Max acceleration**: X=3000, Y=3000, Z=500, A=1000, B=1000, E=10000 mm/s²
-- **Homing feedrate**: X=50mm/s, Y=50mm/s, Z=15mm/s, A=90mm/s, B=45mm/s
-- **Microstepping**: 16 microsteps (TMC2208 UART mode default)
+### Stepper motor mapping
 
-### Axis Limits
-- **X-axis**: 0 to 200mm (homes at X_MAX)
-- **Y-axis**: -40 to 200mm (homes at Y_MIN, endstop at -40mm, bed 0-200mm)
-- **Z-axis**: 0 to 174.6mm (homes at Z_MAX)
-- **A-axis (I)**: -360° to 360° (homes at 177°)
-- **B-axis (J)**: -146° to 146° (homes at J_MIN)
+| Axis | Motor slot | Endstop | Notes |
+|------|------------|---------|-------|
+| X | Motor 0 | X_MAX | Homes to max |
+| Y | Motor 1 | Y_MIN | Homes to min (-40mm) |
+| Z | Motor 2 | Z_MAX | Homes to max |
+| A (I) | Motor 3 | J30 (PG13) | Yaw rotation, homes to min |
+| B (J) | Motor 4 | J32 (PG14) | Tilt rotation, homes to min |
+| E0 | Motor 5 | - | Extruder |
 
-### Temperatures
-- **Hotend max**: 270°C
-- **Bed max**: 70°C
-- **Extrude min**: 170°C
+### Key settings
 
-### Advanced Features
-- **Babystepping**: Enabled (adjust Z offset during print)
-- **Filament load/unload**: M701/M702 G-codes (600mm length)
-- **Custom LCD menu**: "Filament" menu with Load/Unload shortcuts
-- **Nozzle park**: Enabled (parks at X=10, Y=10, Z=20mm)
+| Setting | Value |
+|---------|-------|
+| Build volume | 200 × 200 × 174.6 mm |
+| Steps/unit (X, Y, Z, E, A, B) | 80, 80, 400, 415, 26.666, 26.68 |
+| Stepper drivers | TMC2208 (UART) |
+| Display | BTT Mini 12864 |
+| Hotend max temp | 270°C |
+| Bed max temp | 70°C |
 
-## Installation
+### Axis limits
 
-### Option 1: Use pre-compiled firmware (recommended for exact same configuration)
+| Axis | Min | Max | Home direction |
+|------|-----|-----|----------------|
+| X | 0 | 200 mm | MAX |
+| Y | -40 | 200 mm | MIN |
+| Z | 0 | 174.6 mm | MAX |
+| A (I) | -360° | 360° | MIN |
+| B (J) | -135° | 135° | MIN |
 
-If you want the exact same configuration as documented above:
+## After installation
 
-1. Copy `firmware_rep5x_ender3v3se_octopus_v1.1.bin` to SD card root directory
-2. Rename to `firmware.bin` (if required by your bootloader)
-3. Insert SD card into Octopus board
-4. Power on - firmware flashes automatically
-5. Verify installation via LCD display or serial connection
-6. Run `M502` then `M500` to load and save default settings
+Follow the [installation guide](../../../../universal-parts/firmware/INSTALLATION.md) for:
+- Verifying hardware with Printer Control tool
+- Calibrating A and B axes with Printer Setup tool
+- Troubleshooting common build errors
 
-### Option 2: Customize and build yourself
+## Support
 
-If you need to modify settings for your specific setup:
-
-1. Copy `configuration_rep5x_ender3v3se_octopus_v1.1.h` to Marlin source as `Configuration.h`
-2. Copy `configuration_adv_rep5x_ender3v3se_octopus_v1.1.h` to Marlin source as `Configuration_adv.h`
-3. Compile using PlatformIO with environment `STM32F446ZE_btt`
-4. Flash resulting `.bin` file to board
-
-## Getting help
-
-**Discord**: https://discord.gg/GNdah82VBg for firmware support and troubleshooting
+- [Discord](https://discord.gg/GNdah82VBg)

@@ -6,74 +6,12 @@
     <title>Rep5x 5-Axis G-code Viewer</title>
     <meta name="description" content="View and animate Rep5x 5-axis G-code files">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="../shared/styles.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
-    <style>
-        /* CSS Custom Properties - will be populated by theme.js */
-        :root {
-            --color-primary: #32D74B;
-            --color-secondary: #1A1A1A;
-            --color-body: #FAFAFA;
-            --color-border: #E5E5E5;
-            --color-light: #F7FFF8;
-            --color-dark: #0D1117;
-            --color-text: #1F2937;
-            --color-text-dark: #111827;
-            --color-text-light: #fff;
-        }
-
-        body { 
-            background-color: var(--color-body); 
-            color: var(--color-text);
-        }
-        
-        .bg-primary { background-color: var(--color-primary) !important; }
-        .text-primary { color: var(--color-primary) !important; }
-        .border-primary { border-color: var(--color-primary) !important; }
-        
-        .btn-primary {
-            background-color: var(--color-primary);
-            color: var(--color-text-light);
-        }
-        .btn-primary:hover {
-            background-color: var(--color-primary);
-            opacity: 0.9;
-        }
-
-        /* Slider theming (same as vase generator) */
-        input[type="range"]::-webkit-slider-thumb {
-            background: var(--color-primary);
-        }
-        input[type="range"]::-moz-range-thumb {
-            background: var(--color-primary);
-        }
-        
-        .slider-container:hover .slider-value {
-            opacity: 1;
-        }
-        .slider-value {
-            transition: opacity 0.2s;
-        }
-
-        /* Drag and drop styling */
-        .drag-over {
-            border-color: var(--color-primary) !important;
-            background-color: var(--color-light) !important;
-        }
-    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50 min-h-screen" data-tool-name="G-code Viewer">
     <!-- Header -->
-    <header class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-gray-900">Rep5x Tools</h1>
-                    <span class="ml-2 text-sm text-gray-500">5-Axis G-code Viewer</span>
-                </div>
-                <a href="https://rep5x.com" class="text-primary hover:opacity-80 text-sm">← Back to Rep5x.com</a>
-            </div>
-        </div>
-    </header>
+    <div id="shared-header"></div>
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -153,11 +91,11 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
                                     Speed: <span id="speedValue" class="font-semibold text-primary">1.0</span>x
                                 </label>
-                                <input type="range" id="speed" min="0.1" max="5.0" step="0.1" value="1.0" 
+                                <input type="range" id="speed" min="1" max="20" step="1" value="1"
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
                                 <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                    <span>0.1x</span>
-                                    <span>5.0x</span>
+                                    <span>1x</span>
+                                    <span>20x</span>
                                 </div>
                             </div>
 
@@ -191,7 +129,7 @@
             <!-- 3D Preview -->
             <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
                 <h2 class="text-2xl font-bold text-gray-900 mb-6">5-Axis Animation</h2>
-                <div class="bg-gray-100 rounded-lg relative overflow-hidden" style="height: 70vh; min-height: 500px;">
+                <div class="bg-gray-100 rounded-lg relative overflow-hidden h-canvas">
                     <canvas id="canvas3d" class="w-full h-full"></canvas>
                     <div class="absolute top-4 right-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg text-xs text-gray-600">
                         <div class="flex items-center">
@@ -290,43 +228,19 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center text-sm text-gray-500">
-                <p>Part of the <a href="https://rep5x.com" class="text-primary hover:opacity-80">Rep5x</a> open-source 5-axis printer project</p>
-                <p class="mt-1">
-                    <a href="https://github.com/dennisklappe/Rep5x" class="text-primary hover:opacity-80">GitHub</a> · 
-                    <a href="https://discord.gg/pfTrx9uy8H" class="text-primary hover:opacity-80">Discord</a>
-                </p>
-            </div>
-        </div>
-    </footer>
+    <div id="shared-footer"></div>
 
     <!-- Three.js from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Load theme from parent directory -->
-    <script>
-        // Simplified theme for standalone operation
-        window.getTheme = function() {
-            return {
-                colors: {
-                    primary: '#32D74B',
-                    secondary: '#1A1A1A',
-                    body: '#FAFAFA',
-                    border: '#E5E5E5',
-                    light: '#F7FFF8',
-                    dark: '#0D1117',
-                    text: '#1F2937',
-                    textDark: '#111827',
-                    textLight: '#fff'
-                }
-            };
-        };
-    </script>
-    <!-- Core modules -->
-    <script src="gcode-parser.js"></script>
-    <script src="inverse-kinematics-reverser.js"></script>
-    <script src="animation-engine.js"></script>
-    <script src="app.js"></script>
+    <!-- Shared components -->
+    <script src="../shared/theme.js"></script>
+    <script src="../shared/storage-manager.js"></script>
+    <script src="../shared/header.js"></script>
+    <script src="../shared/footer.js"></script>
+    <!-- Tool-specific scripts -->
+    <script src="js/gcode-parser.js"></script>
+    <script src="js/inverse-kinematics-reverser.js"></script>
+    <script src="js/animation-engine.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

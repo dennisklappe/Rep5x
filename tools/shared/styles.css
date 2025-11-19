@@ -1,0 +1,531 @@
+/* Rep5x Tools - Shared Styles
+ * Common CSS for all Rep5x browser-based tools
+ */
+
+/* ==========================================================================
+   CSS Custom Properties (Theme Variables)
+   ========================================================================== */
+
+:root {
+    /* Brand colours */
+    --color-primary: #32D74B;
+    --color-secondary: #1A1A1A;
+
+    /* Background colours */
+    --color-body: #FAFAFA;
+    --color-light: #F7FFF8;
+    --color-dark: #0D1117;
+
+    /* Border colours */
+    --color-border: #E5E5E5;
+
+    /* Success state */
+    --color-success: #16A34A;
+    --color-success-hover: #15803D;
+    --color-success-light: #F0FDF4;
+    --color-success-border: #BBF7D0;
+    --color-success-text: #166534;
+
+    /* Danger state */
+    --color-danger: #DC2626;
+    --color-danger-hover: #B91C1C;
+    --color-danger-light: #FEF2F2;
+    --color-danger-border: #FECACA;
+    --color-danger-text: #991B1B;
+
+    /* Warning state */
+    --color-warning: #F59E0B;
+    --color-warning-light: #FFFBEB;
+    --color-warning-border: #FDE68A;
+    --color-warning-text: #92400E;
+
+    /* Text colours */
+    --color-text: #1F2937;
+    --color-text-dark: #111827;
+    --color-text-light: #fff;
+    --color-text-muted: #6B7280;
+}
+
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
+
+body {
+    background-color: var(--color-body);
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+.bg-primary { background-color: var(--color-primary) !important; }
+.text-primary { color: var(--color-primary) !important; }
+.border-primary { border-color: var(--color-primary) !important; }
+
+.bg-light-theme { background-color: var(--color-light) !important; }
+.border-light-theme { border-color: var(--color-border) !important; }
+
+/* ==========================================================================
+   Button Styles
+   ========================================================================== */
+
+/* Primary button - main call to action */
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-text-light);
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Secondary button - neutral action */
+.btn-secondary {
+    background-color: white;
+    border: 2px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.btn-secondary:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* Outline button - secondary action with primary colour */
+.btn-outline {
+    background-color: white;
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-outline:hover {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+/* Success button - positive action */
+.btn-success {
+    background-color: var(--color-success);
+    color: var(--color-text-light);
+}
+
+.btn-success:hover {
+    background-color: var(--color-success-hover);
+}
+
+/* Danger button - destructive action */
+.btn-danger {
+    background-color: var(--color-danger);
+    color: var(--color-text-light);
+}
+
+.btn-danger:hover {
+    background-color: var(--color-danger-hover);
+}
+
+/* Danger outline button */
+.btn-danger-outline {
+    background-color: white;
+    border: 2px solid var(--color-danger);
+    color: var(--color-danger);
+}
+
+.btn-danger-outline:hover {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+/* ==========================================================================
+   Status Indicators
+   ========================================================================== */
+
+.status-success {
+    background-color: var(--color-success-light);
+    border-color: var(--color-success-border);
+    color: var(--color-success-text);
+}
+
+.status-danger {
+    background-color: var(--color-danger-light);
+    border-color: var(--color-danger-border);
+    color: var(--color-danger-text);
+}
+
+.status-warning {
+    background-color: var(--color-warning-light);
+    border-color: var(--color-warning-border);
+    color: var(--color-warning-text);
+}
+
+/* Status dot indicator */
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.connected {
+    background-color: var(--color-primary);
+}
+
+.status-dot.disconnected {
+    background-color: var(--color-danger);
+}
+
+.status-dot.pending {
+    background-color: var(--color-warning);
+}
+
+/* ==========================================================================
+   Form Elements
+   ========================================================================== */
+
+/* Slider/range input theming */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type="range"]::-webkit-slider-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #E5E7EB;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    margin-top: -6px;
+}
+
+input[type="range"]::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #E5E7EB;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    border: none;
+}
+
+.slider-container:hover .slider-value {
+    opacity: 1;
+}
+
+.slider-value {
+    transition: opacity 0.2s;
+}
+
+/* Checkbox theming */
+.checkbox-primary {
+    color: var(--color-primary);
+}
+
+.checkbox-primary:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+/* ==========================================================================
+   Progress Stepper
+   ========================================================================== */
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 600;
+    background-color: var(--color-border);
+    color: var(--color-text);
+    transition: all 0.3s;
+}
+
+.progress-step.active {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.progress-step.completed {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.progress-connector {
+    flex: 1;
+    height: 2px;
+    background-color: var(--color-border);
+    margin: 0 8px;
+    transition: background-color 0.3s;
+}
+
+.progress-connector.completed {
+    background-color: var(--color-primary);
+}
+
+/* ==========================================================================
+   Wizard Steps
+   ========================================================================== */
+
+.wizard-step {
+    display: none;
+}
+
+.wizard-step.active {
+    display: block;
+}
+
+/* ==========================================================================
+   Jog Controls
+   ========================================================================== */
+
+.jog-btn {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+    background-color: white;
+    border: 2px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.jog-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.jog-btn:active:not(:disabled) {
+    transform: scale(0.95);
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.jog-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.jog-btn.selected {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.jog-btn.selected:hover:not(:disabled) {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Step size button */
+.step-btn {
+    transition: all 0.15s;
+}
+
+.step-btn.active {
+    background-color: var(--color-primary);
+    color: var(--color-text-light);
+    border-color: var(--color-primary);
+}
+
+/* ==========================================================================
+   Info Banner
+   ========================================================================== */
+
+.info-banner {
+    background-color: var(--color-light);
+    border-color: var(--color-primary);
+    color: var(--color-text);
+}
+
+.info-banner .icon {
+    color: var(--color-primary);
+}
+
+/* ==========================================================================
+   Drag and Drop
+   ========================================================================== */
+
+.drag-over {
+    border-color: var(--color-primary) !important;
+    background-color: var(--color-light) !important;
+}
+
+/* ==========================================================================
+   Monospace/Code Display
+   ========================================================================== */
+
+.pos-value {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   Measurement Items
+   ========================================================================== */
+
+.measurement-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    margin-bottom: 8px;
+    transition: all 0.2s;
+}
+
+.measurement-item.current {
+    border-color: var(--color-primary);
+    background-color: var(--color-light);
+}
+
+.measurement-item.completed {
+    background-color: var(--color-success-light);
+    border-color: var(--color-success-border);
+}
+
+/* ==========================================================================
+   Cards
+   ========================================================================== */
+
+.method-card {
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    cursor: pointer;
+}
+
+.method-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-color: var(--color-primary);
+}
+
+.method-card.selected {
+    border-color: var(--color-primary);
+    background-color: var(--color-light);
+}
+
+/* ==========================================================================
+   Result Display
+   ========================================================================== */
+
+.result-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+/* Visual guide for angle display */
+.visual-guide {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.angle-display {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+}
+
+.angle-unit {
+    font-size: 1.25rem;
+    color: var(--color-text);
+}
+
+/* ==========================================================================
+   Emergency/Stop Button
+   ========================================================================== */
+
+.btn-emergency {
+    background-color: white;
+    border: 2px solid var(--color-danger);
+    color: var(--color-danger);
+}
+
+.btn-emergency:hover {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+/* ==========================================================================
+   Console (Printer Control)
+   ========================================================================== */
+
+.console {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    background-color: var(--color-light);
+    color: var(--color-text);
+}
+
+.console-line {
+    padding: 2px 12px;
+}
+
+.console-line.sent {
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.console-line.received {
+    color: var(--color-text);
+}
+
+.console-line.error {
+    color: var(--color-danger);
+}
+
+.console-line.info {
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Container Heights (Common sizes)
+   ========================================================================== */
+
+.h-console {
+    height: 200px;
+}
+
+.h-camera {
+    height: 300px;
+}
+
+.h-camera-lg {
+    height: 400px;
+}
+
+.h-canvas {
+    height: 70vh;
+    min-height: 500px;
+}

@@ -1,11 +1,13 @@
-# Rep5x - 5-axis vase generator
+# Rep5x - Vase generator
 
 Generate demonstration G-code files to showcase Rep5x 5-axis printing capabilities with various shapes.
+
+**Live tool:** https://tools.rep5x.com/vase-generator/
 
 ## Features
 
 - **Multiple shapes**: elbow pipe, *more to come*
-- **Interactive 3D preview**: Real-time visualization of generated models
+- **Interactive 3D preview**: Real-time visualisation of generated models
 - **Configurable parameters**: Diameter, height, layer settings, speeds, and materials
 - **5-axis demonstrations**: Each shape highlights different aspects of 5-axis printing advantages
 - **Ready-to-print output**: Generate complete G-code files with proper printer settings
@@ -35,8 +37,25 @@ Generated files include Rep5x-specific metadata:
 ; A-axis Optimization: enabled
 ```
 
-Files are compatible with Rep5x firmware and can be visualized using the [G-code previewer](../gcode-previewer/).
+Files are compatible with Rep5x firmware and can be visualised using the [G-code viewer](../gcode-viewer/).
 
 ## Development
 
-The generator uses Three.js for 3D visualization and generates standard G-code with 5-axis extensions (A/B axes). All shapes are parametrically defined for easy modification and extension.
+The generator uses Three.js for 3D visualisation and generates standard G-code with 5-axis extensions (A/B axes). All shapes are parametrically defined for easy modification and extension.
+
+### File structure
+```
+vase-generator/
+├── index.html              # Main HTML interface
+├── README.md               # This documentation
+└── js/
+    ├── app.js              # Main application controller
+    ├── inverse-kinematics.js # IK calculations
+    ├── a-axis-optimizer.js # A-axis path optimisation
+    └── shapes/
+        └── elbow-pipe.js   # Elbow pipe shape generator
+```
+
+## Support
+
+- **Discord**: [Join our community](https://discord.gg/GNdah82VBg)

@@ -19,6 +19,7 @@ class GcodePreviewerApp {
             // Set up callbacks
             this.animationEngine.updateProgressCallback = (progress) => this.updateProgress(progress);
             this.animationEngine.updatePositionCallback = (position) => this.updatePositionDisplay(position);
+            this.animationEngine.onPauseCallback = (message) => this.showPauseMessage(message);
             
             // Set up event listeners
             this.setupEventListeners();
@@ -27,14 +28,13 @@ class GcodePreviewerApp {
             document.getElementById('loading').style.display = 'none';
         } catch (error) {
             console.error('Error initializing app:', error);
-            document.getElementById('loading').innerHTML = '<div class="text-center"><div class="text-red-600">Error initializing 3D viewer: ' + error.message + '</div></div>';
+            document.getElementById('loading').innerHTML = '<div class="text-center"><div style="color: #DC2626;">Error initializing 3D viewer: ' + error.message + '</div></div>';
         }
     }
 
     setupEventListeners() {
         // File upload
         document.getElementById('gcodeFile').addEventListener('change', (e) => {
-            console.log('File input changed:', e.target.files[0]);
             this.handleFileSelect(e.target.files[0]);
         });
 
@@ -120,7 +120,6 @@ class GcodePreviewerApp {
 
         // Handle dropped files
         dropZone.addEventListener('drop', (e) => {
-            console.log('File dropped:', e.dataTransfer.files[0]);
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 this.handleFileSelect(files[0]);
@@ -129,7 +128,6 @@ class GcodePreviewerApp {
     }
 
     handleFileSelect(file) {
-        console.log('Handling file selection:', file);
         if (!file) return;
 
         // Show file selected state
@@ -140,7 +138,6 @@ class GcodePreviewerApp {
     }
 
     showFileSelected(file) {
-        console.log('Showing file selected:', file.name);
         const dropContent = document.getElementById('dropContent');
         const fileSelected = document.getElementById('fileSelected');
         const fileName = document.getElementById('fileName');
@@ -167,7 +164,6 @@ class GcodePreviewerApp {
         if (!file) return;
 
         try {
-            console.log('Loading G-code file:', file.name, 'size:', file.size, 'bytes');
             
             // Check file size and warn for very large files
             if (file.size > 100 * 1024 * 1024) {
@@ -180,18 +176,9 @@ class GcodePreviewerApp {
             
             // Use streaming approach for large files
             const parseResult = await this.parseFileInChunks(file);
-            console.log('Parse result:', parseResult);
             
             this.currentData = parseResult;
             this.displayFileInfo(parseResult.metadata, this.parser.getStatistics());
-            
-            // Always show advanced options when a file is loaded (for manual override)
-            console.log('Checking 5-axis parameters:', {
-                inverseKinematics: parseResult.metadata.inverseKinematics,
-                aAxisOptimization: parseResult.metadata.aAxisOptimization,
-                laParameter: parseResult.metadata.laParameter,
-                lbParameter: parseResult.metadata.lbParameter
-            });
             
             // Show advanced options and prefill with detected parameters
             document.getElementById('advancedOptions').classList.remove('hidden');
@@ -199,7 +186,6 @@ class GcodePreviewerApp {
             
             // Set up IK reverser if needed
             if (parseResult.metadata.inverseKinematics) {
-                console.log('IK enabled, setting up reverser...');
                 this.ikReverser = new InverseKinematicsReverser(
                     parseResult.metadata.laParameter,
                     parseResult.metadata.lbParameter
@@ -213,7 +199,6 @@ class GcodePreviewerApp {
                 this.displayIKAnalysis(this.ikReverser.analyzeIKCorrections(parseResult.commands));
                 
             } else {
-                console.log('IK disabled, loading commands directly...');
                 // Load commands directly - no IK processing needed
                 this.animationEngine.loadCommands(parseResult.commands);
             }
@@ -268,7 +253,6 @@ class GcodePreviewerApp {
             reader.onload = (e) => {
                 try {
                     const result = e.target.result;
-                    console.log('File read successfully, size:', result.length, 'characters');
                     resolve(result);
                 } catch (error) {
                     console.error('Error processing file content:', error);
@@ -284,7 +268,6 @@ class GcodePreviewerApp {
             reader.onprogress = (e) => {
                 if (e.lengthComputable) {
                     const progress = Math.round((e.loaded / e.total) * 100);
-                    console.log(`Reading file: ${progress}%`);
                 }
             };
             
@@ -298,7 +281,6 @@ class GcodePreviewerApp {
     }
 
     async parseFileInChunks(file) {
-        console.log('Streaming parse of file:', file.name, 'size:', file.size, 'bytes');
         
         // Reset parser
         this.parser.commands = [];
@@ -333,7 +315,6 @@ class GcodePreviewerApp {
         const estimatedLines = fileSize / 50; // Rough estimate: 50 bytes per line
         if (estimatedLines > 200000) {
             decimation = Math.ceil(estimatedLines / 100000);
-            console.log(`Large file detected. Using decimation factor: ${decimation}`);
         }
         
         while (offset < fileSize) {
@@ -360,7 +341,6 @@ class GcodePreviewerApp {
                 
                 // Progress feedback
                 const progress = Math.min(100, Math.round((offset / fileSize) * 100));
-                console.log(`Parsed ${progress}% (${commandCount} commands found, line ${lineNumber})`);
                 
                 // Yield to browser
                 await new Promise(resolve => setTimeout(resolve, 1));
@@ -376,7 +356,6 @@ class GcodePreviewerApp {
             this.parser.processLine(buffer.trim(), lineNumber);
         }
         
-        console.log('Streaming parse complete. Commands:', this.parser.commands.length);
         
         return {
             commands: this.parser.commands,
@@ -451,7 +430,7 @@ class GcodePreviewerApp {
 
     togglePlayPause() {
         const button = document.getElementById('playPause');
-        
+
         if (this.animationEngine.isPlaying) {
             this.animationEngine.pause();
             button.innerHTML = `
@@ -461,6 +440,7 @@ class GcodePreviewerApp {
                 Play Animation
             `;
         } else {
+            this.hidePauseMessage();
             this.animationEngine.play();
             button.innerHTML = `
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -473,6 +453,7 @@ class GcodePreviewerApp {
 
     resetAnimation() {
         this.animationEngine.reset();
+        this.hidePauseMessage();
         const button = document.getElementById('playPause');
         button.innerHTML = `
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -480,6 +461,39 @@ class GcodePreviewerApp {
             </svg>
             Play Animation
         `;
+    }
+
+    showPauseMessage(message) {
+        // Update play button to show "Continue"
+        const button = document.getElementById('playPause');
+        button.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"></path>
+            </svg>
+            Continue
+        `;
+
+        // Show pause message overlay
+        let overlay = document.getElementById('pauseOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'pauseOverlay';
+            overlay.className = 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 text-white px-6 py-4 rounded-lg text-center z-50';
+            document.getElementById('canvas3d').parentElement.appendChild(overlay);
+        }
+        overlay.innerHTML = `
+            <div class="text-lg font-bold mb-2">PAUSED</div>
+            <div class="text-sm mb-3">${message}</div>
+            <div class="text-xs text-gray-300">Click "Continue" to proceed</div>
+        `;
+        overlay.style.display = 'block';
+    }
+
+    hidePauseMessage() {
+        const overlay = document.getElementById('pauseOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
     }
 
     updateProgress(progress) {
@@ -531,7 +545,6 @@ class GcodePreviewerApp {
     }
     
     applyManualSettings() {
-        console.log('Applying manual settings...');
 
         if (!this.currentData) {
             alert('Please load a G-code file first');
@@ -564,7 +577,6 @@ class GcodePreviewerApp {
     processWithSettings(metadata) {
         // Process commands with specified settings
         if (metadata.inverseKinematics) {
-            console.log('Applying IK with manual settings...');
             this.ikReverser = new InverseKinematicsReverser(
                 metadata.laParameter,
                 metadata.lbParameter
@@ -577,7 +589,6 @@ class GcodePreviewerApp {
             // Show IK analysis
             this.displayIKAnalysis(this.ikReverser.analyzeIKCorrections(this.currentData.commands));
         } else {
-            console.log('Loading commands directly...');
             this.animationEngine.loadCommands(this.currentData.commands);
         }
         

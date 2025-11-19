@@ -9,29 +9,26 @@ class InverseKinematicsReverser {
 
     // Reverse the Rep5x inverse kinematics to get original coordinates
     reverseIK(x, y, z, a, b) {
-        // Convert angles from degrees to radians
         const aRad = a * Math.PI / 180;
         const bRad = b * Math.PI / 180;
-        
-        // Reverse the Rep5x inverse kinematics formulas:
-        // Original: X = X' + sin(A') × LA + cos(A') × sin(B') × LB
-        // Reversed: X' = X - sin(A') × LA - cos(A') × sin(B') × LB
-        
+
+        // Forward: X = X' + sin(A)·LA + cos(A)·sin(B)·LB
+        // Reversed: X' = X - sin(A)·LA - cos(A)·sin(B)·LB
         const originalX = x - Math.sin(aRad) * this.la - Math.cos(aRad) * Math.sin(bRad) * this.lb;
-        
-        // Original: Y = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB  
-        // Reversed: Y' = Y + LA - cos(A') × LA + sin(A') × sin(B') × LB
-        const originalY = y + this.la - Math.cos(aRad) * this.la + Math.sin(aRad) * Math.sin(bRad) * this.lb;
-        
-        // Original: Z = Z' + cos(B') × LB - LB
-        // Reversed: Z' = Z - cos(B') × LB + LB = Z + LB × (1 - cos(B'))
-        const originalZ = z + this.lb * (1 - Math.cos(bRad));
-        
+
+        // Forward: Y = Y' + (cos(A) - 1)·LA - sin(A)·sin(B)·LB
+        // Reversed: Y' = Y - (cos(A) - 1)·LA + sin(A)·sin(B)·LB
+        const originalY = y - (Math.cos(aRad) - 1) * this.la + Math.sin(aRad) * Math.sin(bRad) * this.lb;
+
+        // Forward: Z = Z' + (cos(B) - 1)·LB
+        // Reversed: Z' = Z - (cos(B) - 1)·LB
+        const originalZ = z - (Math.cos(bRad) - 1) * this.lb;
+
         return {
             x: originalX,
             y: originalY,
             z: originalZ,
-            a: a, // A and B angles remain the same
+            a: a,
             b: b
         };
     }
@@ -82,14 +79,18 @@ class InverseKinematicsReverser {
 
     // Calculate the difference between original and IK-corrected positions
     getIKCorrection(x, y, z, a, b) {
-        // Apply IK to original coordinates
         const aRad = a * Math.PI / 180;
         const bRad = b * Math.PI / 180;
-        
+
+        // X = X' + sin(A)·LA + cos(A)·sin(B)·LB
         const correctedX = x + Math.sin(aRad) * this.la + Math.cos(aRad) * Math.sin(bRad) * this.lb;
-        const correctedY = y - this.la + Math.cos(aRad) * this.la - Math.sin(aRad) * Math.sin(bRad) * this.lb;
-        const correctedZ = z + this.lb * (Math.cos(bRad) - 1);
-        
+
+        // Y = Y' + (cos(A) - 1)·LA - sin(A)·sin(B)·LB
+        const correctedY = y + (Math.cos(aRad) - 1) * this.la - Math.sin(aRad) * Math.sin(bRad) * this.lb;
+
+        // Z = Z' + (cos(B) - 1)·LB
+        const correctedZ = z + (Math.cos(bRad) - 1) * this.lb;
+
         return {
             deltaX: correctedX - x,
             deltaY: correctedY - y,

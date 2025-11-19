@@ -14,6 +14,8 @@ class AnimationEngine {
         this.currentStep = 0;
         this.commands = [];
         this.speed = 1.0;
+        this.lastFeedrate = 1800; // Default feedrate in mm/min
+        this.onPauseCallback = null; // Called when M0 pause is hit
         
         // 3D objects
         this.printhead = null;
@@ -136,6 +138,15 @@ class AnimationEngine {
         // With rotation.x = Math.PI, the tip points down to Y=0, center should be at Y=4
         arrow.position.set(0, 4, 0);  // Cone center at Y=4, tip at Y=0, top at Y=8
         group.add(arrow);
+
+        // A-axis rotation indicator - green arrow pointing in -X direction (toward left when A=0)
+        // This shows which way the printhead is facing for A-axis rotation
+        const markerGeometry = new THREE.ConeGeometry(2, 8, 4);
+        const markerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+        const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+        marker.rotation.z = Math.PI / 2; // Point in -X direction
+        marker.position.set(-10, 15, 0);  // Stick out to the left of the hotend
+        group.add(marker);
         
         // Store references
         group.nozzle = nozzle;
@@ -299,13 +310,11 @@ class AnimationEngine {
     }
 
     loadCommands(commands) {
-        console.log('Loading commands into animation engine, total:', commands.length);
         
         // Filter commands more efficiently for large arrays
         this.commands = [];
         const chunkSize = 5000;
         
-        console.log('Filtering movement commands...');
         for (let i = 0; i < commands.length; i += chunkSize) {
             const chunk = commands.slice(i, i + chunkSize);
             // Use simple for loop instead of filter to avoid stack issues
@@ -317,11 +326,9 @@ class AnimationEngine {
             
             // Progress feedback for large files
             if (i % 10000 === 0) {
-                console.log(`Filtered ${i}/${commands.length} commands (${Math.round(i/commands.length*100)}%)`);
             }
         }
         
-        console.log('Filtered to movement commands:', this.commands.length);
         
         this.currentStep = this.commands.length;
         this.printedPath = [];
@@ -376,7 +383,7 @@ class AnimationEngine {
     }
 
     setSpeed(speed) {
-        this.speed = Math.max(0.1, Math.min(5.0, speed));
+        this.speed = Math.max(1, Math.min(20, speed));
     }
 
     setProgress(percentage) {
@@ -394,24 +401,71 @@ class AnimationEngine {
             return;
         }
 
-        // Process multiple steps based on speed
-        const stepsPerFrame = Math.max(1, Math.floor(this.speed * 2));
-        
-        for (let i = 0; i < stepsPerFrame && this.currentStep < this.commands.length; i++) {
+        const command = this.commands[this.currentStep];
+
+        // Skip reset commands immediately (no delay)
+        if (command && command.type === 'reset') {
             this.processStep(this.currentStep);
             this.currentStep++;
+            this.updateProgressCallback((this.currentStep / this.commands.length) * 100);
+            // Continue immediately with next command
+            setTimeout(() => this.playAnimation(), 0);
+            return;
         }
+
+        // Calculate movement distance for timing (XYZ only, ignore rotation for timing)
+        let distance = 0;
+        if (command) {
+            const dx = (command.x !== null ? command.x : this.currentPosition.x) - this.currentPosition.x;
+            const dy = (command.y !== null ? command.y : this.currentPosition.y) - this.currentPosition.y;
+            const dz = (command.z !== null ? command.z : this.currentPosition.z) - this.currentPosition.z;
+
+            distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        }
+
+        // Get feedrate (default 1800 mm/min = 30 mm/s)
+        const feedrate = (command && command.f) ? command.f : this.lastFeedrate || 1800;
+        if (command && command.f) this.lastFeedrate = command.f;
+
+        // Calculate delay based on distance and feedrate
+        // feedrate is in mm/min, convert to mm/ms: feedrate / 60000
+        // Time in ms = distance / (feedrate / 60000) = distance * 60000 / feedrate
+        // Apply speed multiplier (higher = faster playback)
+        let delayMs = (distance * 60000) / feedrate / this.speed;
+
+        // Minimum delay based on distance - ensures visible movement
+        // At least 50ms per mm of movement for visibility
+        const minDelay = Math.max(5, distance * 50 / this.speed);
+
+        // Clamp delay: use calculated min, max 5000ms (don't wait forever)
+        delayMs = Math.max(minDelay, Math.min(5000, delayMs));
+
+        // Process this step
+        this.processStep(this.currentStep);
+        this.currentStep++;
 
         this.updateCurrentPosition();
         this.updateProgressCallback((this.currentStep / this.commands.length) * 100);
 
-        // Continue animation
-        setTimeout(() => this.playAnimation(), 50); // ~20 FPS
+        // Continue animation with calculated delay
+        setTimeout(() => this.playAnimation(), delayMs);
     }
 
     processStep(stepIndex) {
         const command = this.commands[stepIndex];
         if (!command) return;
+
+        // Handle G92 reset commands - they don't move the printhead
+        // but they DO reset the coordinate system (used by A-axis optimizer)
+        if (command.type === 'reset') {
+            // Update internal position to match the reset values
+            if (command.x !== null) this.currentPosition.x = command.x;
+            if (command.y !== null) this.currentPosition.y = command.y;
+            if (command.z !== null) this.currentPosition.z = command.z;
+            if (command.a !== null) this.currentPosition.a = command.a;
+            if (command.b !== null) this.currentPosition.b = command.b;
+            return;
+        }
 
         // Update position
         if (command.x !== null) this.currentPosition.x = command.x;
@@ -440,6 +494,9 @@ class AnimationEngine {
             const command = this.commands[i];
             if (!command) continue;
 
+            // Skip G92 reset commands
+            if (command.type === 'reset') continue;
+
             if (command.x !== null) position.x = command.x;
             if (command.y !== null) position.y = command.y;
             if (command.z !== null) position.z = command.z;
@@ -463,7 +520,8 @@ class AnimationEngine {
     updateCurrentPosition() {
         if (this.currentStep > 0 && this.currentStep <= this.commands.length) {
             const command = this.commands[this.currentStep - 1];
-            if (command) {
+            // Skip G92 reset commands when updating position
+            if (command && command.type !== 'reset') {
                 if (command.x !== null) this.currentPosition.x = command.x;
                 if (command.y !== null) this.currentPosition.y = command.y;
                 if (command.z !== null) this.currentPosition.z = command.z;
@@ -490,7 +548,8 @@ class AnimationEngine {
         this.printhead.rotation.set(0, 0, 0);
         
         // Apply A rotation (yaw around vertical axis = Three.js Y)
-        const aRadians = this.currentPosition.a * Math.PI / 180;
+        // Negate A: positive A is clockwise on printer, but Three.js rotateY is CCW
+        const aRadians = -this.currentPosition.a * Math.PI / 180;
         this.printhead.rotateY(aRadians);
 
         // Apply B rotation
