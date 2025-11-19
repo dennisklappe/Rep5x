@@ -170,8 +170,9 @@ function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, laye
         const centerX = R - R * Math.cos(alpha);
         const centerZ = L1 + R * Math.sin(alpha);
         
-        // B angle (nozzle tilt) follows the bend - negative for right turn
-        const B = -alpha * 180 / Math.PI;
+        // B angle (nozzle tilt) follows the bend
+        // Positive B rotates nozzle in direction of bend
+        const B = alpha * 180 / Math.PI;
         
         // Local coordinate system at this point on the curve:
         // Tangent direction (along the curve)
@@ -216,7 +217,8 @@ function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, laye
     gcode.push("; === SECTION 3: Angled Section ===");
     gcode.push(`; Segments: ${segments3}, Rotations: ${rotations3.toFixed(2)}`);
     
-    const BFinal = -theta * 180 / Math.PI;
+    // Final B angle matches the end of the elbow curve
+    const BFinal = theta * 180 / Math.PI;
     
     for (let i = 0; i <= segments3; i++) {
         const progress = segments3 > 0 ? i / segments3 : 0;

@@ -496,9 +496,9 @@ class AnimationEngine {
         // Apply A rotation (yaw around vertical axis = Three.js Y)
         const aRadians = this.currentPosition.a * Math.PI / 180;
         this.printhead.rotateY(aRadians);
-        
-        // Apply B rotation (should point left/right, so rotate around Three.js Z)
-        const bRadians = this.currentPosition.b * Math.PI / 180;
+
+        // Apply B rotation (negate for correct direction)
+        const bRadians = -this.currentPosition.b * Math.PI / 180;
         this.printhead.rotateZ(bRadians);
     }
 
