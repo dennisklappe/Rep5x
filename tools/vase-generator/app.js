@@ -5,7 +5,7 @@ let animationId;
 
 // Shape information
 const shapeInfo = {
-    "elbow-pipe": "Elbow pipe demonstrates true 5-axis capability by printing curved geometries - impossible with conventional 3-axis printers without support material."
+    "elbow-pipe": "Elbow pipe demonstrates the pitch axis printing capability."
 };
 
 function initThreeJS() {

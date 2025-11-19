@@ -496,9 +496,9 @@ class AnimationEngine {
         // Apply A rotation (yaw around vertical axis = Three.js Y)
         const aRadians = this.currentPosition.a * Math.PI / 180;
         this.printhead.rotateY(aRadians);
-        
-        // Apply B rotation (should point left/right, so rotate around Three.js Z)
-        const bRadians = this.currentPosition.b * Math.PI / 180;
+
+        // Apply B rotation
+        const bRadians = -this.currentPosition.b * Math.PI / 180;
         this.printhead.rotateZ(bRadians);
     }
 
@@ -536,21 +536,9 @@ class AnimationEngine {
     }
 
     // Visibility controls
-    showPrintPath(show) {
-        if (this.printPath) {
-            this.printPath.visible = show;
-        }
-    }
-
     showPrinthead(show) {
         if (this.printhead) {
             this.printhead.visible = show;
-        }
-    }
-
-    showAxes(show) {
-        if (this.axes) {
-            this.axes.visible = show;
         }
     }
 
