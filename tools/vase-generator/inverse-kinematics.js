@@ -1,7 +1,7 @@
 // Rep5x Inverse Kinematics Processor
 // Processes raw G-code and applies kinematic corrections based on A/B axis movements
 
-function processInverseKinematics(rawGcode, enableKinematics = true, la = 0, lb = 46) {
+function processInverseKinematics(rawGcode, enableKinematics = true, la = 0, lb = 47.9) {
     if (!enableKinematics) {
         return rawGcode; // Return unchanged if disabled
     }

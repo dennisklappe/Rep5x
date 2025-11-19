@@ -522,7 +522,7 @@ function generateGcode() {
     }, 100);
 }
 
-function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt, nozzleDiameter, startGcode = '', endGcode = '', enableKinematics = false, laParam = 0, lbParam = 46, enableAAxisOptimization = false) {
+function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt, nozzleDiameter, startGcode = '', endGcode = '', enableKinematics = false, laParam = 0, lbParam = 47.9, enableAAxisOptimization = false) {
     const gcode = [];
     const radius = diameter / 2;
     const totalHeight = verticalHeight + horizontalLength; // Approximate total height
