@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rep5x Tools</title>
+    <meta name="description" content="Web-based tools for Rep5x 5-axis 3D printer">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
+    <style>
+        /* CSS Custom Properties */
+        :root {
+            --color-primary: #32D74B;
+            --color-secondary: #1A1A1A;
+            --color-body: #FAFAFA;
+            --color-border: #E5E5E5;
+            --color-light: #F7FFF8;
+            --color-dark: #0D1117;
+            --color-text: #1F2937;
+            --color-text-dark: #111827;
+            --color-text-light: #fff;
+        }
+
+        body {
+            background-color: var(--color-body);
+            color: var(--color-text);
+        }
+
+        .bg-primary { background-color: var(--color-primary) !important; }
+        .text-primary { color: var(--color-primary) !important; }
+        .border-primary { border-color: var(--color-primary) !important; }
+
+        .tool-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">Rep5x Tools</h1>
+                </div>
+                <a href="https://rep5x.com" class="text-primary hover:opacity-80 text-sm">← Back to Rep5x.com</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Web Tools for Rep5x</h2>
+            <p class="text-lg text-gray-600">Browser-based tools to help you work with your Rep5x 5-axis printer</p>
+        </div>
+
+        <!-- Tools Grid -->
+        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <!-- Vase Generator -->
+            <a href="/vase-generator/" class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
+                <div class="flex items-center mb-4">
+                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    </svg>
+                    <h3 class="text-2xl font-bold text-gray-900">Vase Generator</h3>
+                </div>
+                <p class="text-gray-600 mb-4">
+                    Generate sample 5-axis vase mode G-code to test your Rep5x printer. Create elbow pipes and other curved geometries impossible with conventional 3-axis printing.
+                </p>
+                <div class="flex items-center text-primary font-medium">
+                    Open Tool
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+            </a>
+
+            <!-- G-code Viewer -->
+            <a href="/gcode-viewer/" class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
+                <div class="flex items-center mb-4">
+                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    <h3 class="text-2xl font-bold text-gray-900">G-code Viewer</h3>
+                </div>
+                <p class="text-gray-600 mb-4">
+                    Visualize and animate 5-axis G-code in 3D. Preview your prints with proper A/B axis rotation, inverse kinematics support, and real-time animation.
+                </p>
+                <div class="flex items-center text-primary font-medium">
+                    Open Tool
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center text-sm text-gray-500">
+                <p>Part of the <a href="https://rep5x.com" class="text-primary hover:opacity-80">Rep5x</a> open-source 5-axis printer project</p>
+                <p class="mt-1">
+                    <a href="https://github.com/dennisklappe/Rep5x" class="text-primary hover:opacity-80">GitHub</a> ·
+                    <a href="https://discord.gg/pfTrx9uy8H" class="text-primary hover:opacity-80">Discord</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Load theme from website config -->
+    <script src="vase-generator/theme.js"></script>
+</body>
+</html>
