@@ -497,7 +497,7 @@ class AnimationEngine {
         const aRadians = this.currentPosition.a * Math.PI / 180;
         this.printhead.rotateY(aRadians);
 
-        // Apply B rotation (negate for correct direction)
+        // Apply B rotation
         const bRadians = -this.currentPosition.b * Math.PI / 180;
         this.printhead.rotateZ(bRadians);
     }
@@ -536,21 +536,9 @@ class AnimationEngine {
     }
 
     // Visibility controls
-    showPrintPath(show) {
-        if (this.printPath) {
-            this.printPath.visible = show;
-        }
-    }
-
     showPrinthead(show) {
         if (this.printhead) {
             this.printhead.visible = show;
-        }
-    }
-
-    showAxes(show) {
-        if (this.axes) {
-            this.axes.visible = show;
         }
     }
 

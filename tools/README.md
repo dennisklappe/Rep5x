@@ -9,7 +9,6 @@ Generate sample vase mode G-code to test and demonstrate Rep5x 5-axis capabiliti
 
 **Features:**
 - Interactive 3D preview with real-time updates
-- Multiple demonstration shapes (tilted cylinder, wave vase, mushroom, hourglass)
 - Configurable print parameters (diameter, height, layer height, speeds)
 - Ready-to-print G-code output with proper 5-axis movements
 - Educational tool showing 5-axis printing advantages
@@ -18,7 +17,7 @@ Generate sample vase mode G-code to test and demonstrate Rep5x 5-axis capabiliti
 Visualize and animate 5-axis G-code files with real-time nozzle orientation display.
 
 **Features:**
-- Load and parse large G-code files (10MB+)
+- Load and parse G-code files
 - 3D visualization of print paths with nozzle orientation
 - Animation controls with progress tracking
 - Inverse kinematics parameter detection and override
@@ -34,4 +33,4 @@ These tools are designed to be deployed to `tools.rep5x.com` as standalone web a
 
 ## Development
 
-Each tool is self-contained with HTML, CSS, and JavaScript files for easy deployment and maintenance. Tools use modern web standards and are optimised for both desktop and mobile devices.
+Each tool is self-contained with HTML, CSS, and JavaScript files for easy deployment and maintenance.

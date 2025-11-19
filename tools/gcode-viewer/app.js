@@ -68,21 +68,9 @@ class GcodePreviewerApp {
         });
 
         // View controls
-        document.getElementById('showPath').addEventListener('change', (e) => {
-            if (this.animationEngine) {
-                this.animationEngine.showPrintPath(e.target.checked);
-            }
-        });
-
         document.getElementById('showPrinthead').addEventListener('change', (e) => {
             if (this.animationEngine) {
                 this.animationEngine.showPrinthead(e.target.checked);
-            }
-        });
-
-        document.getElementById('showAxes').addEventListener('change', (e) => {
-            if (this.animationEngine) {
-                this.animationEngine.showAxes(e.target.checked);
             }
         });
 
