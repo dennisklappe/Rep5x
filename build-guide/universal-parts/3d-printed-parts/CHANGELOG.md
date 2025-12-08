@@ -6,6 +6,11 @@ Version history and changes for Rep5x 3D printed components. This log helps buil
 
 ## Version 1.1.0 (November 2025)
 
+### b-arm v1.1.0
+- **Added**: Cable routing slit in the slip ring cable hole
+- **Reason**: Allows easier installation/replacement of B-arm without disconnecting hotend and stepper cables
+- **Compatibility**: Direct replacement for v1.0.0
+
 ### A-driven-pulley v1.1.0
 - **Updated**: Shaft diameter slightly reduced for better bearing fit
 - **Reason**: Improved fit tolerance with 61804 bearings
