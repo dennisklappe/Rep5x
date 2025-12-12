@@ -121,6 +121,27 @@
                                 <input type="checkbox" id="showPrinthead" checked class="rounded text-primary">
                                 <span class="ml-2 text-sm">Show printhead</span>
                             </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showAxisMarker" checked class="rounded text-primary">
+                                <span class="ml-2 text-sm">Show A-axis marker</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showRealisticHead" class="rounded text-primary">
+                                <span class="ml-2 text-sm">Show realistic printhead</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showCollisions" class="rounded text-primary">
+                                <span class="ml-2 text-sm">Detect collisions</span>
+                            </label>
+                            <div class="mt-2">
+                                <label class="block text-sm text-gray-600 mb-1">Printhead model</label>
+                                <select id="printheadSelect" class="w-full text-sm border border-gray-300 rounded px-2 py-1">
+                                    <!-- Options populated by JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+                        <div id="collisionInfo" class="hidden mt-2 p-2 bg-red-50 rounded text-sm text-red-700">
+                            <span id="collisionCount">0</span> collisions detected
                         </div>
                     </div>
                 </div>
@@ -240,7 +261,12 @@
     <!-- Tool-specific scripts -->
     <script src="js/gcode-parser.js"></script>
     <script src="js/inverse-kinematics-reverser.js"></script>
+    <script src="js/printheads/printhead-base.js"></script>
+    <script src="js/printheads/ender3-v3-se.js"></script>
+    <script src="js/collision-detector.js"></script>
     <script src="js/animation-engine.js"></script>
+    <script src="js/file-handler.js"></script>
+    <script src="js/ui-controller.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
