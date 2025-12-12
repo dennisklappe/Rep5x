@@ -41,25 +41,25 @@ function getMushroomProfile(progress, stemRadius, stemHeight, capRadius, capHeig
             // Underside - expand outward
             const p = t / 0.30;
             radius = stemTopRadius + (capRadius - stemTopRadius) * p;
-            z = stemHeight + capHeight * 0.1 * p;
+            z = stemHeight + capHeight * 0.10 * p;
             tiltAngle = Math.PI / 2 * (0.55 + 0.25 * p);
-        } else if (t < 0.50) {
+        } else if (t < 0.45) {
             // Transition - curve upward
-            const p = (t - 0.30) / 0.20;
-            radius = capRadius - (capRadius * 0.1) * p;
-            z = stemHeight + capHeight * 0.1 + capHeight * 0.25 * p;
+            const p = (t - 0.30) / 0.15;
+            radius = capRadius - (capRadius * 0.08) * p;
+            z = stemHeight + capHeight * 0.10 + capHeight * 0.20 * p;
             tiltAngle = Math.PI / 2 * 0.8 + (perpAngle - Math.PI / 2 * 0.8) * smoothstep(p);
-        } else if (t < 0.60) {
+        } else if (t < 0.65) {
             // Dome - curve inward
-            const p = (t - 0.50) / 0.10;
-            radius = capRadius * 0.9 - (capRadius * 0.3) * p;
-            z = stemHeight + capHeight * 0.35 + capHeight * 0.25 * Math.pow(p, 0.7);
+            const p = (t - 0.45) / 0.20;
+            radius = capRadius * 0.92 - (capRadius * 0.32) * p;
+            z = stemHeight + capHeight * 0.30 + capHeight * 0.30 * p;
             tiltAngle = perpAngle;
         } else {
-            // Top - converge to center
-            const p = (t - 0.60) / 0.40;
+            // Top - converge to centre
+            const p = (t - 0.65) / 0.35;
             radius = capRadius * 0.6 * (1 - p * 0.85);
-            z = stemHeight + capHeight * 0.6 + capHeight * 0.4 * Math.sin(p * Math.PI / 2);
+            z = stemHeight + capHeight * 0.60 + capHeight * 0.40 * Math.sin(p * Math.PI / 2);
             tiltAngle = perpAngle * (1 - smoothstep(p));
         }
     }
@@ -175,31 +175,35 @@ function generateMushroomGcode(stemDiameter, stemHeight, capDiameter, capHeight,
     const capRotations = capLength / layerHeight;
     const capSegments = Math.round(capRotations * resolution);
 
-    for (let i = 0; i <= capSegments; i++) {
+    for (let i = 1; i <= capSegments; i++) {
         const t = i / capSegments;
         const angle = totalAngle + (i / resolution) * 2 * Math.PI;
         const perpAngle = Math.atan2(capRadius * 0.3, capHeight * 0.35);
 
         let radius, z, tiltAngle;
         if (t < 0.30) {
+            // Underside - expand outward
             const p = t / 0.30;
             radius = stemTopRadius + (capRadius - stemTopRadius) * p;
-            z = stemHeight + capHeight * 0.1 * p;
+            z = stemHeight + capHeight * 0.10 * p;
             tiltAngle = Math.PI / 2 * (0.55 + 0.25 * p);
-        } else if (t < 0.50) {
-            const p = (t - 0.30) / 0.20;
-            radius = capRadius - (capRadius * 0.1) * p;
-            z = stemHeight + capHeight * 0.1 + capHeight * 0.25 * p;
+        } else if (t < 0.45) {
+            // Transition - curve upward
+            const p = (t - 0.30) / 0.15;
+            radius = capRadius - (capRadius * 0.08) * p;
+            z = stemHeight + capHeight * 0.10 + capHeight * 0.20 * p;
             tiltAngle = Math.PI / 2 * 0.8 + (perpAngle - Math.PI / 2 * 0.8) * smoothstep(p);
-        } else if (t < 0.60) {
-            const p = (t - 0.50) / 0.10;
-            radius = capRadius * 0.9 - (capRadius * 0.3) * p;
-            z = stemHeight + capHeight * 0.35 + capHeight * 0.25 * Math.pow(p, 0.7);
+        } else if (t < 0.65) {
+            // Dome - curve inward
+            const p = (t - 0.45) / 0.20;
+            radius = capRadius * 0.92 - (capRadius * 0.32) * p;
+            z = stemHeight + capHeight * 0.30 + capHeight * 0.30 * p;
             tiltAngle = perpAngle;
         } else {
-            const p = (t - 0.60) / 0.40;
+            // Top - converge to centre
+            const p = (t - 0.65) / 0.35;
             radius = capRadius * 0.6 * (1 - p * 0.85);
-            z = stemHeight + capHeight * 0.6 + capHeight * 0.4 * Math.sin(p * Math.PI / 2);
+            z = stemHeight + capHeight * 0.60 + capHeight * 0.40 * Math.sin(p * Math.PI / 2);
             tiltAngle = perpAngle * (1 - smoothstep(p));
         }
 
@@ -209,12 +213,13 @@ function generateMushroomGcode(stemDiameter, stemHeight, capDiameter, capHeight,
         const baseBdeg = tiltAngle * 180 / Math.PI;
 
         let A, B;
-        if (t < 0.45) {
+        if (t < 0.33) {
             A = baseA + 180;
             B = -baseBdeg;
-        } else if (t < 0.55) {
+        } else if (t < 0.43) {
+            // B-axis flip
             A = baseA + 180;
-            B = baseBdeg * (2 * smoothstep((t - 0.45) / 0.10) - 1);
+            B = baseBdeg * (2 * smoothstep((t - 0.33) / 0.10) - 1);
         } else if (t < 0.85) {
             A = baseA + 180;
             B = baseBdeg;
@@ -223,8 +228,8 @@ function generateMushroomGcode(stemDiameter, stemHeight, capDiameter, capHeight,
             B = baseBdeg;
         }
 
-        const inTransition = t >= 0.30 && t < 0.50;
-        addMove(x, y, z, A, B, false, inTransition ? 0.4 : 0.6);
+        const inCriticalZone = t >= 0.30 && t < 0.65;
+        addMove(x, y, z, A, B, false, inCriticalZone ? 0.35 : 0.6);
     }
     totalAngle += capRotations * 2 * Math.PI;
 
