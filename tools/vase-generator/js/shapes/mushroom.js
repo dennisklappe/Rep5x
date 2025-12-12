@@ -1,95 +1,73 @@
-// Mushroom shape implementation for Rep5x vase generator
-// Demonstrates both A-axis (yaw) and B-axis (pitch) movements
-// Organic mushroom: tapered stem, cap goes outward then curves up and inward to rounded top
+// Mushroom shape for Rep5x vase generator
 
-// Helper function to get mushroom profile at a given height progress
+// Shared easing function
+function smoothstep(t) {
+    return t * t * (3 - 2 * t);
+}
+
+// Calculate distance between two points
+function distance3D(p1, p2) {
+    return Math.sqrt(
+        Math.pow(p1.x - p2.x, 2) +
+        Math.pow(p1.y - p2.y, 2) +
+        Math.pow(p1.z - p2.z, 2)
+    );
+}
+
+// Get mushroom profile at a given progress (0-1)
 function getMushroomProfile(progress, stemRadius, stemHeight, capRadius, capHeight) {
-    const stemBottomRadius = stemRadius * 1.4;  // Wider base
-    const stemTopRadius = stemRadius * 0.85;    // Narrower at top of stem
-
-    // Total path: stem then cap
-    const stemLength = stemHeight;
-    const capLength = capRadius * 2.5;  // Cap needs more path length for the curve
-    const totalLength = stemLength + capLength;
-    const stemFraction = stemLength / totalLength;
+    const stemBottomRadius = stemRadius * 1.4;
+    const stemTopRadius = stemRadius * 0.85;
+    const stemFraction = stemHeight / (stemHeight + capRadius * 2.5);
 
     let radius, z, tiltAngle;
 
     if (progress <= stemFraction) {
-        // STEM: tapered cylinder with slight organic bulge
-        const stemProgress = progress / stemFraction;
-        z = stemProgress * stemHeight;
+        // Stem section
+        const t = progress / stemFraction;
+        z = t * stemHeight;
 
-        // Slight bulge in middle for organic look
-        const bulge = Math.sin(stemProgress * Math.PI) * 0.08;
-        radius = stemBottomRadius + (stemTopRadius - stemBottomRadius) * stemProgress;
+        const bulge = Math.sin(t * Math.PI) * 0.08;
+        radius = stemBottomRadius + (stemTopRadius - stemBottomRadius) * t;
         radius *= (1 + bulge);
 
-        // Gradual tilt at end of stem to transition smoothly into cap
-        if (stemProgress > 0.9) {
-            const transitionT = (stemProgress - 0.9) / 0.1;  // 0 to 1 over last 10%
-            tiltAngle = Math.PI / 2 * 0.55 * transitionT;  // 0 to ~50° to match cap start
-        } else {
-            tiltAngle = 0;  // Vertical nozzle for most of stem
-        }
+        tiltAngle = t > 0.9 ? Math.PI / 2 * 0.55 * ((t - 0.9) / 0.1) : 0;
     } else {
-        // CAP: goes outward horizontally, then curves up and inward to center
-        const capProgress = (progress - stemFraction) / (1 - stemFraction);
+        // Cap section
+        const t = (progress - stemFraction) / (1 - stemFraction);
+        const perpAngle = Math.atan2(capRadius * 0.3, capHeight * 0.35);
 
-        if (capProgress < 0.35) {
-            // Phase 1: Go outward almost horizontally (like underside of mushroom cap)
-            const t = capProgress / 0.35;
-
-            // Radius expands from stem to full cap width
-            radius = stemTopRadius + (capRadius - stemTopRadius) * t;
-
-            // Height rises very slightly - almost flat/horizontal
-            z = stemHeight + capHeight * 0.1 * t;
-
-            // Nozzle tilts inward (positive B) to be parallel with the layers
-            // Cap underside is nearly horizontal, so nozzle needs significant tilt
-            tiltAngle = Math.PI / 2 * (0.55 + 0.25 * t);  // Start ~50°, ease to ~72°
-
-        } else if (capProgress < 0.7) {
-            // Phase 2: Curve upward while coming back inward
-            const t = (capProgress - 0.35) / 0.35;
-
-            // Radius starts decreasing - coming back inward
-            const prevRadius = capRadius;
-            radius = capRadius - (capRadius * 0.4) * t;
-
-            // Height increases - going up
-            const prevZ = stemHeight + capHeight * 0.1;
-            z = stemHeight + capHeight * 0.1 + capHeight * 0.6 * Math.pow(t, 0.7);
-
-            // Calculate surface angle - nozzle perpendicular to surface, pointing outward
-            // Surface goes inward and up, so nozzle tilts inward (negative)
-            const dRadius = -capRadius * 0.4;  // Change in radius (negative = inward)
-            const dZ = capHeight * 0.6;  // Change in height
-            // Surface angle from vertical: negative because curving inward
-            tiltAngle = -Math.atan2(-dRadius, dZ) * 0.8;  // Tilt inward, slightly reduced
-
+        if (t < 0.30) {
+            // Underside - expand outward
+            const p = t / 0.30;
+            radius = stemTopRadius + (capRadius - stemTopRadius) * p;
+            z = stemHeight + capHeight * 0.1 * p;
+            tiltAngle = Math.PI / 2 * (0.55 + 0.25 * p);
+        } else if (t < 0.50) {
+            // Transition - curve upward
+            const p = (t - 0.30) / 0.20;
+            radius = capRadius - (capRadius * 0.1) * p;
+            z = stemHeight + capHeight * 0.1 + capHeight * 0.25 * p;
+            tiltAngle = Math.PI / 2 * 0.8 + (perpAngle - Math.PI / 2 * 0.8) * smoothstep(p);
+        } else if (t < 0.60) {
+            // Dome - curve inward
+            const p = (t - 0.50) / 0.10;
+            radius = capRadius * 0.9 - (capRadius * 0.3) * p;
+            z = stemHeight + capHeight * 0.35 + capHeight * 0.25 * Math.pow(p, 0.7);
+            tiltAngle = perpAngle;
         } else {
-            // Phase 3: Final curve inward to rounded top center
-            const t = (capProgress - 0.7) / 0.3;
-
-            // Radius converges toward center
-            const startRadius = capRadius * 0.6;
-            radius = startRadius * (1 - t * 0.85);
-
-            // Height reaches peak with rounded top
-            z = stemHeight + capHeight * 0.7 + capHeight * 0.3 * Math.sin(t * Math.PI / 2);
-
-            // Nozzle perpendicular to dome surface, pointing outward (inward tilt)
-            // As we approach the top center, surface becomes more horizontal
-            const surfaceAngle = Math.atan2(startRadius * 0.85, capHeight * 0.3) * (1 - t);
-            tiltAngle = -surfaceAngle * 0.7;  // Negative = tilting inward
+            // Top - converge to center
+            const p = (t - 0.60) / 0.40;
+            radius = capRadius * 0.6 * (1 - p * 0.85);
+            z = stemHeight + capHeight * 0.6 + capHeight * 0.4 * Math.sin(p * Math.PI / 2);
+            tiltAngle = perpAngle * (1 - smoothstep(p));
         }
     }
 
     return { radius, z, tiltAngle };
 }
 
+// Create Three.js geometry for preview
 function createMushroom(stemRadius, stemHeight, capRadius, capHeight) {
     const geometry = new THREE.BufferGeometry();
     const vertices = [];
@@ -97,339 +75,198 @@ function createMushroom(stemRadius, stemHeight, capRadius, capHeight) {
     const segments = 32;
     const layers = 80;
 
-    // Generate mushroom body
     for (let i = 0; i <= layers; i++) {
-        const progress = i / layers;
-        const profile = getMushroomProfile(progress, stemRadius, stemHeight, capRadius, capHeight);
-
+        const profile = getMushroomProfile(i / layers, stemRadius, stemHeight, capRadius, capHeight);
         for (let j = 0; j <= segments; j++) {
             const theta = (j / segments) * Math.PI * 2;
-            const x = profile.radius * Math.cos(theta);
-            const y = profile.radius * Math.sin(theta);
-            vertices.push(x, profile.z, y);
+            vertices.push(profile.radius * Math.cos(theta), profile.z, profile.radius * Math.sin(theta));
         }
     }
 
-    // Create faces for mushroom body
     for (let i = 0; i < layers; i++) {
         for (let j = 0; j < segments; j++) {
             const a = i * (segments + 1) + j;
             const b = a + segments + 1;
-            indices.push(a, b, a + 1);
-            indices.push(b, b + 1, a + 1);
+            indices.push(a, b, a + 1, b, b + 1, a + 1);
         }
     }
 
-    // Add closed top - converge to center point
+    // Cap the top
     const lastLayerStart = layers * (segments + 1);
     const lastProfile = getMushroomProfile(1, stemRadius, stemHeight, capRadius, capHeight);
-
-    // Add center point at top
     const centerIndex = vertices.length / 3;
     vertices.push(0, lastProfile.z, 0);
 
-    // Connect last layer to center
     for (let j = 0; j < segments; j++) {
-        const a = lastLayerStart + j;
-        indices.push(a, a + 1, centerIndex);
+        indices.push(lastLayerStart + j, lastLayerStart + j + 1, centerIndex);
     }
 
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
-
     return geometry;
 }
 
-// Generate G-code for mushroom shape
+// Generate G-code for printing
 function generateMushroomGcode(stemDiameter, stemHeight, capDiameter, capHeight, layerHeight, speed) {
     const gcode = [];
     const stemRadius = stemDiameter / 2;
     const capRadius = capDiameter / 2;
-
-    const stemBottomRadius = stemRadius * 1.4;  // Match the stem base width
-
     const resolution = 100;
-    let prevPos = null;
 
-    // Extrusion calculation: E = (layer_height * line_width * distance) / filament_area
-    // For 1.75mm filament: area = π * 0.875² ≈ 2.405
-    // Assuming line_width ≈ 0.4mm (nozzle diameter)
     const filamentArea = Math.PI * Math.pow(1.75 / 2, 2);
-    const lineWidth = 0.4;
-    const extrusionMultiplier = (layerHeight * lineWidth) / filamentArea;  // ~0.033 for 0.2mm layer
+    const extrusionMultiplier = (layerHeight * 0.4) / filamentArea;
 
     gcode.push("; === MUSHROOM VASE ===");
     gcode.push(`; Stem: ${stemDiameter}mm x ${stemHeight}mm`);
     gcode.push(`; Cap: ${capDiameter}mm x ${capHeight}mm`);
 
-    // === FLOOR: Spiral outward from center ===
-    // NOTE: Floor commented out - starting with wall directly
-    // gcode.push("");
-    // gcode.push("; === FLOOR ===");
-    //
-    // const floorRotations = Math.max(3, stemBottomRadius / layerHeight);
-    // const floorSegments = Math.round(floorRotations * resolution);
-    //
-    // // Start floor spiral from a minimum radius to avoid tiny movements at center
-    // const minFloorRadius = 10;  // 10mm hole in center
-    //
-    // for (let i = 0; i <= floorSegments; i++) {
-    //     const t = i / floorSegments;
-    //     const spiralAngle = (i / resolution) * 2 * Math.PI;
-    //
-    //     // Spiral outward from minimum radius to stem base radius
-    //     const floorRadius = minFloorRadius + (stemBottomRadius - minFloorRadius) * t;
-    //     const x = floorRadius * Math.cos(spiralAngle);
-    //     const y = floorRadius * Math.sin(spiralAngle);
-    //     const z = layerHeight;  // First layer height
-    //
-    //     const A = spiralAngle * 180 / Math.PI;  // Continuous rotation - optimizer will add G92 resets if enabled
-    //     const B = 0;  // Vertical nozzle for floor
-    //
-    //     let deltaE = 0;
-    //     if (prevPos) {
-    //         const distance = Math.sqrt(
-    //             Math.pow(x - prevPos.x, 2) +
-    //             Math.pow(y - prevPos.y, 2) +
-    //             Math.pow(z - prevPos.z, 2)
-    //         );
-    //         deltaE = distance * extrusionMultiplier;
-    //     }
-    //
-    //     if (i === 0) {
-    //         gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E0 F${speed} ; move to center`);
-    //     } else {
-    //         gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${speed}`);
-    //     }
-    //
-    //     prevPos = { x, y, z };
-    // }
+    let prevPos = null;
+    let totalAngle = 0;
 
-    // === STEM SECTION ===
-    gcode.push("");
-    gcode.push("; === STEM ===");
-
-    // Calculate stem segment count based on layer height
-    const stemRotations = stemHeight / layerHeight;
-    const stemSegments = Math.round(stemRotations * resolution);
-    let totalSpiralAngle = 0;
-
-    gcode.push(`; Segments: ${stemSegments}, Rotations: ${stemRotations.toFixed(2)}`);
-
-    for (let i = 0; i <= stemSegments; i++) {
-        const progress = i / stemSegments;
-        const spiralAngle = totalSpiralAngle + (i / resolution) * 2 * Math.PI;
-
-        // Calculate stem profile at this progress
-        const stemProgress = progress;
-        const z = stemProgress * stemHeight;
-
-        // Slight bulge in middle for organic look
-        const bulge = Math.sin(stemProgress * Math.PI) * 0.08;
-        let radius = stemBottomRadius + (stemRadius * 0.85 - stemBottomRadius) * stemProgress;
-        radius *= (1 + bulge);
-
-        const x = radius * Math.cos(spiralAngle);
-        const y = radius * Math.sin(spiralAngle);
-
-        // Gradual tilt at end of stem to transition smoothly into cap
-        let tiltAngle = 0;
-        if (stemProgress > 0.9) {
-            const transitionT = (stemProgress - 0.9) / 0.1;  // 0 to 1 over last 10%
-            tiltAngle = Math.PI / 2 * 0.55 * transitionT;  // 0 to ~50° to match cap start
-        }
-
-        const A = -spiralAngle * 180 / Math.PI;
-        const B = tiltAngle * 180 / Math.PI;
-
+    // Helper to add G-code line
+    function addMove(x, y, z, A, B, isFirst, speedMult = 1) {
         let deltaE = 0;
-        if (prevPos) {
-            const distance = Math.sqrt(
-                Math.pow(x - prevPos.x, 2) +
-                Math.pow(y - prevPos.y, 2) +
-                Math.pow(z - prevPos.z, 2)
-            );
-            deltaE = distance * extrusionMultiplier;
-        }
+        const pos = { x, y, z };
+        if (prevPos) deltaE = distance3D(pos, prevPos) * extrusionMultiplier;
 
-        if (i === 0) {
-            gcode.push(`G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} ; move to start`);
+        if (isFirst) {
+            gcode.push(`G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)}`);
         } else {
-            gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${speed}`);
+            gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${Math.round(speed * speedMult)}`);
         }
-
-        prevPos = { x, y, z };
+        prevPos = pos;
     }
 
-    totalSpiralAngle += stemRotations * 2 * Math.PI;
+    // Stem
+    gcode.push("", "; === STEM ===");
+    const stemRotations = stemHeight / layerHeight;
+    const stemSegments = Math.round(stemRotations * resolution);
+    const stemBottomRadius = stemRadius * 1.4;
+    const stemTopRadius = stemRadius * 0.85;
 
-    // === CAP SECTION ===
-    gcode.push("");
-    gcode.push("; === CAP ===");
+    for (let i = 0; i <= stemSegments; i++) {
+        const t = i / stemSegments;
+        const angle = totalAngle + (i / resolution) * 2 * Math.PI;
+        const z = t * stemHeight;
 
-    // Cap path length and segments
+        const bulge = Math.sin(t * Math.PI) * 0.08;
+        let radius = stemBottomRadius + (stemTopRadius - stemBottomRadius) * t;
+        radius *= (1 + bulge);
+
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+
+        let tiltAngle = 0, aOffset = 0, bSign = 1;
+        if (t > 0.9) {
+            const p = (t - 0.9) / 0.1;
+            tiltAngle = Math.PI / 2 * 0.55 * p;
+            aOffset = 180 * p;
+            bSign = 1 - 2 * p;
+        }
+
+        addMove(x, y, z, -angle * 180 / Math.PI + aOffset, bSign * tiltAngle * 180 / Math.PI, i === 0);
+    }
+    totalAngle += stemRotations * 2 * Math.PI;
+
+    // Cap
+    gcode.push("", "; === CAP ===");
     const capLength = capRadius * 2.5;
     const capRotations = capLength / layerHeight;
     const capSegments = Math.round(capRotations * resolution);
 
-    gcode.push(`; Cap length: ${capLength.toFixed(2)}mm, Segments: ${capSegments}, Rotations: ${capRotations.toFixed(2)}`);
-
     for (let i = 0; i <= capSegments; i++) {
-        const capProgress = i / capSegments;
-        const spiralAngle = totalSpiralAngle + (i / resolution) * 2 * Math.PI;
+        const t = i / capSegments;
+        const angle = totalAngle + (i / resolution) * 2 * Math.PI;
+        const perpAngle = Math.atan2(capRadius * 0.3, capHeight * 0.35);
 
         let radius, z, tiltAngle;
-
-        if (capProgress < 0.35) {
-            // Phase 1: Go outward almost horizontally (underside of mushroom cap)
-            const t = capProgress / 0.35;
-            const stemTopRadius = stemRadius * 0.85;
-            radius = stemTopRadius + (capRadius - stemTopRadius) * t;
-            z = stemHeight + capHeight * 0.1 * t;
-            tiltAngle = Math.PI / 2 * (0.55 + 0.25 * t);
-
-        } else if (capProgress < 0.7) {
-            // Phase 2: Curve upward while coming back inward
-            const t = (capProgress - 0.35) / 0.35;
-            radius = capRadius - (capRadius * 0.4) * t;
-            z = stemHeight + capHeight * 0.1 + capHeight * 0.6 * Math.pow(t, 0.7);
-            const dRadius = -capRadius * 0.4;
-            const dZ = capHeight * 0.6;
-            tiltAngle = -Math.atan2(-dRadius, dZ) * 0.8;
-
+        if (t < 0.30) {
+            const p = t / 0.30;
+            radius = stemTopRadius + (capRadius - stemTopRadius) * p;
+            z = stemHeight + capHeight * 0.1 * p;
+            tiltAngle = Math.PI / 2 * (0.55 + 0.25 * p);
+        } else if (t < 0.50) {
+            const p = (t - 0.30) / 0.20;
+            radius = capRadius - (capRadius * 0.1) * p;
+            z = stemHeight + capHeight * 0.1 + capHeight * 0.25 * p;
+            tiltAngle = Math.PI / 2 * 0.8 + (perpAngle - Math.PI / 2 * 0.8) * smoothstep(p);
+        } else if (t < 0.60) {
+            const p = (t - 0.50) / 0.10;
+            radius = capRadius * 0.9 - (capRadius * 0.3) * p;
+            z = stemHeight + capHeight * 0.35 + capHeight * 0.25 * Math.pow(p, 0.7);
+            tiltAngle = perpAngle;
         } else {
-            // Phase 3: Final curve inward to rounded top center
-            const t = (capProgress - 0.7) / 0.3;
-            const startRadius = capRadius * 0.6;
-            radius = startRadius * (1 - t * 0.85);
-            z = stemHeight + capHeight * 0.7 + capHeight * 0.3 * Math.sin(t * Math.PI / 2);
-            const surfaceAngle = Math.atan2(startRadius * 0.85, capHeight * 0.3) * (1 - t);
-            tiltAngle = -surfaceAngle * 0.7;
+            const p = (t - 0.60) / 0.40;
+            radius = capRadius * 0.6 * (1 - p * 0.85);
+            z = stemHeight + capHeight * 0.6 + capHeight * 0.4 * Math.sin(p * Math.PI / 2);
+            tiltAngle = perpAngle * (1 - smoothstep(p));
         }
 
-        const x = radius * Math.cos(spiralAngle);
-        const y = radius * Math.sin(spiralAngle);
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+        const baseA = -angle * 180 / Math.PI;
+        const baseBdeg = tiltAngle * 180 / Math.PI;
 
-        const A = -spiralAngle * 180 / Math.PI;
-        const B = tiltAngle * 180 / Math.PI;
-
-        let deltaE = 0;
-        if (prevPos) {
-            const distance = Math.sqrt(
-                Math.pow(x - prevPos.x, 2) +
-                Math.pow(y - prevPos.y, 2) +
-                Math.pow(z - prevPos.z, 2)
-            );
-            deltaE = distance * extrusionMultiplier;
+        let A, B;
+        if (t < 0.45) {
+            A = baseA + 180;
+            B = -baseBdeg;
+        } else if (t < 0.55) {
+            A = baseA + 180;
+            B = baseBdeg * (2 * smoothstep((t - 0.45) / 0.10) - 1);
+        } else if (t < 0.85) {
+            A = baseA + 180;
+            B = baseBdeg;
+        } else {
+            A = baseA + 180 * (1 - smoothstep((t - 0.85) / 0.15));
+            B = baseBdeg;
         }
 
-        // Slow down for cap (more complex movements)
-        gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${Math.round(speed * 0.6)}`);
-
-        prevPos = { x, y, z };
+        const inTransition = t >= 0.30 && t < 0.50;
+        addMove(x, y, z, A, B, false, inTransition ? 0.4 : 0.6);
     }
+    totalAngle += capRotations * 2 * Math.PI;
 
-    totalSpiralAngle += capRotations * 2 * Math.PI;
-
-    // Close at top - spiral inward to center
-    gcode.push("");
-    gcode.push("; === CLOSING TOP ===");
-
+    // Closing spiral
+    gcode.push("", "; === CLOSING ===");
     const lastProfile = getMushroomProfile(1, stemRadius, stemHeight, capRadius, capHeight);
-
-    // Calculate how many segments needed to spiral from current radius to center
-    // More rotations for a proper fill
-    const closeStartRadius = lastProfile.radius;
-    const closeRotations = Math.max(3, closeStartRadius / layerHeight);  // At least 3 full rotations
+    const closeRotations = Math.max(3, lastProfile.radius / layerHeight);
     const closeSegments = Math.round(closeRotations * resolution);
-
-    gcode.push(`; Close rotations: ${closeRotations.toFixed(2)}`);
 
     for (let i = 1; i <= closeSegments; i++) {
         const t = i / closeSegments;
-        const spiralAngle = totalSpiralAngle + (i / resolution) * 2 * Math.PI;
+        const angle = totalAngle + (i / resolution) * 2 * Math.PI;
+        const radius = lastProfile.radius * (1 - t);
 
-        // Spiral inward to center - goes all the way to 0
-        const closingRadius = closeStartRadius * (1 - t);
-        const x = closingRadius * Math.cos(spiralAngle);
-        const y = closingRadius * Math.sin(spiralAngle);
-        const z = lastProfile.z;
-
-        const A = -spiralAngle * 180 / Math.PI;
-        const B = 0;  // Vertical nozzle for closing
-
-        let deltaE = 0;
-        if (prevPos) {
-            const distance = Math.sqrt(
-                Math.pow(x - prevPos.x, 2) +
-                Math.pow(y - prevPos.y, 2) +
-                Math.pow(z - prevPos.z, 2)
-            );
-            deltaE = distance * extrusionMultiplier;
-        }
-
-        gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${Math.round(speed * 0.4)}`);
-        prevPos = { x, y, z };
+        addMove(radius * Math.cos(angle), radius * Math.sin(angle), lastProfile.z, -angle * 180 / Math.PI, 0, false, 0.4);
     }
 
     return gcode;
 }
 
-// Create print path visualization for mushroom
+// Create path for animation preview
 function createMushroomPath(stemRadius, stemHeight, capRadius, capHeight) {
     const pathPoints = [];
-
-    // NOTE: Floor commented out - starting with wall directly
-    // const stemBottomRadius = stemRadius * 1.4;
-    // const minFloorRadius = 10;  // Match G-code generation
-    //
-    // // Floor spiral - outward from minimum radius (hole in center)
-    // const floorPoints = 90;  // 3 rotations
-    // for (let i = 0; i <= floorPoints; i++) {
-    //     const t = i / floorPoints;
-    //     const spiralAngle = (i * 12) * Math.PI / 180;
-    //
-    //     const floorRadius = (minFloorRadius + (stemBottomRadius - minFloorRadius) * t) * 1.02;
-    //     const x = floorRadius * Math.cos(spiralAngle);
-    //     const y = floorRadius * Math.sin(spiralAngle);
-    //
-    //     pathPoints.push(new THREE.Vector3(x, 0, y));
-    // }
-
-    // Main mushroom body
     const totalPoints = 400;
-    const floorEndAngle = 0;  // No floor, start from angle 0
 
     for (let i = 0; i < totalPoints; i++) {
-        const progress = i / totalPoints;
-        const spiralAngle = (floorEndAngle + i * 12) * Math.PI / 180;
-
-        const profile = getMushroomProfile(progress, stemRadius, stemHeight, capRadius, capHeight);
-        const displayRadius = profile.radius * 1.02;
-
-        const x = displayRadius * Math.cos(spiralAngle);
-        const y = displayRadius * Math.sin(spiralAngle);
-
-        pathPoints.push(new THREE.Vector3(x, profile.z, y));
+        const profile = getMushroomProfile(i / totalPoints, stemRadius, stemHeight, capRadius, capHeight);
+        const angle = (i * 12) * Math.PI / 180;
+        const r = profile.radius * 1.02;
+        pathPoints.push(new THREE.Vector3(r * Math.cos(angle), profile.z, r * Math.sin(angle)));
     }
 
-    // Closing spiral at top - more rotations to fully close
+    // Closing spiral
     const lastProfile = getMushroomProfile(1, stemRadius, stemHeight, capRadius, capHeight);
-    const startRadius = lastProfile.radius;
-    const closeRotations = 3;
-    const closePoints = closeRotations * 30;
-    const bodyEndAngle = floorEndAngle + totalPoints * 12;
+    const closePoints = 90;
+    const bodyEndAngle = totalPoints * 12;
 
     for (let i = 1; i <= closePoints; i++) {
         const t = i / closePoints;
-        const spiralAngle = (bodyEndAngle + i * 12) * Math.PI / 180;
-
-        const closingRadius = startRadius * (1 - t) * 1.02;
-        const x = closingRadius * Math.cos(spiralAngle);
-        const y = closingRadius * Math.sin(spiralAngle);
-
-        pathPoints.push(new THREE.Vector3(x, lastProfile.z, y));
+        const angle = (bodyEndAngle + i * 12) * Math.PI / 180;
+        const r = lastProfile.radius * (1 - t) * 1.02;
+        pathPoints.push(new THREE.Vector3(r * Math.cos(angle), lastProfile.z, r * Math.sin(angle)));
     }
 
     return pathPoints;
