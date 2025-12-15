@@ -18,6 +18,46 @@ class CollisionDetector {
         this.cable = null;
 
         this.collisionPoints = [];
+
+        // Spatial grid for fast collision lookups
+        this.gridCellSize = 20; // mm per cell
+        this.spatialGrid = new Map();
+    }
+
+    // Get grid cell key for a position
+    getGridKey(x, y, z) {
+        const cx = Math.floor(x / this.gridCellSize);
+        const cy = Math.floor(y / this.gridCellSize);
+        const cz = Math.floor(z / this.gridCellSize);
+        return `${cx},${cy},${cz}`;
+    }
+
+    // Add point to spatial grid
+    addToGrid(point) {
+        const key = this.getGridKey(point.x, point.y, point.z);
+        if (!this.spatialGrid.has(key)) {
+            this.spatialGrid.set(key, []);
+        }
+        this.spatialGrid.get(key).push(point);
+    }
+
+    // Get points in nearby cells (3x3x3 neighborhood)
+    getNearbyPoints(x, y, z) {
+        const nearby = [];
+        const cx = Math.floor(x / this.gridCellSize);
+        const cy = Math.floor(y / this.gridCellSize);
+        const cz = Math.floor(z / this.gridCellSize);
+
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dz = -1; dz <= 1; dz++) {
+                    const key = `${cx + dx},${cy + dy},${cz + dz}`;
+                    const cell = this.spatialGrid.get(key);
+                    if (cell) nearby.push(...cell);
+                }
+            }
+        }
+        return nearby;
     }
 
     setParams(params) {
@@ -32,7 +72,8 @@ class CollisionDetector {
 
     analyzeCollisions(commands) {
         this.collisionPoints = [];
-        let tempPath = [];
+        this.spatialGrid.clear();
+        let pathPointCount = 0;
         let position = { x: 0, y: 0, z: 0, a: 0, b: 0 };
         let lastCollisionStep = -100;
 
@@ -46,8 +87,9 @@ class CollisionDetector {
             if (command.a !== null) position.a = command.a;
             if (command.b !== null) position.b = command.b;
 
-            if (tempPath.length > 20 && i - lastCollisionStep > 10) {
-                const hasCollision = this.checkCollisionWithPath(position, tempPath);
+            // Check for collisions using spatial grid (much faster than O(n²))
+            if (pathPointCount > 20 && i - lastCollisionStep > 10) {
+                const hasCollision = this.checkCollisionAtPosition(position);
                 if (hasCollision) {
                     this.collisionPoints.push({
                         step: i,
@@ -57,19 +99,22 @@ class CollisionDetector {
                 }
             }
 
+            // Add extrusion points to spatial grid
             if (command.e !== null && command.e > 0) {
-                tempPath.push(new THREE.Vector3(
+                const point = new THREE.Vector3(
                     position.x,
                     position.z,
                     -position.y
-                ));
+                );
+                this.addToGrid(point);
+                pathPointCount++;
             }
         }
 
         return this.collisionPoints;
     }
 
-    checkCollisionWithPath(position, path) {
+    checkCollisionAtPosition(position) {
         const nozzleTip = new THREE.Vector3(
             position.x,
             position.z,
@@ -91,12 +136,14 @@ class CollisionDetector {
             return true;
         }
 
-        // Check path points against printhead components
+        // Get only nearby points from spatial grid (O(1) lookup vs O(n))
+        const nearbyPoints = this.getNearbyPoints(nozzleTip.x, nozzleTip.y, nozzleTip.z);
+        if (nearbyPoints.length === 0) return false;
+
+        // Check nearby path points against printhead components
         const inverseMatrix = matrix.clone().invert();
 
-        for (let i = 0; i < path.length - 5; i++) {
-            const point = path[i];
-
+        for (const point of nearbyPoints) {
             const toPoint = new THREE.Vector3(
                 point.x - nozzleTip.x,
                 point.y - nozzleTip.y,
