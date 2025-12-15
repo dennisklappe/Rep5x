@@ -15,6 +15,7 @@ export interface NavigationLink {
   url: string;
   hasChildren?: boolean;
   children?: ChildNavigationLink[];
+  external?: boolean;
 }
 
 const { main }: { main: NavigationLink[] } = menu;
@@ -125,6 +126,8 @@ const { pathname } = Astro.url;
                           pathname === menu.url) &&
                         "active"
                       }`}
+                      target={menu.external ? "_blank" : undefined}
+                      rel={menu.external ? "noopener noreferrer" : undefined}
                     >
                       {menu.name}
                     </a>

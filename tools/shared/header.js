@@ -18,7 +18,7 @@ const SharedHeader = {
                         <h1 class="text-xl font-bold text-gray-900">Rep5x Tools</h1>
                         <span class="ml-2 text-sm text-gray-500">${toolName}</span>
                     </div>
-                    <a href="https://rep5x.com" class="text-primary hover:opacity-80 text-sm">&larr; Back to Rep5x.com</a>
+                    <a href="../" class="text-primary hover:opacity-80 text-sm">&larr; Rep5x Tools</a>
                 </div>
             </div>
         </header>`;
