@@ -334,8 +334,7 @@
                                 Skip
                             </button>
                         </div>
-                        <div id="prepareStatus"
-                            class="hidden mt-4 p-3 status-success border rounded-lg text-sm">
+                        <div id="prepareStatus" class="hidden mt-4 p-3 status-success border rounded-lg text-sm">
                             Printer ready. Now position the nozzle at the reference point below.
                         </div>
                     </div>
@@ -605,7 +604,9 @@
                                     <span class="text-sm text-gray-500">mm</span>
                                 </div>
                                 <div class="mt-1 text-xs text-gray-500" id="laConsistency"></div>
-                                <button id="laRedoBtn" class="mt-3 w-full btn-secondary py-2 rounded-lg text-sm font-medium" style="display: none;">
+                                <button id="laRedoBtn"
+                                    class="mt-3 w-full btn-secondary py-2 rounded-lg text-sm font-medium"
+                                    style="display: none;">
                                     Redo with measured LA
                                 </button>
                             </div>
@@ -839,7 +840,9 @@
                                     <span class="text-sm text-gray-500">mm</span>
                                 </div>
                                 <div class="mt-1 text-xs text-gray-500" id="lbConsistency"></div>
-                                <button id="lbRedoBtn" class="mt-3 w-full btn-secondary py-2 rounded-lg text-sm font-medium" style="display: none;">
+                                <button id="lbRedoBtn"
+                                    class="mt-3 w-full btn-secondary py-2 rounded-lg text-sm font-medium"
+                                    style="display: none;">
                                     Redo with measured LB
                                 </button>
                             </div>
@@ -1001,7 +1004,7 @@
     <script src="../shared/printer-interface.js"></script>
     <!-- Tool-specific scripts -->
     <script src="js/measurement-engine.js"></script>
-    <script src="js/camera-manager.js"></script>
+    <script src="../shared/camera-manager.js"></script>
     <script src="js/method.js"></script>
     <script src="js/connect.js"></script>
     <script src="js/prepare.js"></script>
