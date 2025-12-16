@@ -2,35 +2,50 @@
 
 Web-based tools for Rep5x 5-axis 3D printing.
 
+**Live tools:** https://tools.rep5x.com/
+
 ## Available tools
 
-### [`vase-generator/`](vase-generator/) - 5-axis vase mode generator
-Generate sample vase mode G-code to test and demonstrate Rep5x 5-axis capabilities.
+### [Printer Control](https://tools.rep5x.com/printer-control/)
+Control your printer directly from the browser. Jog all 5 axes, send G-code commands, and monitor position.
 
-**Features:**
-- Interactive 3D preview with real-time updates
-- Configurable print parameters (diameter, height, layer height, speeds)
-- Ready-to-print G-code output with proper 5-axis movements
-- Educational tool showing 5-axis printing advantages
+### [Printer Setup](https://tools.rep5x.com/printer-setup/)
+Calibrate Z height and A/B axis zero positions before kinematic calibration.
 
-### [`gcode-previewer/`](gcode-previewer/) - 5-axis G-code visualization
-Visualize and animate 5-axis G-code files with real-time nozzle orientation display.
+### [LA/LB Measure](https://tools.rep5x.com/la-lb-measure/)
+Measure your printer's LA and LB kinematic parameters with step-by-step guidance.
 
-**Features:**
-- Load and parse G-code files
-- 3D visualization of print paths with nozzle orientation
-- Animation controls with progress tracking
-- Inverse kinematics parameter detection and override
-- Direct coordinate mapping for accurate visualization
-- Support for Rep5x-specific metadata and formulas
+### [Vase Generator](https://tools.rep5x.com/vase-generator/)
+Generate sample 5-axis vase mode G-code to test and demonstrate Rep5x capabilities.
 
-### Calibrator tool
-*In development - see `feature/calibrator-tool` branch for machine calibration utilities*
+### [G-code Viewer](https://tools.rep5x.com/gcode-viewer/)
+Visualise and animate 5-axis G-code files with collision detection.
 
-## Deployment
+### [Calibrator](https://tools.rep5x.com/calibrator/)
+Find error curves for your 5-axis system across all A and B angles.
 
-These tools are designed to be deployed to `tools.rep5x.com` as standalone web applications.
+## File structure
 
-## Development
+```
+tools/
+├── index.html           # Tools landing page
+├── README.md
+├── shared/              # Shared components
+│   ├── styles.css
+│   ├── theme.js
+│   ├── storage-manager.js
+│   ├── printer-interface.js
+│   ├── camera-manager.js
+│   ├── header.js
+│   └── footer.js
+├── printer-control/
+├── printer-setup/
+├── la-lb-measure/
+├── vase-generator/
+├── gcode-viewer/
+└── calibrator/
+```
 
-Each tool is self-contained with HTML, CSS, and JavaScript files for easy deployment and maintenance.
+## Support
+
+- **Discord**: [Join our community](https://discord.gg/GNdah82VBg)

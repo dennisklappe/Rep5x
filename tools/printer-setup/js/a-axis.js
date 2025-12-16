@@ -1,0 +1,212 @@
+/**
+ * Step 3: A-axis calibration
+ * Measures two reference positions (0°, 360°) to calculate offset and steps/degree
+ */
+
+class StepAAxis {
+    constructor(app) {
+        this.app = app;
+        this.measurements = {
+            targets: [0, 360],
+            currentIndex: 0,
+            recorded: {}
+        };
+        this.needsHoming = false;   // Set true when restarting calibration
+        this.directionChecked = false;   // Set by direction check step
+    }
+
+    /**
+     * Set up event listeners for this step
+     */
+    setup() {
+        document.getElementById('confirmAPosition').addEventListener('click', () => this.confirmPosition());
+        document.getElementById('skipAAxis').addEventListener('click', () => this.skip());
+    }
+
+    /**
+     * Skip A-axis calibration (use current values)
+     */
+    skip() {
+        // Record dummy values that result in no correction
+        // a0 = 0, a360 = 360 means: no offset needed, no steps correction needed
+        this.measurements.recorded = { 0: 0, 360: 360 };
+        this.app.nextStep();
+    }
+
+    /**
+     * Called when entering this step
+     */
+    async enter() {
+        document.getElementById('nextBtn').disabled = true;
+        document.getElementById('confirmAPosition').disabled = true;
+        this.measurements.currentIndex = 0;
+        this.measurements.recorded = {};
+
+        try {
+            // Only home if restarting calibration (not on first pass after prepare)
+            if (this.needsHoming) {
+                document.getElementById('confirmAPosition').textContent = 'Homing A...';
+                await this.app.printer.sendCommandAndWait('G28 A', 60000);
+                this.needsHoming = false;
+            }
+
+            // Request current position to update display
+            await this.app.printer.requestPosition();
+
+            // Start calibration directly (direction check is now a separate step)
+            await this.startCalibration();
+        } catch (e) {
+            console.error('A-axis enter error:', e);
+            document.getElementById('confirmAPosition').textContent = 'Confirm position';
+            document.getElementById('confirmAPosition').disabled = false;
+            this.needsHoming = false;
+        }
+    }
+
+    /**
+     * Start calibration phase
+     */
+    async startCalibration() {
+        // Move to first target position (A0)
+        await this.moveToTarget(0);
+        this.updateUI();
+
+        document.getElementById('confirmAPosition').textContent = 'Confirm position';
+        document.getElementById('confirmAPosition').disabled = false;
+    }
+
+    /**
+     * Pre-move platform to target A position
+     */
+    async moveToTarget(target) {
+        const btn = document.getElementById('confirmAPosition');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = `Moving to A${target}°...`;
+
+        try {
+            await this.app.printer.sendCommandAndWait(`G0 A${target} F1800`, 30000);
+            await this.app.printer.sendCommandAndWait('M400', 30000);
+            await this.app.printer.requestPosition();
+        } catch (error) {
+            console.error('Move error:', error);
+        }
+
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+
+    /**
+     * Get recorded measurements for calculations
+     */
+    getRecorded() {
+        return this.measurements.recorded;
+    }
+
+    /**
+     * Update UI for current target
+     */
+    updateUI() {
+        const targets = this.measurements.targets;
+        const index = this.measurements.currentIndex;
+
+        if (index >= targets.length) return;
+
+        const target = targets[index];
+
+        // Update visual guide
+        this.updateVisualGuide(target);
+
+        // Update target description
+        const descriptions = {
+            0: 'Nozzle facing forwards',
+            360: 'Nozzle facing forwards again'
+        };
+        document.getElementById('aTargetDescription').textContent = descriptions[target] || '';
+        document.getElementById('aTargetAngle').textContent = `Target: A = ${target}°`;
+
+        // Update measurement items
+        document.querySelectorAll('#aMeasurements .measurement-item').forEach(item => {
+            const itemTarget = parseInt(item.dataset.target);
+            item.classList.remove('current', 'completed');
+
+            if (this.measurements.recorded[itemTarget] !== undefined) {
+                item.classList.add('completed');
+            } else if (itemTarget === target) {
+                item.classList.add('current');
+            }
+        });
+    }
+
+    /**
+     * Update visual guide SVG
+     */
+    updateVisualGuide(target) {
+        const guide = document.getElementById('aVisualGuide');
+        const rotation = target;
+
+        const svg = `<svg class="w-24 h-24 mx-auto" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="35" fill="none" stroke="#ddd" stroke-width="2"/>
+            <g transform="rotate(${rotation} 50 50)">
+                <line x1="50" y1="50" x2="50" y2="15" stroke="#32D74B" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="50" cy="12" r="4" fill="#EF4444"/>
+            </g>
+            <circle cx="50" cy="50" r="6" fill="#32D74B"/>
+            ${target === 0 ? '<text x="50" y="8" text-anchor="middle" font-size="8" fill="#666">MARK</text>' : ''}
+        </svg>`;
+
+        guide.innerHTML = svg;
+    }
+
+    /**
+     * Confirm position for current target
+     */
+    async confirmPosition() {
+        const targets = this.measurements.targets;
+        const index = this.measurements.currentIndex;
+        const target = targets[index];
+
+        // Query fresh position from printer (M114) before recording
+        const pos = await this.app.printer.requestPosition();
+
+        // Record current firmware position for this physical target
+        this.measurements.recorded[target] = pos.a;
+
+        // Update display
+        const displayEl = document.getElementById(`a-recorded-${target}`);
+        if (displayEl) {
+            displayEl.textContent = `${pos.a.toFixed(1)}°`;
+        }
+
+        // Mark as completed
+        const item = document.querySelector(`#aMeasurements [data-target="${target}"]`);
+        if (item) {
+            item.classList.remove('current');
+            item.classList.add('completed');
+        }
+
+        // Move to next
+        this.measurements.currentIndex++;
+
+        if (this.measurements.currentIndex >= targets.length) {
+            // All A measurements done
+            // After A360 confirmation, we're physically at A0 again, so reset coordinate
+            await this.app.printer.sendCommandAndWait('G92 A0', 5000);
+            await this.app.printer.requestPosition();
+
+            // Calibration complete, proceed to next step
+            this.app.nextStep();
+        } else {
+            // Pre-move to next target position
+            // For A360, move to expected physical 360° based on a0 measurement
+            const nextTarget = targets[this.measurements.currentIndex];
+            let moveTarget = nextTarget;
+            if (nextTarget === 360 && this.measurements.recorded[0] !== undefined) {
+                // Move to a0 + 360 so we're at expected physical 360°
+                moveTarget = this.measurements.recorded[0] + 360;
+            }
+            await this.moveToTarget(moveTarget);
+            this.updateUI();
+        }
+    }
+}

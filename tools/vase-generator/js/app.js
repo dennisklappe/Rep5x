@@ -5,7 +5,14 @@ let animationId;
 
 // Shape information
 const shapeInfo = {
-    "elbow-pipe": "Elbow pipe demonstrates the pitch axis printing capability."
+    "elbow-pipe": "Elbow pipe demonstrates the B-axis (pitch) printing capability.",
+    "mushroom": "Mushroom shape demonstrates both A-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form."
+};
+
+// Shape descriptions for selector
+const shapeDescriptions = {
+    "elbow-pipe": "Configurable elbow pipe to demonstrate B-axis (pitch) printing",
+    "mushroom": "Organic mushroom shape demonstrating both A and B axis movements"
 };
 
 function initThreeJS() {
@@ -236,20 +243,45 @@ function updatePreview() {
     }
 
     const shape = document.getElementById('shape').value;
-    const diameter = parseFloat(document.getElementById('diameter').value);
-    const vertical = parseFloat(document.getElementById('vertical').value);
-    const horizontal = parseFloat(document.getElementById('horizontal').value);
-    const tilt = parseFloat(document.getElementById('tilt').value);
 
-    // Update shape info
+    // Update shape info and description
     document.getElementById('shapeInfo').innerHTML = `<p>${shapeInfo[shape]}</p>`;
+    const descElem = document.getElementById('shapeDescription');
+    if (descElem && shapeDescriptions[shape]) {
+        descElem.textContent = shapeDescriptions[shape];
+    }
+
+    // Toggle parameter panels based on shape
+    const elbowParams = document.getElementById('elbowPipeParams');
+    const mushroomParams = document.getElementById('mushroomParams');
+    if (elbowParams && mushroomParams) {
+        if (shape === 'mushroom') {
+            elbowParams.classList.add('hidden');
+            mushroomParams.classList.remove('hidden');
+        } else {
+            elbowParams.classList.remove('hidden');
+            mushroomParams.classList.add('hidden');
+        }
+    }
 
     // Create geometry based on shape
     let geometry;
-    
+
     try {
-        // Only elbow pipe supported
-        geometry = createElbowPipe(diameter/2, vertical, horizontal, tilt);
+        if (shape === 'mushroom') {
+            const stemDiameter = parseFloat(document.getElementById('stemDiameter').value);
+            const stemHeight = parseFloat(document.getElementById('stemHeight').value);
+            const capDiameter = parseFloat(document.getElementById('capDiameter').value);
+            const capHeight = parseFloat(document.getElementById('capHeight').value);
+            geometry = createMushroom(stemDiameter/2, stemHeight, capDiameter/2, capHeight);
+        } else {
+            // Elbow pipe (default)
+            const diameter = parseFloat(document.getElementById('diameter').value);
+            const vertical = parseFloat(document.getElementById('vertical').value);
+            const horizontal = parseFloat(document.getElementById('horizontal').value);
+            const tilt = parseFloat(document.getElementById('tilt').value);
+            geometry = createElbowPipe(diameter/2, vertical, horizontal, tilt);
+        }
 
         // Use theme colors for the material
         const theme = getTheme();
@@ -268,7 +300,7 @@ function updatePreview() {
         mesh.receiveShadow = true;
         scene.add(mesh);
         
-        // Add wireframe for better visualization
+        // Add wireframe for better visualisation
         const wireframeGeometry = geometry.clone();
         const wireframeColor = new THREE.Color(theme.colors.primary).multiplyScalar(0.7); // Darker version
         
@@ -280,10 +312,22 @@ function updatePreview() {
         });
         wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
         scene.add(wireframeMesh);
-        
+
         // Add spiral print path visualization
-        createPrintPath(shape, diameter/2, vertical, horizontal, tilt);
-        
+        if (shape === 'mushroom') {
+            const stemDiameter = parseFloat(document.getElementById('stemDiameter').value);
+            const stemHeight = parseFloat(document.getElementById('stemHeight').value);
+            const capDiameter = parseFloat(document.getElementById('capDiameter').value);
+            const capHeight = parseFloat(document.getElementById('capHeight').value);
+            createPrintPath(shape, stemDiameter/2, stemHeight, capDiameter/2, capHeight);
+        } else {
+            const diameter = parseFloat(document.getElementById('diameter').value);
+            const vertical = parseFloat(document.getElementById('vertical').value);
+            const horizontal = parseFloat(document.getElementById('horizontal').value);
+            const tilt = parseFloat(document.getElementById('tilt').value);
+            createPrintPath(shape, diameter/2, vertical, horizontal, tilt);
+        }
+
     } catch (error) {
         console.error('Error creating geometry:', error);
     }
@@ -388,25 +432,29 @@ function updateBuildPlatform() {
     scene.add(axesGroup);
 }
 
-function createPrintPath(shape, radius, verticalHeight, horizontalLength, tilt) {
+function createPrintPath(shape, param1, param2, param3, param4) {
     let pathPoints = [];
-    
+
     // Let the shape module handle the path generation
-    if (shape === 'elbow-pipe') {
-        pathPoints = createElbowPipePath(radius, verticalHeight, horizontalLength, tilt);
+    if (shape === 'mushroom') {
+        // params: stemRadius, stemHeight, capRadius, capHeight
+        pathPoints = createMushroomPath(param1, param2, param3, param4);
+    } else if (shape === 'elbow-pipe') {
+        // params: radius, verticalHeight, horizontalLength, tilt
+        pathPoints = createElbowPipePath(param1, param2, param3, param4);
     } else {
-        // Fallback for other shapes (if any)
+        // Fallback for other shapes
         const totalPoints = 300;
-        
+
         for (let i = 0; i < totalPoints; i++) {
             const t = i / totalPoints;
             const angle = (i * 360 / 30) % 360;
             const rad = angle * Math.PI / 180;
-            
-            const x = radius * Math.cos(rad);
-            const y = t * verticalHeight;
-            const z = radius * Math.sin(rad);
-            
+
+            const x = param1 * Math.cos(rad);
+            const y = t * param2;
+            const z = param1 * Math.sin(rad);
+
             pathPoints.push(new THREE.Vector3(x, y, z));
         }
     }
@@ -439,12 +487,8 @@ function generateGcode() {
     setTimeout(() => {
         try {
             const shape = document.getElementById('shape').value;
-            const diameter = parseFloat(document.getElementById('diameter').value);
-            const vertical = parseFloat(document.getElementById('vertical').value);
-            const horizontal = parseFloat(document.getElementById('horizontal').value);
             const layerHeight = parseFloat(document.getElementById('layerHeight').value);
             const speed = parseFloat(document.getElementById('speed').value) * 60; // mm/min
-            const tilt = parseFloat(document.getElementById('tilt').value);
 
             // Get bed size
             const bedWidth = parseFloat(document.getElementById('bedWidth').value);
@@ -477,35 +521,53 @@ function generateGcode() {
             startGcode = startGcode.replace(/M109 S\d+/g, `M109 S${nozzleTemp}`);
             startGcode = startGcode.replace(/M140 S\d+/g, `M140 S${bedTemp}`);
             startGcode = startGcode.replace(/M190 S\d+/g, `M190 S${bedTemp}`);
-            
+
             // Get kinematic settings
             const enableKinematics = document.getElementById('enableKinematics').checked;
             const laParam = parseFloat(document.getElementById('laParam').value);
             const lbParam = parseFloat(document.getElementById('lbParam').value);
-            
+
             // Get A-axis optimization setting
             const enableAAxisOptimization = document.getElementById('enableAAxisOptimization').checked;
-            
 
-            let gcode = generateShapeGcode(shape, diameter, vertical, horizontal, layerHeight, speed, tilt, nozzleDiameter, startGcode, endGcode, enableKinematics, laParam, lbParam, enableAAxisOptimization);
-            
+            // Build shape parameters object based on shape type
+            let shapeParams, filename;
+            if (shape === 'mushroom') {
+                const stemDiameter = parseFloat(document.getElementById('stemDiameter').value);
+                const stemHeight = parseFloat(document.getElementById('stemHeight').value);
+                const capDiameter = parseFloat(document.getElementById('capDiameter').value);
+                const capHeight = parseFloat(document.getElementById('capHeight').value);
+                shapeParams = { stemDiameter, stemHeight, capDiameter, capHeight };
+                filename = `rep5x_mushroom_stem${stemDiameter}x${stemHeight}_cap${capDiameter}x${capHeight}mm.gcode`;
+            } else {
+                // Elbow pipe parameters
+                const diameter = parseFloat(document.getElementById('diameter').value);
+                const vertical = parseFloat(document.getElementById('vertical').value);
+                const horizontal = parseFloat(document.getElementById('horizontal').value);
+                const tilt = parseFloat(document.getElementById('tilt').value);
+                shapeParams = { diameter, vertical, horizontal, tilt };
+                filename = `rep5x_${shape}_vase_${diameter}x${vertical}x${horizontal}mm.gcode`;
+            }
+
+            let gcode = generateShapeGcode(shape, shapeParams, layerHeight, speed, nozzleDiameter, startGcode, endGcode, enableKinematics, laParam, lbParam, enableAAxisOptimization);
+
             // Apply inverse kinematics if enabled
             if (enableKinematics) {
                 gcode = processInverseKinematics(gcode, enableKinematics, laParam, lbParam);
             }
-            
+
             // Apply A-axis optimization if enabled
             if (enableAAxisOptimization) {
                 gcode = optimizeAAxisRotation(gcode, enableAAxisOptimization);
                 gcode = addAAxisOptimizationComment(gcode);
             }
-            
+
             // Create and download file
             const blob = new Blob([gcode], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `rep5x_${shape}_vase_${diameter}x${vertical}x${horizontal}mm.gcode`;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -522,27 +584,47 @@ function generateGcode() {
     }, 100);
 }
 
-function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt, nozzleDiameter, startGcode = '', endGcode = '', enableKinematics = false, laParam = 0, lbParam = 47.9, enableAAxisOptimization = false) {
+function generateShapeGcode(shape, shapeParams, layerHeight, speed, nozzleDiameter, startGcode = '', endGcode = '', enableKinematics = false, laParam = 0, lbParam = 47.9, enableAAxisOptimization = false) {
     const gcode = [];
-    const radius = diameter / 2;
-    const totalHeight = verticalHeight + horizontalLength; // Approximate total height
-    const layers = Math.floor(totalHeight / layerHeight);
-    let e = 0; // Extruder position
-    
+
+    // Calculate total height based on shape
+    let totalHeight;
+    if (shape === 'mushroom') {
+        const { stemHeight, capHeight } = shapeParams;
+        totalHeight = stemHeight + capHeight;
+    } else {
+        // Elbow pipe
+        const { vertical, horizontal } = shapeParams;
+        totalHeight = vertical + horizontal;
+    }
+
     // Header
     gcode.push('; Generated by Rep5x Vase Generator');
     gcode.push(`; Shape: ${shape}`);
-    gcode.push(`; Diameter: ${diameter}mm`);
-    gcode.push(`; Vertical Section: ${verticalHeight}mm`);
-    gcode.push(`; Horizontal Section: ${horizontalLength}mm`);
-    gcode.push(`; Bend Angle: ${tilt}°`);
+
+    // Shape-specific parameters in header
+    if (shape === 'mushroom') {
+        const { stemDiameter, stemHeight, capDiameter, capHeight } = shapeParams;
+        gcode.push(`; Stem Diameter: ${stemDiameter}mm`);
+        gcode.push(`; Stem Height: ${stemHeight}mm`);
+        gcode.push(`; Cap Diameter: ${capDiameter}mm`);
+        gcode.push(`; Cap Height: ${capHeight}mm`);
+    } else {
+        // Elbow pipe
+        const { diameter, vertical, horizontal, tilt } = shapeParams;
+        gcode.push(`; Diameter: ${diameter}mm`);
+        gcode.push(`; Vertical Section: ${vertical}mm`);
+        gcode.push(`; Horizontal Section: ${horizontal}mm`);
+        gcode.push(`; Bend Angle: ${tilt}°`);
+    }
+
     gcode.push(`; Nozzle Diameter: ${nozzleDiameter}mm`);
     gcode.push(`; Layer Height: ${layerHeight}mm`);
     gcode.push(`; Print Speed: ${speed/60}mm/s`);
     gcode.push(`; Generated on: ${new Date().toISOString()}`);
     gcode.push('');
-    
-    // 5-axis and IK parameters for previewer
+
+    // 5-axis and IK parameters for viewer
     gcode.push('; === Rep5x Parameters ===');
     gcode.push(`; Inverse Kinematics: ${enableKinematics ? 'enabled' : 'disabled'}`);
     if (enableKinematics) {
@@ -555,7 +637,7 @@ function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, l
     }
     gcode.push(`; A-axis Optimization: ${enableAAxisOptimization ? 'enabled' : 'disabled'}`);
     gcode.push('');
-    
+
     // Start sequence
     gcode.push('; Start sequence');
     if (startGcode.trim()) {
@@ -576,13 +658,19 @@ function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, l
     }
     gcode.push('M83 ; Use relative extrusion');
     gcode.push('');
-    
-    let lastX = 0, lastY = 0, lastZ = 0;
-    
-    // Generate elbow pipe G-code
-    const shapeGcode = generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, layerHeight, speed, tilt);
+
+    // Generate shape-specific G-code
+    let shapeGcode;
+    if (shape === 'mushroom') {
+        const { stemDiameter, stemHeight, capDiameter, capHeight } = shapeParams;
+        shapeGcode = generateMushroomGcode(stemDiameter, stemHeight, capDiameter, capHeight, layerHeight, speed);
+    } else {
+        // Elbow pipe
+        const { diameter, vertical, horizontal, tilt } = shapeParams;
+        shapeGcode = generateElbowPipeGcode(diameter, vertical, horizontal, layerHeight, speed, tilt);
+    }
     gcode.push(...shapeGcode);
-    
+
     // End sequence
     gcode.push('');
     gcode.push('; End sequence');
@@ -600,7 +688,7 @@ function generateShapeGcode(shape, diameter, verticalHeight, horizontalLength, l
         gcode.push('M84 ; Disable motors');
         gcode.push('M117 Print Complete! ; Display message');
     }
-    
+
     return gcode.join('\n');
 }
 
@@ -628,17 +716,37 @@ document.getElementById('generate').addEventListener('click', generateGcode);
 document.getElementById('bedWidth').addEventListener('input', updateBuildPlatform);
 document.getElementById('bedDepth').addEventListener('input', updateBuildPlatform);
 
-// Update shape when parameters change
+// Update shape when parameters change - elbow pipe
 document.getElementById('vertical').addEventListener('input', updatePreview);
 document.getElementById('horizontal').addEventListener('input', updatePreview);
 
-// Update displayed values for new sliders
+// Update displayed values for elbow pipe sliders
 document.getElementById('vertical').addEventListener('input', (e) => {
     document.getElementById('verticalValue').textContent = e.target.value;
 });
 
 document.getElementById('horizontal').addEventListener('input', (e) => {
     document.getElementById('horizontalValue').textContent = e.target.value;
+});
+
+// Update shape when mushroom parameters change
+document.getElementById('stemDiameter').addEventListener('input', updatePreview);
+document.getElementById('stemHeight').addEventListener('input', updatePreview);
+document.getElementById('capDiameter').addEventListener('input', updatePreview);
+document.getElementById('capHeight').addEventListener('input', updatePreview);
+
+// Update displayed values for mushroom sliders
+document.getElementById('stemDiameter').addEventListener('input', (e) => {
+    document.getElementById('stemDiameterValue').textContent = e.target.value;
+});
+document.getElementById('stemHeight').addEventListener('input', (e) => {
+    document.getElementById('stemHeightValue').textContent = e.target.value;
+});
+document.getElementById('capDiameter').addEventListener('input', (e) => {
+    document.getElementById('capDiameterValue').textContent = e.target.value;
+});
+document.getElementById('capHeight').addEventListener('input', (e) => {
+    document.getElementById('capHeightValue').textContent = e.target.value;
 });
 
 // No special handling needed for number inputs - values are read directly

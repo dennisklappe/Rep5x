@@ -27,14 +27,12 @@ class GcodeParser {
     async parse(gcodeText) {
         this.commands = [];
         
-        console.log('Parsing G-code, size:', (gcodeText.length / 1024 / 1024).toFixed(2), 'MB');
         
         // Manual line splitting to avoid regex stack overflow on large files
         const lines = [];
         let currentLine = '';
         let lineCount = 0;
         
-        console.log('Splitting into lines...');
         
         // Split manually in chunks to avoid memory issues
         const chunkSize = 100000; // 100KB chunks
@@ -59,7 +57,6 @@ class GcodeParser {
             // Yield occasionally during splitting
             if (i % (chunkSize * 50) === 0) {
                 await new Promise(resolve => setTimeout(resolve, 1));
-                console.log(`Split ${Math.round(i/gcodeText.length*100)}% (${lineCount} lines found)`);
             }
         }
         
@@ -69,13 +66,11 @@ class GcodeParser {
             lineCount++;
         }
         
-        console.log('Total lines found:', lineCount);
         
         // Smart decimation for large files
         let decimation = 1;
         if (lineCount > 300000) {
             decimation = Math.ceil(lineCount / 100000); // Target ~100k commands max
-            console.log(`Large file detected. Using decimation factor: ${decimation}`);
         }
         
         // Process lines in batches
@@ -96,13 +91,10 @@ class GcodeParser {
             if (i % (batchSize * 10) === 0) {
                 await new Promise(resolve => setTimeout(resolve, 1));
                 const progress = Math.round((i / lineCount) * 100);
-                console.log(`Parsed ${progress}% (${i}/${lineCount} lines)`);
             }
         }
 
-        console.log('Parsed commands:', this.commands.length);
         if (decimation > 1) {
-            console.log(`Applied decimation factor ${decimation}`);
         }
 
         return {
@@ -115,6 +107,12 @@ class GcodeParser {
         if (line.startsWith(';')) {
             // Parse metadata from comments
             this.parseComment(line);
+        } else if (line.startsWith('G92')) {
+            // Parse coordinate system reset (used by A-axis optimizer)
+            const resetCommand = this.parseG92Command(line, lineNumber);
+            if (resetCommand) {
+                this.commands.push(resetCommand);
+            }
         } else if (line.startsWith('G1') || line.startsWith('G0')) {
             // Parse movement command
             const command = this.parseMovementCommand(line, lineNumber);
@@ -122,6 +120,26 @@ class GcodeParser {
                 this.commands.push(command);
             }
         }
+        // M0 pause commands are ignored in the viewer
+    }
+
+    parseG92Command(line, lineNumber) {
+        // Parse G92 coordinate reset commands
+        const coords = {
+            lineNumber: lineNumber,
+            type: 'reset',  // Coordinate system reset
+            a: null,
+            hasReset: false
+        };
+
+        // Extract A value (main use case for A-axis optimizer)
+        const aMatch = line.match(/A([-+]?\d*\.?\d+)/i);
+        if (aMatch) {
+            coords.a = parseFloat(aMatch[1]);
+            coords.hasReset = true;
+        }
+
+        return coords.hasReset ? coords : null;
     }
 
     parseComment(line) {
@@ -239,7 +257,6 @@ class GcodeParser {
 
     // Get print statistics
     getStatistics() {
-        console.log('Calculating statistics for', this.commands.length, 'commands');
         
         // Filter in chunks to avoid stack issues
         let movements = 0;

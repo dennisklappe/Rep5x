@@ -7,7 +7,17 @@
         "body": "#FAFAFA",
         "border": "#E5E5E5",
         "light": "#F7FFF8",
-        "dark": "#0D1117"
+        "dark": "#0D1117",
+        "success": "#16A34A",
+        "success-hover": "#15803D",
+        "success-light": "#F0FDF4",
+        "success-border": "#BBF7D0",
+        "success-text": "#166534",
+        "danger": "#DC2626",
+        "danger-hover": "#B91C1C",
+        "danger-light": "#FEF2F2",
+        "danger-border": "#FECACA",
+        "danger-text": "#991B1B"
       },
       "text_color": {
         "text": "#1F2937",

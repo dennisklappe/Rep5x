@@ -71,6 +71,12 @@
   #define MOTHERBOARD BOARD_BTT_OCTOPUS_V1_1
 #endif
 
+// Rep5x custom pin assignments for A-axis (I) and B-axis (J) endstops
+// A-axis endstop on J30 (PG13), B-axis endstop on J32 = E2DET (PG14)
+// Using I_MIN_PIN and J_MIN_PIN since both axes home to MIN direction
+#define I_MIN_PIN PG13   // A-axis endstop (J30)
+#define J_MIN_PIN PG14   // B-axis endstop (J32 / E2DET)
+
 // @section serial
 
 /**
@@ -135,7 +141,7 @@
 //#define BLUETOOTH
 
 // Name displayed in the LCD "Ready" message and Info menu
-//#define CUSTOM_MACHINE_NAME "3D Printer"
+#define CUSTOM_MACHINE_NAME "Rep5x"
 //#define CONFIGURABLE_MACHINE_NAME // Add G-code M550 to set/report the machine name
 
 // Printer's unique ID, used by some programs to differentiate between machines.
@@ -1247,10 +1253,10 @@
 #define Y_MAX_ENDSTOP_HIT_STATE HIGH
 #define Z_MIN_ENDSTOP_HIT_STATE HIGH
 #define Z_MAX_ENDSTOP_HIT_STATE LOW
-#define I_MIN_ENDSTOP_HIT_STATE HIGH
+#define I_MIN_ENDSTOP_HIT_STATE HIGH   // A-axis endstop
 #define I_MAX_ENDSTOP_HIT_STATE HIGH
-#define J_MIN_ENDSTOP_HIT_STATE LOW
-#define J_MAX_ENDSTOP_HIT_STATE LOW
+#define J_MIN_ENDSTOP_HIT_STATE LOW    // B-axis endstop (inverted, using J_STOP_PIN)
+#define J_MAX_ENDSTOP_HIT_STATE HIGH
 #define K_MIN_ENDSTOP_HIT_STATE HIGH
 #define K_MAX_ENDSTOP_HIT_STATE HIGH
 #define U_MIN_ENDSTOP_HIT_STATE HIGH
@@ -1848,7 +1854,7 @@
 #define INVERT_X_DIR false
 #define INVERT_Y_DIR true
 #define INVERT_Z_DIR false
-#define INVERT_I_DIR true
+#define INVERT_I_DIR false
 #define INVERT_J_DIR false
 //#define INVERT_K_DIR false
 //#define INVERT_U_DIR false
@@ -1893,7 +1899,7 @@
 #define X_HOME_DIR 1
 #define Y_HOME_DIR -1
 #define Z_HOME_DIR 1
-#define I_HOME_DIR 1
+#define I_HOME_DIR -1   // A-axis homes to MIN
 #define J_HOME_DIR -1
 //#define K_HOME_DIR -1
 //#define U_HOME_DIR -1
@@ -1930,8 +1936,8 @@
 #define Z_MAX_POS 174.6
 #define I_MIN_POS -360
 #define I_MAX_POS 360
-#define J_MIN_POS -146
-#define J_MAX_POS 146
+#define J_MIN_POS -135
+#define J_MAX_POS 135
 //#define K_MIN_POS 0
 //#define K_MAX_POS 50
 //#define U_MIN_POS 0
