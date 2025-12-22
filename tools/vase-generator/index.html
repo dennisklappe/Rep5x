@@ -482,109 +482,29 @@ M84 X Y E A B ;Disable all steppers except Z
 
     <!-- Three.js from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <!-- Shared components -->
     <script src="../shared/theme.js"></script>
     <script src="../shared/storage-manager.js"></script>
     <script src="../shared/header.js"></script>
     <script src="../shared/footer.js"></script>
-    <!-- Inverse kinematics for Rep5x -->
-    <script>
-        // Inverse kinematics calculations for Rep5x 5-axis printer
-        function applyInverseKinematics(x, y, z, a, b, la = 0, lb = 47.9) {
-            const aRad = a * Math.PI / 180;
-            const bRad = b * Math.PI / 180;
 
-            // X = X' + sin(A)·LA + cos(A)·sin(B)·LB
-            const correctedX = x + Math.sin(aRad) * la + Math.cos(aRad) * Math.sin(bRad) * lb;
+    <!-- Utilities and base classes (load first) -->
+    <script src="js/utils.js"></script>
+    <script src="js/shapes/shape-base.js"></script>
 
-            // Y = Y' + (cos(A) - 1)·LA - sin(A)·sin(B)·LB
-            const correctedY = y + (Math.cos(aRad) - 1) * la - Math.sin(aRad) * Math.sin(bRad) * lb;
-
-            // Z = Z' + (cos(B) - 1)·LB
-            const correctedZ = z + (Math.cos(bRad) - 1) * lb;
-
-            return {
-                x: correctedX,
-                y: correctedY,
-                z: correctedZ,
-                a: a,
-                b: b
-            };
-        }
-    </script>
-    <!-- Tool-specific scripts -->
+    <!-- Shape implementations -->
     <script src="js/shapes/elbow-pipe.js"></script>
     <script src="js/shapes/mushroom.js"></script>
+
+    <!-- Core modules -->
     <script src="js/inverse-kinematics.js"></script>
     <script src="js/a-axis-optimizer.js"></script>
+    <script src="js/scene-manager.js"></script>
+    <script src="js/ui-controller.js"></script>
+    <script src="js/gcode-generator.js"></script>
+
+    <!-- Main application -->
     <script src="js/app.js"></script>
-    <!-- Load saved LA/LB values -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Load saved calibration values
-            const savedResults = StorageManager.loadCalibrationResults();
-            if (savedResults && (savedResults.la !== undefined || savedResults.lb !== undefined)) {
-                // Update footer display
-                const display = document.getElementById('savedKinematicsDisplay');
-                const laSpan = document.getElementById('savedLaValue');
-                const lbSpan = document.getElementById('savedLbValue');
-
-                if (display && laSpan && lbSpan) {
-                    laSpan.textContent = savedResults.la?.toFixed(2) ?? '0';
-                    lbSpan.textContent = savedResults.lb?.toFixed(2) ?? '47';
-                    display.classList.remove('hidden');
-                }
-
-                // Prefill LA/LB input fields if they exist
-                const laInput = document.getElementById('laParam');
-                const lbInput = document.getElementById('lbParam');
-
-                if (laInput && savedResults.la !== undefined) {
-                    laInput.value = savedResults.la.toFixed(2);
-                }
-                if (lbInput && savedResults.lb !== undefined) {
-                    lbInput.value = savedResults.lb.toFixed(2);
-                }
-            }
-
-            // Save button for advanced LA/LB params
-            const saveAdvancedBtn = document.getElementById('saveAdvancedParams');
-            const laParamInput = document.getElementById('laParam');
-            const lbParamInput = document.getElementById('lbParam');
-
-            if (saveAdvancedBtn && laParamInput && lbParamInput) {
-                saveAdvancedBtn.addEventListener('click', () => {
-                    const la = parseFloat(laParamInput.value) || 0;
-                    const lb = parseFloat(lbParamInput.value) || 47;
-
-                    if (typeof StorageManager !== 'undefined') {
-                        StorageManager.saveCalibrationResults(la, lb, {
-                            method: 'manual',
-                            testMode: false
-                        });
-                    }
-
-                    // Dispatch event so footer updates
-                    document.dispatchEvent(new CustomEvent('laLbUpdated', {
-                        detail: { la, lb, source: 'advanced' }
-                    }));
-
-                    // Visual feedback
-                    saveAdvancedBtn.textContent = 'Saved!';
-                    setTimeout(() => {
-                        saveAdvancedBtn.textContent = 'Save LA/LB to browser';
-                    }, 1500);
-                });
-
-                // Listen for updates from footer
-                document.addEventListener('laLbUpdated', (e) => {
-                    if (e.detail.source !== 'advanced') {
-                        if (e.detail.la !== undefined) laParamInput.value = e.detail.la.toFixed(2);
-                        if (e.detail.lb !== undefined) lbParamInput.value = e.detail.lb.toFixed(2);
-                    }
-                });
-            }
-        });
-    </script>
 </body>
 </html>

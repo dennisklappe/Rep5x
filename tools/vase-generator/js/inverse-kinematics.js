@@ -1,6 +1,49 @@
 // Rep5x Inverse Kinematics Processor
 // Processes raw G-code and applies kinematic corrections based on A/B axis movements
 
+/**
+ * Apply inverse kinematics calculations for Rep5x 5-axis printer
+ * Converts tool-tip coordinates to machine coordinates based on A/B axis rotations
+ *
+ * @param {number} x - X coordinate (tool tip)
+ * @param {number} y - Y coordinate (tool tip)
+ * @param {number} z - Z coordinate (tool tip)
+ * @param {number} a - A axis rotation in degrees
+ * @param {number} b - B axis rotation in degrees
+ * @param {number} la - LA parameter (A-axis offset, default 0)
+ * @param {number} lb - LB parameter (B-axis offset, default 47.9)
+ * @returns {Object} Corrected coordinates {x, y, z, a, b}
+ */
+function applyInverseKinematics(x, y, z, a, b, la = 0, lb = 47.9) {
+    const aRad = a * Math.PI / 180;
+    const bRad = b * Math.PI / 180;
+
+    // X = X' + sin(A)·LA + cos(A)·sin(B)·LB
+    const correctedX = x + Math.sin(aRad) * la + Math.cos(aRad) * Math.sin(bRad) * lb;
+
+    // Y = Y' + (cos(A) - 1)·LA - sin(A)·sin(B)·LB
+    const correctedY = y + (Math.cos(aRad) - 1) * la - Math.sin(aRad) * Math.sin(bRad) * lb;
+
+    // Z = Z' + (cos(B) - 1)·LB
+    const correctedZ = z + (Math.cos(bRad) - 1) * lb;
+
+    return {
+        x: correctedX,
+        y: correctedY,
+        z: correctedZ,
+        a: a,
+        b: b
+    };
+}
+
+/**
+ * Process raw G-code and apply inverse kinematics corrections
+ * @param {string} rawGcode - Raw G-code string
+ * @param {boolean} enableKinematics - Whether to apply corrections
+ * @param {number} la - LA parameter
+ * @param {number} lb - LB parameter
+ * @returns {string} Processed G-code
+ */
 function processInverseKinematics(rawGcode, enableKinematics = true, la = 0, lb = 47.9) {
     if (!enableKinematics) {
         return rawGcode; // Return unchanged if disabled
