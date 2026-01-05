@@ -38,17 +38,37 @@ class InverseKinematicsReverser {
         // Process in chunks to avoid performance issues
         const result = [];
         const chunkSize = 1000;
-        
+
+        // Track modal values for A and B axes (G-code retains last set value)
+        let currentA = 0;
+        let currentB = 0;
+        let currentX = 0;
+        let currentY = 0;
+        let currentZ = 0;
+
         for (let i = 0; i < commands.length; i += chunkSize) {
             const chunk = commands.slice(i, i + chunkSize);
             const processedChunk = chunk.map(command => {
+                // Handle G92 reset commands - they set modal values without IK transformation
+                if (command.type === 'reset') {
+                    if (command.a !== null) currentA = command.a;
+                    return command;
+                }
+
                 if (command.hasMovement) {
-                    // Use previous position for null coordinates
-                    const x = command.x !== null ? command.x : 0;
-                    const y = command.y !== null ? command.y : 0;
-                    const z = command.z !== null ? command.z : 0;
-                    const a = command.a !== null ? command.a : 0;
-                    const b = command.b !== null ? command.b : 0;
+                    // Update modal values when explicitly set
+                    if (command.a !== null) currentA = command.a;
+                    if (command.b !== null) currentB = command.b;
+                    if (command.x !== null) currentX = command.x;
+                    if (command.y !== null) currentY = command.y;
+                    if (command.z !== null) currentZ = command.z;
+
+                    // Use current modal values for IK reversal
+                    const x = currentX;
+                    const y = currentY;
+                    const z = currentZ;
+                    const a = currentA;
+                    const b = currentB;
 
                     const reversed = this.reverseIK(x, y, z, a, b);
 
@@ -70,10 +90,10 @@ class InverseKinematicsReverser {
                 }
                 return command;
             });
-            
+
             result.push(...processedChunk);
         }
-        
+
         return result;
     }
 
