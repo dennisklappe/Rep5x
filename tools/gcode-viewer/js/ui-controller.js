@@ -124,6 +124,16 @@ class UIController {
             if (this.onManualModeChange) this.onManualModeChange(e.target.checked);
         });
 
+        // Load LA/LB from browser storage when IK is enabled
+        this.elements.manualIK.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                const la = StorageManager.loadLa();
+                const lb = StorageManager.loadLb();
+                if (la !== null) this.elements.manualLA.value = la;
+                if (lb !== null) this.elements.manualLB.value = lb;
+            }
+        });
+
         this.elements.applyManual.addEventListener('click', () => {
             if (this.onApplyManual) this.onApplyManual();
         });
@@ -224,6 +234,34 @@ class UIController {
         this.elements.fileDetails.innerHTML += ikHtml;
     }
 
+    displayCalibrationInfo(summary) {
+        if (!summary || !summary.enabled) return;
+
+        let calibHtml = '<div class="mt-2 pt-2 border-t border-gray-300">';
+        calibHtml += '<div><strong>Calibration Correction:</strong></div>';
+        calibHtml += `<div class="text-xs text-green-600">✓ Detected and reversed for display</div>`;
+        calibHtml += `<div class="text-xs">A-axis: ${summary.aHarmonics} Fourier harmonics</div>`;
+        calibHtml += `<div class="text-xs">B-axis: ${summary.bHarmonics} harmonics</div>`;
+        calibHtml += '</div>';
+
+        this.elements.fileDetails.innerHTML += calibHtml;
+    }
+
+    updateReversalStatus(status) {
+        // Update UI to show which reversals are active
+        const statusEl = document.getElementById('reversalStatus');
+        if (!statusEl) return;
+
+        let html = '';
+        if (status.ik) {
+            html += '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mr-1">IK reversed</span>';
+        }
+        if (status.calibration) {
+            html += '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Calibration reversed</span>';
+        }
+        statusEl.innerHTML = html;
+    }
+
     updateProgress(progress) {
         this.elements.progress.value = progress;
         this.elements.progressText.textContent = `${Math.round(progress)}%`;
@@ -297,10 +335,12 @@ class UIController {
     }
 
     getManualSettings() {
+        const manualCalibration = document.getElementById('manualCalibration');
         return {
             inverseKinematics: this.elements.manualIK.checked,
             laParameter: parseFloat(this.elements.manualLA.value) || 0,
-            lbParameter: parseFloat(this.elements.manualLB.value) || 46
+            lbParameter: parseFloat(this.elements.manualLB.value) || 46,
+            reverseCalibration: manualCalibration ? manualCalibration.checked : true
         };
     }
 

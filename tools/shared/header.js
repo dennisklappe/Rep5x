@@ -1,6 +1,9 @@
 /**
  * Shared Header Component for Rep5x Tools
+ * Provides consistent navigation across all tools
  * Usage: Include this script and set data-tool-name on body or call SharedHeader.init('Tool Name')
+ *
+ * Used by: All tools
  */
 
 const SharedHeader = {

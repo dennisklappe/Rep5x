@@ -1,5 +1,10 @@
-// Rep5x Theme Configuration
-// This loads the same theme used by the main website
+/**
+ * Rep5x Theme Configuration
+ * Loads and applies the same theme used by the main website
+ * Provides light/dark mode toggle functionality
+ *
+ * Used by: All tools
+ */
 
 let theme = null;
 

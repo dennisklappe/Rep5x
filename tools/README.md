@@ -24,6 +24,9 @@ Visualise and animate 5-axis G-code files with collision detection.
 ### [Calibrator](https://tools.rep5x.com/calibrator/)
 Find error curves for your 5-axis system across all A and B angles.
 
+### [G-code Corrector](https://tools.rep5x.com/gcode-corrector/)
+Apply calibration corrections and inverse kinematics to 5-axis G-code files.
+
 ## File structure
 
 ```
@@ -37,13 +40,20 @@ tools/
 │   ├── printer-interface.js
 │   ├── camera-manager.js
 │   ├── header.js
-│   └── footer.js
+│   ├── footer.js
+│   ├── inverse-kinematics.js
+│   ├── a-axis-optimizer.js
+│   ├── calibration-corrector.js
+│   ├── calibration-visualizer.js
+│   ├── calibration-visualizer-3d.js
+│   └── correction-graph-renderer.js
 ├── printer-control/
 ├── printer-setup/
 ├── la-lb-measure/
 ├── vase-generator/
 ├── gcode-viewer/
-└── calibrator/
+├── calibrator/
+└── gcode-corrector/
 ```
 
 ## Support

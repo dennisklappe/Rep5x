@@ -1,6 +1,8 @@
 /**
- * Storage Manager for Rep5x Kinematic Calibrator
- * Handles persistence of calibration data using localStorage with cookie fallback
+ * Storage Manager for Rep5x Tools
+ * Handles persistence of calibration data, LA/LB values, and settings using localStorage
+ *
+ * Used by: All tools (Calibrator, LA/LB Measure, Printer Setup, Printer Control, Vase Generator, G-code Corrector, G-code Viewer)
  */
 
 class StorageManager {

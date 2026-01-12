@@ -28,8 +28,6 @@ vase-generator/
 ├── README.md
 └── js/
     ├── app.js
-    ├── inverse-kinematics.js
-    ├── a-axis-optimizer.js
     └── shapes/
         ├── elbow-pipe.js
         └── mushroom.js

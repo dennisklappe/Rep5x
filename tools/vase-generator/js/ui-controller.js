@@ -24,8 +24,10 @@ class UIController {
         this.setupShapeListeners();
         this.setupMaterialPresetListeners();
         this.setupKinematicsListeners();
+        this.setupCalibrationListeners();
         this.setupNozzleListeners();
         this.loadSavedCalibration();
+        this.loadCalibrationData();
     }
 
     setupTabListeners() {
@@ -225,6 +227,70 @@ class UIController {
         }
     }
 
+    setupCalibrationListeners() {
+        const loadBtn = document.getElementById('loadCalibrationBtn');
+        const enableCheckbox = document.getElementById('enableCalibration');
+
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => {
+                this.loadCalibrationData();
+                loadBtn.textContent = 'Reloaded!';
+                setTimeout(() => {
+                    loadBtn.textContent = 'Reload from browser storage';
+                }, 1500);
+            });
+        }
+
+        // Disable checkbox if no calibration data
+        if (enableCheckbox && !this.calibrationCorrector?.loaded) {
+            enableCheckbox.disabled = true;
+        }
+    }
+
+    loadCalibrationData() {
+        if (typeof StorageManager === 'undefined' || typeof CalibrationCorrector === 'undefined') return;
+
+        const calibData = StorageManager.loadCalibrationData();
+        if (!calibData) {
+            this.updateCalibrationStatus(false);
+            return;
+        }
+
+        try {
+            this.calibrationCorrector = new CalibrationCorrector();
+            const result = this.calibrationCorrector.loadFromJSON(calibData);
+
+            this.updateCalibrationStatus(true, result);
+
+            // Enable checkbox
+            const checkbox = document.getElementById('enableCalibration');
+            if (checkbox) checkbox.disabled = false;
+
+        } catch (error) {
+            console.error('Error loading calibration data:', error);
+            this.updateCalibrationStatus(false);
+        }
+    }
+
+    updateCalibrationStatus(loaded, details) {
+        const notLoadedDiv = document.getElementById('calibrationNotLoaded');
+        const loadedDiv = document.getElementById('calibrationLoaded');
+        const detailsDiv = document.getElementById('calibrationDetails');
+
+        if (notLoadedDiv && loadedDiv) {
+            if (loaded) {
+                notLoadedDiv.classList.add('hidden');
+                loadedDiv.classList.remove('hidden');
+                if (detailsDiv && details) {
+                    detailsDiv.textContent = `${details.aSweepPoints} A-sweep + ${details.bSweepPoints} B-sweep points`;
+                }
+            } else {
+                notLoadedDiv.classList.remove('hidden');
+                loadedDiv.classList.add('hidden');
+            }
+        }
+    }
+
     setupNozzleListeners() {
         const nozzleDiameter = document.getElementById('nozzleDiameter');
         const layerHeight = document.getElementById('layerHeight');
@@ -356,6 +422,8 @@ class UIController {
             laParam: parseFloat(document.getElementById('laParam')?.value || 0),
             lbParam: parseFloat(document.getElementById('lbParam')?.value || 47.9),
             enableAAxisOptimization: document.getElementById('enableAAxisOptimization')?.checked || false,
+            enableCalibration: document.getElementById('enableCalibration')?.checked || false,
+            calibrationCorrector: this.calibrationCorrector || null,
             startGcode: document.getElementById('startGcode')?.value || '',
             endGcode: document.getElementById('endGcode')?.value || ''
         };

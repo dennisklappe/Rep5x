@@ -1,7 +1,11 @@
-// A-axis shortest route optimizer for continuous rotation
-// For printers WITH slipring: wraps A values to 0-360 range and inserts G92 resets
-// For printers WITHOUT slipring: leave A values continuous (they rotate back at end)
-// Based on aAxisTakeShortRoute.py
+/**
+ * A-axis Shortest Route Optimizer
+ * For printers WITH slipring: wraps A values to 0-360 range and inserts G92 resets
+ * For printers WITHOUT slipring: leave A values continuous (they rotate back at end)
+ * Based on aAxisTakeShortRoute.py
+ *
+ * Used by: Vase Generator, G-code Corrector
+ */
 
 function optimizeAAxisRotation(gcode, enableOptimization = true) {
     if (!enableOptimization) {
