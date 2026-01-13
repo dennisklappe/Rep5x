@@ -4,9 +4,8 @@ website/dist/
 website/.astro/
 website/.DS_Store
 
-# Package manager files
+# Package manager files (yarn.lock committed for reproducible builds)
 website/package-lock.json
-website/yarn.lock
 website/pnpm-lock.yaml
 
 # Environment variables
