@@ -13,7 +13,7 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 | A-driven-pulley | A-driven-pulley_v1.1.0.3mf | Drive pulley for A-axis |
 | B-driven-pulley | b-driven-pulley_v1.1.0.3mf | Custom pulley for B-axis drive |
 | B_arm | B_arm_v1.0.0.3mf | Rotational arm for B-axis |
-| Slip ring holder | slip-ring-holder_v1.1.0.3mf | Mount for slip ring assembly |
+| Slip ring holder | slip-ring-holder_v1.1.1.3mf | Mount for slip ring assembly |
 | Spacer 3mm | spacer-3mm_v1.0.0.3mf | 3mm spacer component |
 | Hotend spacer | hotend-spacer_v1.0.0.3mf | Spacer for hotend mounting |
 

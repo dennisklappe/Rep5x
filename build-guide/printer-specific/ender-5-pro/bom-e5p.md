@@ -2,9 +2,15 @@
 
 This BOM covers components specific to the Ender 5 Pro conversion. See the [universal BOM](../../universal-parts/bom-universal.md) for common components required across all printer models.
 
-## Printer-specific components
+## Printer-specific 3D printed components
 
-The Ender 5 Pro conversion requires only one additional component beyond the [universal BOM](../../universal-parts/bom-universal.md):
+All files available in [`3d-printed-parts/current/3mf/`](3d-printed-parts/current/3mf/) and [`3d-printed-parts/current/step/`](3d-printed-parts/current/step/).
+
+| Component | File | Description |
+|-----------|------|-------------|
+| Carriage mount | carriage-mount_v1.0.0.3mf | Mounts to Ender 5 Pro X carriage |
+
+## Printer-specific COTS components
 
 | Qty | Part Number | Description | Notes | Purchase links |
 |-----|-------------|-------------|-------|----------------|

@@ -4,6 +4,15 @@ Version history and changes for Rep5x 3D printed components. This log helps buil
 
 ---
 
+## Version 1.1.1 (January 2026)
+
+### slip-ring-holder v1.1.1
+- **Updated**: Shortened overall length for easier fit between carriage mount and slip ring
+- **Reason**: Improved clearance and easier assembly with v1.1.x carriage mounts
+- **Compatibility**: Direct replacement for v1.1.0. Requires v1.1.x carriage mount design (not compatible with v1.0.0 Ender 5 Pro carriage mount)
+
+---
+
 ## Version 1.1.0 (November 2025)
 
 ### b-arm v1.1.0
@@ -24,8 +33,8 @@ Version history and changes for Rep5x 3D printed components. This log helps buil
 ### slip-ring-holder v1.1.0
 - **Updated**: Redesigned slipring mounting component
 - **Replaces**: slip-ring-holder v1.0.0
-- **Reason**: Redesigned to better fit the new carriage mount for Ender 3 V3 SE
-- **Compatibility**: Designed for Ender 3 V3 SE carriage mount, does not work with Ender 5 Pro carriage mount
+- **Reason**: Redesigned to fit v1.1.x carriage mount design
+- **Compatibility**: Requires v1.1.x carriage mount design (not compatible with v1.0.0 Ender 5 Pro carriage mount)
 
 ### B_switch_cover v1.1.0
 - **Removed**: No longer required in v1.1.0 design
