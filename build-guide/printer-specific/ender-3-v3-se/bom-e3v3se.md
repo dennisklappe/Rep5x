@@ -4,11 +4,11 @@ This BOM covers components specific to the Ender 3 V3 SE conversion. See the [un
 
 ## Printer-specific 3D printed components
 
-All files available in [`3d-printed-parts/3mf/`](3d-printed-parts/3mf/) and [`3d-printed-parts/step/`](3d-printed-parts/step/).
+All files available in [`3d-printed-parts/current/3mf/`](3d-printed-parts/current/3mf/) and [`3d-printed-parts/current/step/`](3d-printed-parts/current/step/).
 
 | Component | File | Description |
 |-----------|------|-------------|
-| Carriage mount | carriage-mount_v1.1.0.3mf | Mounts to Ender 3 V3 SE X carriage |
+| Carriage mount | carriage-mount_v1.1.1.3mf | Mounts to Ender 3 V3 SE X carriage |
 | Y endstop mount | y-endstop_v1.1.0.3mf | 3D printed mount for Y-axis microswitch |
 | Z endstop mount | z-endstop_v1.1.0.3mf | 3D printed mount for Z-axis microswitch on X gantry |
 
@@ -17,6 +17,7 @@ All files available in [`3d-printed-parts/3mf/`](3d-printed-parts/3mf/) and [`3d
 | Qty | Part Number | Description | Notes | Purchase links |
 |-----|-------------|-------------|-------|----------------|
 | 2 | Microswitch | Endstop switches for Y and Z axes | 2-pin micro limit switch | [AliExpress](https://s.click.aliexpress.com/e/_c4MonxZx)<br>[Amazon](https://amzn.to/47VtY08) |
+| 4 | M3 washer | Washers for yaw stepper mounting | 7mm OD | - |
 | 1 | BTT Mini 12864 Display (optional) | LCD display | V3 SE stock screen not compatible - other compatible screens or headless operation also work | [AliExpress](https://s.click.aliexpress.com/e/_c36wGfe9)<br>[Amazon](https://amzn.to/3JDvGeD) |
 | 1 | External Bowden extruder | Remote extruder assembly | Stock is direct drive | [AliExpress](https://s.click.aliexpress.com/e/_c38c2EU9)<br>[Amazon](https://amzn.to/49ikoqu) |
 | 1 | Bowden-compatible hotend | Replacement hotend with PTFE coupling | Stock V3 SE hotend lacks Bowden retention | [AliExpress](https://s.click.aliexpress.com/e/_c2yOJW0z)<br>[Amazon](https://amzn.to/4o3crsJ) |
