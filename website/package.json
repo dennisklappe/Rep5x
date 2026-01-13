@@ -32,6 +32,9 @@
     "shiki": "^3.2.1",
     "vite": "^6.2.1"
   },
+  "resolutions": {
+    "fontkitten": "1.0.0"
+  },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
