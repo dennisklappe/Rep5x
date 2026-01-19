@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rep5x Calibrator</title>
-    <meta name="description" content="Find error curves for your Rep5x 5-axis printer across all A and B positions">
+    <meta name="description" content="Find error curves for your Rep5x 5-axis printer across all C and B positions">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="../shared/styles.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
@@ -199,7 +199,7 @@
                 <div class="text-center mb-8">
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">5-axis error calibration</h2>
                     <p class="text-gray-600 max-w-2xl mx-auto">
-                        Measure position errors across all A and B angles to create an error map.
+                        Measure position errors across all C and B angles to create an error map.
                         This data can be used to improve print accuracy.
                     </p>
                 </div>
@@ -216,7 +216,7 @@
                         </div>
                         <div class="ml-3 text-sm text-blue-700">
                             <p>Measures <strong>21 points</strong> using sweep calibration:
-                                A-axis sweep (0° to 315° at B=0°), then B-axis sweep (0° to ±90° at A=0°).
+                                C-axis sweep (0° to 315° at B=0°), then B-axis sweep (0° to ±90° at C=0°).
                                 At each point, align the nozzle to the reference and confirm.
                             </p>
                         </div>
@@ -384,7 +384,7 @@
                                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                                         clip-rule="evenodd" />
                                 </svg>
-                                <span>Move to starting position (X100 Y100 Z50 A0 B0)</span>
+                                <span>Move to starting position (X100 Y100 Z50 C0 B0)</span>
                             </div>
                         </div>
                         <div class="flex gap-3">
@@ -475,7 +475,7 @@
                         <div class="mb-4 p-3 bg-gray-50 rounded-lg">
                             <p class="text-xs text-gray-500 mb-1">Current position</p>
                             <div class="font-mono text-sm" id="prepare-position-display">
-                                X: --- Y: --- Z: --- A: --- B: ---
+                                X: --- Y: --- Z: --- C: --- B: ---
                             </div>
                         </div>
 
@@ -543,7 +543,7 @@
                         <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
                             <div class="text-center mb-3">
                                 <span class="text-gray-600">Current position: </span>
-                                <span class="font-bold">A=<span id="current-a">0</span>° B=<span
+                                <span class="font-bold">C=<span id="current-c">0</span>° B=<span
                                         id="current-b">0</span>°</span>
                             </div>
                             <div class="grid grid-cols-3 gap-4 text-center">
@@ -599,7 +599,7 @@
                                 <span class="text-sm text-gray-500">mm</span>
                             </div>
                             <div id="calibration-position" class="pos-value text-center text-gray-600 text-sm">
-                                X: --- Y: --- Z: --- A: --- B: ---
+                                X: --- Y: --- Z: --- C: --- B: ---
                             </div>
                         </div>
                     </div>
@@ -626,7 +626,7 @@
 
                         <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
                             <div class="flex gap-2 mb-3" id="graph-axis-selector">
-                                <button class="flex-1 px-3 py-2 text-sm border rounded active" data-view="a">A sweep</button>
+                                <button class="flex-1 px-3 py-2 text-sm border rounded active" data-view="c">C sweep</button>
                                 <button class="flex-1 px-3 py-2 text-sm border rounded" data-view="b">B sweep</button>
                             </div>
                             <!-- Z Safety Offset -->
@@ -651,7 +651,7 @@
                 </div>
 
                 <div class="flex justify-center gap-3 mt-6">
-                    <button id="skip-a-sweep-btn" class="btn-secondary px-4 py-2 rounded-lg text-sm">Skip A sweep</button>
+                    <button id="skip-c-sweep-btn" class="btn-secondary px-4 py-2 rounded-lg text-sm">Skip C sweep</button>
                     <button id="redo-prev-btn" class="btn-outline px-4 py-2 rounded-lg text-sm" disabled>↶ Redo previous</button>
                     <button id="confirm-point-btn" class="btn-success px-6 py-2 rounded-lg font-medium">Confirm
                         (Enter)</button>
@@ -755,7 +755,7 @@
                         <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
                             <div class="text-center mb-3">
                                 <span class="text-gray-600">Current position: </span>
-                                <span class="font-bold">A=<span id="current-a-z">0</span>° B=<span
+                                <span class="font-bold">C=<span id="current-c-z">0</span>° B=<span
                                         id="current-b-z">0</span>°</span>
                             </div>
                             <div class="text-center">
@@ -787,7 +787,7 @@
                                 <span class="text-sm text-gray-500">mm</span>
                             </div>
                             <div id="calibration-position-z" class="pos-value text-center text-gray-600 text-sm">
-                                X: --- Y: --- Z: --- A: --- B: ---
+                                X: --- Y: --- Z: --- C: --- B: ---
                             </div>
                         </div>
                     </div>
@@ -832,17 +832,17 @@
                 <div class="max-w-4xl mx-auto">
                     <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Calibration results</h2>
 
-                    <!-- A sweep graph (B=0) -->
+                    <!-- C sweep graph (B=0) -->
                     <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">A sweep (B=0°)</h4>
+                        <h4 class="font-semibold text-gray-700 mb-2">C sweep (B=0°)</h4>
                         <div class="graph-container">
-                            <canvas id="results-graph-a" class="graph-canvas"></canvas>
+                            <canvas id="results-graph-c" class="graph-canvas"></canvas>
                         </div>
                     </div>
 
-                    <!-- B sweep graph (A=0) -->
+                    <!-- B sweep graph (C=0) -->
                     <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">B sweep (A=0°)</h4>
+                        <h4 class="font-semibold text-gray-700 mb-2">B sweep (C=0°)</h4>
                         <div class="graph-container">
                             <canvas id="results-graph-b" class="graph-canvas"></canvas>
                         </div>
@@ -876,7 +876,7 @@
                         <div id="results-viz-container" class="w-full h-64 bg-gray-900 rounded cursor-pointer"></div>
                         <div class="flex justify-center gap-3 mt-2">
                             <button id="results-viz-sweep-both" class="text-xs px-3 py-1 rounded bg-gray-600 text-white">Both</button>
-                            <button id="results-viz-sweep-a" class="text-xs px-3 py-1 rounded bg-gray-300 text-gray-700">A sweep</button>
+                            <button id="results-viz-sweep-c" class="text-xs px-3 py-1 rounded bg-gray-300 text-gray-700">C sweep</button>
                             <button id="results-viz-sweep-b" class="text-xs px-3 py-1 rounded bg-gray-300 text-gray-700">B sweep</button>
                             <button id="results-viz-sweep-combined" class="text-xs px-3 py-1 rounded bg-gray-300 text-gray-700">Combined</button>
                             <button id="results-viz-reset" class="text-xs px-3 py-1 rounded bg-gray-300 text-gray-700 hover:bg-gray-400">Reset</button>
@@ -973,7 +973,7 @@
     <script src="../shared/camera-manager.js"></script>
     <script src="../shared/inverse-kinematics.js"></script>
     <script src="../shared/calibration-corrector.js"></script>
-    <script src="../shared/a-axis-optimizer.js"></script>
+    <script src="../shared/c-axis-optimizer.js"></script>
     <script src="../shared/calibration-visualizer-3d.js"></script>
 
     <!-- Tool-specific scripts -->

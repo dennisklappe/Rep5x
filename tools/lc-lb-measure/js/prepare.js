@@ -68,7 +68,7 @@ class StepPrepare {
             // Step 4: Move to starting position
             this.setItemActive('position');
             btn.textContent = 'Moving to starting position...';
-            await this.app.printer.sendCommandAndWait('G0 X100 Y100 Z50 A0 B0 F3000', 30000);
+            await this.app.printer.sendCommandAndWait('G0 X100 Y100 Z50 C0 B0 F3000', 30000);
             await this.app.printer.sendCommandAndWait('M400', 30000); // Wait for move to complete
             await this.app.printer.requestPosition(); // Update position display
             this.setItemComplete('position');
@@ -100,12 +100,12 @@ class StepPrepare {
     confirmReference() {
         const position = this.app.printer.getPosition();
 
-        // Store reference position for use in LA/LB measurements
+        // Store reference position for use in LC/LB measurements
         this.app.referencePosition = {
             x: position.x,
             y: position.y,
             z: position.z,
-            a: position.a,
+            c: position.c,
             b: position.b
         };
 
@@ -134,7 +134,7 @@ class StepPrepare {
     skip() {
 
         // Mark as ready without setting a reference position
-        // Reference will be set during LA measurement at A=0 confirmation
+        // Reference will be set during LC measurement at C=0 confirmation
         this.isReady = true;
         this.referenceConfirmed = true;
 

@@ -1,26 +1,26 @@
 /**
  * Step 2: Direction Check
- * Verifies A and B axis motor directions before calibration
+ * Verifies C and B axis motor directions before calibration
  */
 
 class StepDirectionCheck {
     constructor(app) {
         this.app = app;
-        this.aChecked = false;
+        this.cChecked = false;
         this.bChecked = false;
-        this.currentAxis = null;  // 'a' or 'b'
+        this.currentAxis = null;  // 'c' or 'b'
     }
 
     /**
      * Set up event listeners for this step
      */
     setup() {
-        // A-axis direction buttons
-        document.getElementById('aDirectionStart')?.addEventListener('click', () => this.runDirectionTest('a'));
-        document.getElementById('aDirectionSkip')?.addEventListener('click', () => this.skipAxis('a'));
-        document.getElementById('aDirectionCorrect')?.addEventListener('click', () => this.directionConfirmed('a', true));
-        document.getElementById('aDirectionWrong')?.addEventListener('click', () => this.directionConfirmed('a', false));
-        document.getElementById('aDirectionRetry')?.addEventListener('click', () => this.retryDirectionCheck('a'));
+        // C-axis direction buttons
+        document.getElementById('cDirectionStart')?.addEventListener('click', () => this.runDirectionTest('c'));
+        document.getElementById('cDirectionSkip')?.addEventListener('click', () => this.skipAxis('c'));
+        document.getElementById('cDirectionCorrect')?.addEventListener('click', () => this.directionConfirmed('c', true));
+        document.getElementById('cDirectionWrong')?.addEventListener('click', () => this.directionConfirmed('c', false));
+        document.getElementById('cDirectionRetry')?.addEventListener('click', () => this.retryDirectionCheck('c'));
 
         // B-axis direction buttons
         document.getElementById('bDirectionStart')?.addEventListener('click', () => this.runDirectionTest('b'));
@@ -40,12 +40,12 @@ class StepDirectionCheck {
         document.getElementById('nextBtn').disabled = true;
 
         // Reset state
-        this.aChecked = false;
+        this.cChecked = false;
         this.bChecked = false;
         this.currentAxis = null;
 
-        // Show A-axis prompt first
-        this.showAxisPrompt('a');
+        // Show C-axis prompt first
+        this.showAxisPrompt('c');
     }
 
     /**
@@ -55,7 +55,7 @@ class StepDirectionCheck {
         this.currentAxis = axis;
 
         // Show/hide axis sections
-        document.getElementById('aDirectionSection').classList.toggle('hidden', axis !== 'a');
+        document.getElementById('cDirectionSection').classList.toggle('hidden', axis !== 'c');
         document.getElementById('bDirectionSection').classList.toggle('hidden', axis !== 'b');
 
         // Reset UI for this axis
@@ -71,8 +71,8 @@ class StepDirectionCheck {
      * Skip direction check for a single axis
      */
     async skipAxis(axis) {
-        if (axis === 'a') {
-            this.aChecked = true;
+        if (axis === 'c') {
+            this.cChecked = true;
             // Move to B-axis check
             this.showAxisPrompt('b');
         } else {
@@ -86,7 +86,7 @@ class StepDirectionCheck {
      * Skip all direction checks
      */
     skipAll() {
-        this.aChecked = true;
+        this.cChecked = true;
         this.bChecked = true;
         this.app.nextStep();
     }
@@ -111,10 +111,10 @@ class StepDirectionCheck {
             document.getElementById(`${axis}DirectionStatus`).textContent = 'Starting direction test...';
             await this.app.printer.sendCommandAndWait(`G92 ${Axis}0`, 5000);
 
-            if (axis === 'a') {
-                // A-axis: rotate full turn
-                document.getElementById('aDirectionStatus').textContent = 'Rotating A0 → A360...';
-                await this.app.printer.sendCommandAndWait('G0 A360 F1800', 60000);
+            if (axis === 'c') {
+                // C-axis: rotate full turn
+                document.getElementById('cDirectionStatus').textContent = 'Rotating C0 → C360...';
+                await this.app.printer.sendCommandAndWait('G0 C360 F1800', 60000);
             } else {
                 // B-axis: tilt 90 degrees
                 document.getElementById('bDirectionStatus').textContent = 'Tilting B0 → B90...';
@@ -123,8 +123,8 @@ class StepDirectionCheck {
             await this.app.printer.sendCommandAndWait('M400', 30000);
 
             // Ask user about direction
-            if (axis === 'a') {
-                document.getElementById('aDirectionStatus').textContent = 'Did it rotate clockwise (viewed from above)?';
+            if (axis === 'c') {
+                document.getElementById('cDirectionStatus').textContent = 'Did it rotate clockwise (viewed from above)?';
             } else {
                 document.getElementById('bDirectionStatus').textContent = 'Did the nozzle tilt to the LEFT?';
             }
@@ -145,8 +145,8 @@ class StepDirectionCheck {
 
         if (isCorrect) {
             // Direction is correct
-            if (axis === 'a') {
-                this.aChecked = true;
+            if (axis === 'c') {
+                this.cChecked = true;
             } else {
                 this.bChecked = true;
             }
@@ -157,8 +157,8 @@ class StepDirectionCheck {
             btn.textContent = 'Continuing...';
             document.getElementById(`${axis}DirectionWrong`).disabled = true;
 
-            // Reset position coordinate (we're physically back at start after A360 full rotation)
-            // For A-axis: platform did a full rotation, so it's back at physical start
+            // Reset position coordinate (we're physically back at start after C360 full rotation)
+            // For C-axis: platform did a full rotation, so it's back at physical start
             // For B-axis: we need to move back to B0 first
             if (axis === 'b') {
                 // Move B back to 0 before resetting coordinate
@@ -171,7 +171,7 @@ class StepDirectionCheck {
             await this.app.printer.sendCommandAndWait(`G92 ${Axis}0`, 5000);
 
             // Move to next axis or finish
-            if (axis === 'a') {
+            if (axis === 'c') {
                 // Move to B-axis check
                 this.showAxisPrompt('b');
             } else {
@@ -207,7 +207,7 @@ class StepDirectionCheck {
      */
     async finishDirectionCheck() {
         // Mark direction checks as done in the axis step controllers
-        this.app.stepAAxis.directionChecked = true;
+        this.app.stepCAxis.directionChecked = true;
         this.app.stepBAxis.directionChecked = true;
 
         this.app.nextStep();
@@ -217,12 +217,12 @@ class StepDirectionCheck {
      * Update status indicators showing which axes are checked
      */
     updateStatusIndicators() {
-        const aStatus = document.getElementById('aCheckStatus');
+        const cStatus = document.getElementById('cCheckStatus');
         const bStatus = document.getElementById('bCheckStatus');
 
-        if (aStatus) {
-            aStatus.textContent = this.aChecked ? '✓' : '○';
-            aStatus.classList.toggle('text-green-500', this.aChecked);
+        if (cStatus) {
+            cStatus.textContent = this.cChecked ? '✓' : '○';
+            cStatus.classList.toggle('text-green-500', this.cChecked);
         }
         if (bStatus) {
             bStatus.textContent = this.bChecked ? '✓' : '○';

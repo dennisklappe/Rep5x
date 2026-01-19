@@ -13,12 +13,12 @@ class GcodeParser {
             wallThickness: null,
             generatedOn: null,
             inverseKinematics: false,
-            laParameter: 0,
+            lcParameter: 0,
             lbParameter: 46,
-            aAxisOptimization: false,
+            cAxisOptimization: false,
             ikFormulas: {
-                x: "X' + sin(A') × LA + cos(A') × sin(B') × LB",
-                y: "Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB", 
+                x: "X' + sin(C') × LC + cos(C') × sin(B') × LB",
+                y: "Y' - LC + cos(C') × LC - sin(C') × sin(B') × LB", 
                 z: "Z' + cos(B') × LB - LB"
             }
         };
@@ -108,7 +108,7 @@ class GcodeParser {
             // Parse metadata from comments
             this.parseComment(line);
         } else if (line.startsWith('G92')) {
-            // Parse coordinate system reset (used by A-axis optimizer)
+            // Parse coordinate system reset (used by C-axis optimizer)
             const resetCommand = this.parseG92Command(line, lineNumber);
             if (resetCommand) {
                 this.commands.push(resetCommand);
@@ -128,14 +128,14 @@ class GcodeParser {
         const coords = {
             lineNumber: lineNumber,
             type: 'reset',  // Coordinate system reset
-            a: null,
+            c: null,
             hasReset: false
         };
 
-        // Extract A value (main use case for A-axis optimizer)
-        const aMatch = line.match(/A([-+]?\d*\.?\d+)/i);
-        if (aMatch) {
-            coords.a = parseFloat(aMatch[1]);
+        // Extract C value (main use case for C-axis optimizer)
+        const cMatch = line.match(/C([-+]?\d*\.?\d+)/i);
+        if (cMatch) {
+            coords.c = parseFloat(cMatch[1]);
             coords.hasReset = true;
         }
 
@@ -173,10 +173,10 @@ class GcodeParser {
         else if (comment.toLowerCase().includes('inverse kinematics')) {
             this.metadata.inverseKinematics = comment.toLowerCase().includes('enabled');
         }
-        else if (comment.toLowerCase().includes('la parameter')) {
-            const match = comment.match(/la parameter\s*:\s*([+-]?\d*\.?\d+)/i);
+        else if (comment.toLowerCase().includes('lc parameter')) {
+            const match = comment.match(/lc parameter\s*:\s*([+-]?\d*\.?\d+)/i);
             if (match) {
-                this.metadata.laParameter = parseFloat(match[1]);
+                this.metadata.lcParameter = parseFloat(match[1]);
             }
         }
         else if (comment.toLowerCase().includes('lb parameter')) {
@@ -185,8 +185,8 @@ class GcodeParser {
                 this.metadata.lbParameter = parseFloat(match[1]);
             }
         }
-        else if (comment.toLowerCase().includes('a-axis optimization')) {
-            this.metadata.aAxisOptimization = comment.toLowerCase().includes('enabled');
+        else if (comment.toLowerCase().includes('c-axis optimization')) {
+            this.metadata.cAxisOptimization = comment.toLowerCase().includes('enabled');
         }
         // Parse IK formulas
         else if (comment.startsWith('X = ') || comment.startsWith('X= ')) {
@@ -205,7 +205,7 @@ class GcodeParser {
         const coords = {
             lineNumber: lineNumber,
             type: line.startsWith('G1') ? 'move' : 'rapid',
-            x: null, y: null, z: null, a: null, b: null,
+            x: null, y: null, z: null, c: null, b: null,
             e: null, f: null,
             hasMovement: false
         };
@@ -215,7 +215,7 @@ class GcodeParser {
             x: /X([-+]?\d*\.?\d+)/i,
             y: /Y([-+]?\d*\.?\d+)/i,
             z: /Z([-+]?\d*\.?\d+)/i,
-            a: /A([-+]?\d*\.?\d+)/i,
+            c: /C([-+]?\d*\.?\d+)/i,
             b: /B([-+]?\d*\.?\d+)/i,
             e: /E([-+]?\d*\.?\d+)/i,
             f: /F([-+]?\d*\.?\d+)/i

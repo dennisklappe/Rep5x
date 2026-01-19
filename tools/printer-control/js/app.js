@@ -142,10 +142,10 @@ class PrinterControlApp {
         // Home buttons
         document.getElementById('homeXY').addEventListener('click', () => this.home(['X', 'Y']));
         document.getElementById('homeZ').addEventListener('click', () => this.home(['Z']));
-        document.getElementById('homeA').addEventListener('click', () => this.home(['A']));
+        document.getElementById('homeC').addEventListener('click', () => this.home(['C']));
         document.getElementById('homeB').addEventListener('click', () => this.home(['B']));
         document.getElementById('homeAll').addEventListener('click', () => this.home([]));
-        document.getElementById('homeABZero').addEventListener('click', () => this.homeABAndZero());
+        document.getElementById('homeCBZero').addEventListener('click', () => this.homeCBAndZero());
 
         // Emergency stop
         document.getElementById('emergencyStop').addEventListener('click', () => this.emergencyStop());
@@ -366,7 +366,7 @@ class PrinterControlApp {
         });
 
         // Home, emergency and extrusion buttons
-        ['homeXY', 'homeZ', 'homeA', 'homeB', 'homeAll', 'homeABZero', 'emergencyStop', 'extrudeBtn', 'retractBtn'].forEach(id => {
+        ['homeXY', 'homeZ', 'homeC', 'homeB', 'homeAll', 'homeCBZero', 'emergencyStop', 'extrudeBtn', 'retractBtn'].forEach(id => {
             const btn = document.getElementById(id);
             if (btn) {
                 btn.disabled = !enabled;
@@ -383,7 +383,7 @@ class PrinterControlApp {
         document.getElementById('pos-x').textContent = pos.x.toFixed(2);
         document.getElementById('pos-y').textContent = pos.y.toFixed(2);
         document.getElementById('pos-z').textContent = pos.z.toFixed(2);
-        document.getElementById('pos-a').textContent = pos.a.toFixed(2);
+        document.getElementById('pos-c').textContent = pos.c.toFixed(2);
         document.getElementById('pos-b').textContent = pos.b.toFixed(2);
     }
 
@@ -439,7 +439,7 @@ class PrinterControlApp {
             return;
         }
 
-        const isRotational = axis === 'A' || axis === 'B';
+        const isRotational = axis === 'C' || axis === 'B';
         const step = isRotational ? this.angleStep : this.linearStep;
         const distance = step * direction;
 
@@ -468,20 +468,20 @@ class PrinterControlApp {
         }
     }
 
-    async homeABAndZero() {
+    async homeCBAndZero() {
         if (!this.printer.isConnected()) {
             this.logToConsole('Not connected to printer', 'error');
             return;
         }
 
         try {
-            this.logToConsole('Homing A & B axes...', 'info');
-            await this.printer.home(['A', 'B']);
-            this.logToConsole('Moving to A0 B0...', 'info');
-            await this.printer.moveTo({ a: 0, b: 0 });
-            this.logToConsole('A/B at zero position', 'info');
+            this.logToConsole('Homing C & B axes...', 'info');
+            await this.printer.home(['C', 'B']);
+            this.logToConsole('Moving to C0 B0...', 'info');
+            await this.printer.moveTo({ c: 0, b: 0 });
+            this.logToConsole('C/B at zero position', 'info');
         } catch (error) {
-            this.logToConsole(`Home A/B error: ${error.message}`, 'error');
+            this.logToConsole(`Home C/B error: ${error.message}`, 'error');
         }
     }
 

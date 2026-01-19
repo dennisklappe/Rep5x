@@ -47,7 +47,7 @@ class SceneObjects {
         arrow.position.set(0, 4, 0);
         group.add(arrow);
 
-        // A-axis rotation indicator (green arrow)
+        // C-axis rotation indicator (green arrow)
         const markerGeometry = new THREE.ConeGeometry(2, 8, 4);
         const markerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
         const marker = new THREE.Mesh(markerGeometry, markerMaterial);

@@ -1,6 +1,6 @@
 /**
  * Shared Footer Component for Rep5x Tools
- * Provides consistent footer with LA/LB display and theme toggle
+ * Provides consistent footer with LC/LB display and theme toggle
  * Usage: Include this script after storage-manager.js, then call SharedFooter.init()
  *
  * Used by: All tools
@@ -16,7 +16,7 @@ const SharedFooter = {
         <footer class="bg-white border-t border-gray-200 mt-16">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div class="text-center text-sm text-gray-500">
-                    <!-- Saved LA/LB display (editable) -->
+                    <!-- Saved LC/LB display (editable) -->
                     <div id="savedKinematicsDisplay" class="mb-3 flex flex-wrap justify-center gap-2">
                         <div class="inline-flex items-center px-3 py-2 rounded-lg status-success border text-sm gap-2">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -24,8 +24,8 @@ const SharedFooter = {
                             </svg>
                             <span>IK:</span>
                             <label class="flex items-center gap-1">
-                                LA =
-                                <input type="number" id="savedLaValue" step="0.01" class="w-16 px-1 py-0.5 text-center border border-primary rounded text-xs bg-white" value="0">
+                                LC =
+                                <input type="number" id="savedLcValue" step="0.01" class="w-16 px-1 py-0.5 text-center border border-primary rounded text-xs bg-white" value="0">
                                 mm
                             </label>
                             <label class="flex items-center gap-1">
@@ -56,17 +56,17 @@ const SharedFooter = {
      * Initialize footer functionality
      */
     initEventListeners() {
-        const laInput = document.getElementById('savedLaValue');
+        const lcInput = document.getElementById('savedLcValue');
         const lbInput = document.getElementById('savedLbValue');
         const saveBtn = document.getElementById('saveFooterValues');
 
-        if (!laInput || !lbInput || !saveBtn) return;
+        if (!lcInput || !lbInput || !saveBtn) return;
 
-        // Load saved LA/LB values
+        // Load saved LC/LB values
         if (typeof StorageManager !== 'undefined') {
             const savedResults = StorageManager.loadCalibrationResults();
             if (savedResults) {
-                if (savedResults.la !== undefined) laInput.value = savedResults.la.toFixed(2);
+                if (savedResults.lc !== undefined) lcInput.value = savedResults.lc.toFixed(2);
                 if (savedResults.lb !== undefined) lbInput.value = savedResults.lb.toFixed(2);
             }
         }
@@ -76,19 +76,19 @@ const SharedFooter = {
 
         // Save button handler
         saveBtn.addEventListener('click', () => {
-            const la = parseFloat(laInput.value) || 0;
+            const lc = parseFloat(lcInput.value) || 0;
             const lb = parseFloat(lbInput.value) || 47;
 
             if (typeof StorageManager !== 'undefined') {
-                StorageManager.saveCalibrationResults(la, lb, {
+                StorageManager.saveCalibrationResults(lc, lb, {
                     method: 'manual',
                     testMode: false
                 });
             }
 
             // Dispatch event so other components can update
-            document.dispatchEvent(new CustomEvent('laLbUpdated', {
-                detail: { la, lb, source: 'footer' }
+            document.dispatchEvent(new CustomEvent('lcLbUpdated', {
+                detail: { lc, lb, source: 'footer' }
             }));
 
             // Visual feedback
@@ -100,9 +100,9 @@ const SharedFooter = {
         });
 
         // Listen for updates from other components
-        document.addEventListener('laLbUpdated', (e) => {
+        document.addEventListener('lcLbUpdated', (e) => {
             if (e.detail.source !== 'footer') {
-                if (e.detail.la !== undefined) laInput.value = e.detail.la.toFixed(2);
+                if (e.detail.lc !== undefined) lcInput.value = e.detail.lc.toFixed(2);
                 if (e.detail.lb !== undefined) lbInput.value = e.detail.lb.toFixed(2);
             }
         });

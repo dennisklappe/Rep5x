@@ -22,9 +22,9 @@ class CalibrationVisualizer {
         // Animation state
         this.animating = false;
         this.animationId = null;
-        this.currentA = 0;
+        this.currentC = 0;
         this.currentB = 0;
-        this.sweepMode = 'a';  // 'a', 'b', or 'both'
+        this.sweepMode = 'c';  // 'c', 'b', or 'both'
         this.animationSpeed = 2;  // degrees per frame
 
         // Mode: 'uncalibrated' shows errors, 'calibrated' shows corrected
@@ -80,14 +80,14 @@ class CalibrationVisualizer {
     setSweepMode(mode) {
         this.sweepMode = mode;
         this.trail = [];
-        this.currentA = 0;
+        this.currentC = 0;
         this.currentB = 0;
     }
 
     /**
-     * Get nozzle position error at current A/B
+     * Get nozzle position error at current C/B
      */
-    getError(a, b) {
+    getError(c, b) {
         if (!this.corrector || !this.corrector.loaded) {
             return { x: 0, y: 0, z: 0 };
         }
@@ -99,7 +99,7 @@ class CalibrationVisualizer {
         } else {
             // Uncalibrated: show the actual error
             // The error is what the calibration would correct
-            const correction = this.corrector.getCorrection(a, b);
+            const correction = this.corrector.getCorrection(c, b);
             // Negate because error = -correction (correction compensates for error)
             return {
                 x: -correction.x,
@@ -310,7 +310,7 @@ class CalibrationVisualizer {
         // Current angles
         this.ctx.fillStyle = this.colours.text;
         this.ctx.font = '12px system-ui';
-        this.ctx.fillText(`A: ${this.currentA.toFixed(0)}°  B: ${this.currentB.toFixed(0)}°`, padding, padding + 25);
+        this.ctx.fillText(`C: ${this.currentC.toFixed(0)}°  B: ${this.currentB.toFixed(0)}°`, padding, padding + 25);
 
         // Current error
         if (this.mode === 'uncalibrated') {
@@ -349,7 +349,7 @@ class CalibrationVisualizer {
             return;
         }
 
-        const error = this.getError(this.currentA, this.currentB);
+        const error = this.getError(this.currentC, this.currentB);
 
         this.drawTrail();
         this.drawNozzle(error);
@@ -363,9 +363,9 @@ class CalibrationVisualizer {
         if (!this.animating) return;
 
         // Update angles based on sweep mode
-        if (this.sweepMode === 'a' || this.sweepMode === 'both') {
-            this.currentA += this.animationSpeed;
-            if (this.currentA >= 360) this.currentA = 0;
+        if (this.sweepMode === 'c' || this.sweepMode === 'both') {
+            this.currentC += this.animationSpeed;
+            if (this.currentC >= 360) this.currentC = 0;
         }
 
         if (this.sweepMode === 'b') {
@@ -380,12 +380,12 @@ class CalibrationVisualizer {
         }
 
         if (this.sweepMode === 'both') {
-            // Slowly vary B while A rotates
-            this.currentB = Math.sin(this.currentA * Math.PI / 180) * 45;
+            // Slowly vary B while C rotates
+            this.currentB = Math.sin(this.currentC * Math.PI / 180) * 45;
         }
 
         // Add to trail
-        const error = this.getError(this.currentA, this.currentB);
+        const error = this.getError(this.currentC, this.currentB);
         this.trail.push({ x: error.x, y: error.y, z: error.z });
         if (this.trail.length > this.trailLength) {
             this.trail.shift();
@@ -431,7 +431,7 @@ class CalibrationVisualizer {
      */
     reset() {
         this.stop();
-        this.currentA = 0;
+        this.currentC = 0;
         this.currentB = 0;
         this.trail = [];
         this.render();
@@ -440,8 +440,8 @@ class CalibrationVisualizer {
     /**
      * Set specific angles
      */
-    setAngles(a, b) {
-        this.currentA = a;
+    setAngles(c, b) {
+        this.currentC = c;
         this.currentB = b;
         this.trail = [];
         this.render();

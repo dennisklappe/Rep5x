@@ -1,8 +1,8 @@
 /**
  * Storage Manager for Rep5x Tools
- * Handles persistence of calibration data, LA/LB values, and settings using localStorage
+ * Handles persistence of calibration data, LC/LB values, and settings using localStorage
  *
- * Used by: All tools (Calibrator, LA/LB Measure, Printer Setup, Printer Control, Vase Generator, G-code Corrector, G-code Viewer)
+ * Used by: All tools (Calibrator, LC/LB Measure, Printer Setup, Printer Control, Vase Generator, G-code Corrector, G-code Viewer)
  */
 
 class StorageManager {
@@ -65,13 +65,13 @@ class StorageManager {
 
     /**
      * Save calibration results
-     * @param {number} la - LA parameter value
+     * @param {number} lc - LC parameter value
      * @param {number} lb - LB parameter value
      * @param {object} metadata - Additional calibration metadata
      */
-    static saveCalibrationResults(la, lb, metadata = {}) {
+    static saveCalibrationResults(lc, lb, metadata = {}) {
         const data = {
-            la: la,
+            lc: lc,
             lb: lb,
             timestamp: new Date().toISOString(),
             ...metadata
@@ -79,7 +79,7 @@ class StorageManager {
         StorageManager.save('results', data);
 
         // Also save individual values for easy access
-        StorageManager.save('la', la);
+        StorageManager.save('lc', lc);
         StorageManager.save('lb', lb);
     }
 
@@ -123,11 +123,11 @@ class StorageManager {
     }
 
     /**
-     * Load LA value directly
-     * @returns {number|null} LA value or null
+     * Load LC value directly
+     * @returns {number|null} LC value or null
      */
-    static loadLa() {
-        return StorageManager.load('la', null);
+    static loadLc() {
+        return StorageManager.load('lc', null);
     }
 
     /**
@@ -161,7 +161,7 @@ class StorageManager {
      * Clear all calibration data
      */
     static clearCalibration() {
-        const keys = ['results', 'la', 'lb', 'calibration_data'];
+        const keys = ['results', 'lc', 'lb', 'calibration_data'];
         keys.forEach(key => {
             const fullKey = StorageManager.PREFIX + key;
             try {

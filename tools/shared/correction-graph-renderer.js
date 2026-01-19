@@ -23,13 +23,13 @@ class CorrectionGraphRenderer {
         this.textColour = 'rgba(255, 255, 255, 0.7)';
 
         // Data storage - simple arrays of {angle, errorX, errorY, errorZ}
-        this.aSweepData = [];  // A sweep data (at B=0) - raw measured points
-        this.bSweepData = [];  // B sweep data (at A=0) - raw measured points
-        this.aSweepFitted = [];  // A sweep fitted curve points
+        this.cSweepData = [];  // C sweep data (at B=0) - raw measured points
+        this.bSweepData = [];  // B sweep data (at C=0) - raw measured points
+        this.cSweepFitted = [];  // C sweep fitted curve points
         this.bSweepFitted = [];  // B sweep fitted curve points
 
         // View configuration
-        this.viewMode = 'a';  // 'a' for A sweep, 'b' for B sweep
+        this.viewMode = 'c';  // 'c' for C sweep, 'b' for B sweep
         this.showAxes = { x: true, y: true, z: true };  // Which error axes to show
         this.showFittedCurve = true;  // Show the fitted curve
 
@@ -68,15 +68,15 @@ class CorrectionGraphRenderer {
     }
 
     /**
-     * Set A sweep data (errors at different A angles, B=0)
+     * Set C sweep data (errors at different C angles, B=0)
      * @param {Array} data - Array of {angle, errorX, errorY, errorZ}
      */
-    setASweepData(data) {
-        this.aSweepData = [...data].sort((a, b) => a.angle - b.angle);
+    setCSweepData(data) {
+        this.cSweepData = [...data].sort((a, b) => a.angle - b.angle);
     }
 
     /**
-     * Set B sweep data (errors at different B angles, A=0)
+     * Set B sweep data (errors at different B angles, C=0)
      * @param {Array} data - Array of {angle, errorX, errorY, errorZ}
      */
     setBSweepData(data) {
@@ -89,16 +89,16 @@ class CorrectionGraphRenderer {
      */
     setDataFromCorrector(corrector) {
         // Get raw measured data points
-        if (corrector.getASweepData) {
-            this.setASweepData(corrector.getASweepData());
+        if (corrector.getCSweepData) {
+            this.setCSweepData(corrector.getCSweepData());
         }
         if (corrector.getBSweepData) {
             this.setBSweepData(corrector.getBSweepData());
         }
 
         // Get fitted curve data (if available)
-        if (corrector.getASweepFitted) {
-            this.aSweepFitted = corrector.getASweepFitted(5);  // 5° steps for smooth curve
+        if (corrector.getCSweepFitted) {
+            this.cSweepFitted = corrector.getCSweepFitted(5);  // 5° steps for smooth curve
         }
         if (corrector.getBSweepFitted) {
             this.bSweepFitted = corrector.getBSweepFitted(5);
@@ -113,17 +113,17 @@ class CorrectionGraphRenderer {
      */
     setDataFromEngine(engine) {
         // Convert engine measurements to simple data format
-        // A sweep: all A angles at B=0
-        const aSweepMeasurements = engine.getMeasurementsByB(0);
-        this.aSweepData = aSweepMeasurements.map(m => ({
-            angle: m.a,
+        // C sweep: all C angles at B=0
+        const cSweepMeasurements = engine.getMeasurementsByB(0);
+        this.cSweepData = cSweepMeasurements.map(m => ({
+            angle: m.c,
             errorX: m.error.x,
             errorY: m.error.y,
             errorZ: m.error.z
         })).sort((a, b) => a.angle - b.angle);
 
-        // B sweep: all B angles at A=0
-        const bSweepMeasurements = engine.getMeasurementsByA(0);
+        // B sweep: all B angles at C=0
+        const bSweepMeasurements = engine.getMeasurementsByC(0);
         this.bSweepData = bSweepMeasurements.map(m => ({
             angle: m.b,
             errorX: m.error.x,
@@ -136,7 +136,7 @@ class CorrectionGraphRenderer {
 
     /**
      * Set view mode
-     * @param {string} mode - 'a' for A sweep, 'b' for B sweep
+     * @param {string} mode - 'c' for C sweep, 'b' for B sweep
      */
     setViewMode(mode) {
         this.viewMode = mode;
@@ -365,9 +365,9 @@ class CorrectionGraphRenderer {
         this.clear();
 
         // Select data based on view mode
-        const rawData = this.viewMode === 'a' ? this.aSweepData : this.bSweepData;
-        const fittedData = this.viewMode === 'a' ? this.aSweepFitted : this.bSweepFitted;
-        const angleLabel = this.viewMode === 'a' ? 'A' : 'B';
+        const rawData = this.viewMode === 'c' ? this.cSweepData : this.bSweepData;
+        const fittedData = this.viewMode === 'c' ? this.cSweepFitted : this.bSweepFitted;
+        const angleLabel = this.viewMode === 'c' ? 'C' : 'B';
 
         if ((!rawData || rawData.length === 0) && (!fittedData || fittedData.length === 0)) {
             // Draw empty state
@@ -380,8 +380,8 @@ class CorrectionGraphRenderer {
         }
 
         // Determine angle range
-        const minAngle = this.viewMode === 'a' ? 0 : -90;
-        const maxAngle = this.viewMode === 'a' ? 360 : 90;
+        const minAngle = this.viewMode === 'c' ? 0 : -90;
+        const maxAngle = this.viewMode === 'c' ? 360 : 90;
 
         // Get angle values for x-axis labels (use raw data points)
         const angleValues = rawData.map(d => d.angle);
@@ -448,8 +448,8 @@ class CorrectionGraphRenderer {
 
         // Draw title
         const hasFitted = fittedData && fittedData.length > 0;
-        const fitLabel = this.viewMode === 'a' ? 'Fourier fit' : 'Harmonic fit';
-        const title = `${angleLabel} sweep (${this.viewMode === 'a' ? 'B=0°' : 'A=0°'})${hasFitted ? ` - ${fitLabel}` : ''}`;
+        const fitLabel = this.viewMode === 'c' ? 'Fourier fit' : 'Harmonic fit';
+        const title = `${angleLabel} sweep (${this.viewMode === 'c' ? 'B=0°' : 'C=0°'})${hasFitted ? ` - ${fitLabel}` : ''}`;
         this.ctx.fillStyle = this.textColour;
         this.ctx.font = 'bold 12px system-ui, sans-serif';
         this.ctx.textAlign = 'left';

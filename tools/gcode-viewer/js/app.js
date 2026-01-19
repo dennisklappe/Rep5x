@@ -130,7 +130,7 @@ class GcodePreviewerApp {
         // Step 2: Reverse IK if present and enabled
         if (parseResult.metadata.inverseKinematics && this.reverseIK) {
             this.ikReverser = new InverseKinematicsReverser(
-                parseResult.metadata.laParameter,
+                parseResult.metadata.lcParameter,
                 parseResult.metadata.lbParameter
             );
             commands = this.ikReverser.reverseCommandArray(commands);
@@ -250,7 +250,7 @@ class GcodePreviewerApp {
         // Apply IK reversal if enabled
         if (metadata.inverseKinematics) {
             this.ikReverser = new InverseKinematicsReverser(
-                metadata.laParameter,
+                metadata.lcParameter,
                 metadata.lbParameter
             );
             commands = this.ikReverser.reverseCommandArray(commands);

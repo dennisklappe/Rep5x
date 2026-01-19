@@ -43,7 +43,7 @@ flowchart TD
         C[Printhead geometry]
     end
 
-    A --> D[Build rotation matrix from A and B angles]
+    A --> D[Build rotation matrix from C and B angles]
 
     D --> E{Check build plate collisions}
     E --> F[Heatblock corners]

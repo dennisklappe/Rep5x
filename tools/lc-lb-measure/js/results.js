@@ -1,6 +1,6 @@
 /**
  * Step 4: Results
- * Display final LA/LB values and save/export options
+ * Display final LC/LB values and save/export options
  */
 
 class StepResults {
@@ -23,12 +23,12 @@ class StepResults {
     enter() {
         const results = this.app.calibration.getResults();
 
-        // Display LA
-        document.getElementById('finalLaValue').textContent =
-            MeasurementEngine.formatValue(results.la);
-        document.getElementById('finalLaConsistency').innerHTML =
-            results.laConsistency !== null
-                ? `Asymmetry: &plusmn;${MeasurementEngine.formatValue(results.laConsistency, 3)}mm`
+        // Display LC
+        document.getElementById('finalLcValue').textContent =
+            MeasurementEngine.formatValue(results.lc);
+        document.getElementById('finalLcConsistency').innerHTML =
+            results.lcConsistency !== null
+                ? `Asymmetry: &plusmn;${MeasurementEngine.formatValue(results.lcConsistency, 3)}mm`
                 : '';
 
         // Display LB
@@ -49,17 +49,17 @@ class StepResults {
     saveResults() {
         const results = this.app.calibration.getResults();
 
-        StorageManager.saveCalibrationResults(results.la, results.lb, {
-            laConsistency: results.laConsistency,
+        StorageManager.saveCalibrationResults(results.lc, results.lb, {
+            lcConsistency: results.lcConsistency,
             lbAsymmetry: results.lbAsymmetry,
             method: this.app.selectedMethod,
             testMode: this.app.testMode
         });
 
         // Update footer display immediately
-        const footerLaInput = document.getElementById('savedLaValue');
+        const footerLcInput = document.getElementById('savedLcValue');
         const footerLbInput = document.getElementById('savedLbValue');
-        if (footerLaInput && results.la !== null) footerLaInput.value = results.la.toFixed(2);
+        if (footerLcInput && results.lc !== null) footerLcInput.value = results.lc.toFixed(2);
         if (footerLbInput && results.lb !== null) footerLbInput.value = results.lb.toFixed(2);
 
         // Visual feedback on save button
@@ -76,7 +76,7 @@ class StepResults {
      */
     async copyToClipboard() {
         const results = this.app.calibration.getResults();
-        const text = `LA: ${MeasurementEngine.formatValue(results.la)}\nLB: ${MeasurementEngine.formatValue(results.lb)}`;
+        const text = `LC: ${MeasurementEngine.formatValue(results.lc)}\nLB: ${MeasurementEngine.formatValue(results.lb)}`;
 
         try {
             await navigator.clipboard.writeText(text);

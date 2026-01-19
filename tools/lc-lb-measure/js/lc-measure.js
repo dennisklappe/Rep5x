@@ -1,10 +1,10 @@
 /**
- * Step 3: LA Measurement
- * Measure A-axis offset by recording positions at 0°, 90°, 180°, 270°
- * Uses inverse kinematics to pre-position the nozzle when LA/LB estimates are provided.
+ * Step 3: LC Measurement
+ * Measure C-axis offset by recording positions at 0°, 90°, 180°, 270°
+ * Uses inverse kinematics to pre-position the nozzle when LC/LB estimates are provided.
  */
 
-class StepLaMeasure {
+class StepLcMeasure {
     constructor(app) {
         this.app = app;
         this.currentStep = 0;
@@ -12,10 +12,10 @@ class StepLaMeasure {
 
         // IK-assisted positioning parameters
         this.useIkPositioning = false;
-        this.estimatedLa = 0;
+        this.estimatedLc = 0;
         this.estimatedLb = 47;
-        this.referencePosition = null;  // Tip position at A=0 (camera focus point)
-        this.zSafetyOffset = 0;  // No Z lift needed for LA measurement (rotating around vertical axis)
+        this.referencePosition = null;  // Tip position at C=0 (camera focus point)
+        this.zSafetyOffset = 0;  // No Z lift needed for LC measurement (rotating around vertical axis)
         this.coneSafetyMargin = 10; // Extra mm to stay above cone when using cone method
     }
 
@@ -23,26 +23,26 @@ class StepLaMeasure {
      * Set up event listeners for this step
      */
     setup() {
-        document.getElementById('laConfirmBtn').addEventListener('click', () => this.confirmPosition());
+        document.getElementById('lcConfirmBtn').addEventListener('click', () => this.confirmPosition());
 
         // Redo button
-        const redoBtn = document.getElementById('laRedoBtn');
+        const redoBtn = document.getElementById('lcRedoBtn');
         if (redoBtn) {
             redoBtn.addEventListener('click', () => this.redo());
         }
 
-        // IK toggle for LA (if exists)
-        const ikToggle = document.getElementById('laIkPositioningToggle');
+        // IK toggle for LC (if exists)
+        const ikToggle = document.getElementById('lcIkPositioningToggle');
         if (ikToggle) {
             ikToggle.addEventListener('change', (e) => {
-                const container = document.getElementById('laIkParamsContainer');
+                const container = document.getElementById('lcIkParamsContainer');
                 if (container) {
                     container.style.display = e.target.checked ? 'flex' : 'none';
                 }
                 if (e.target.checked) {
-                    const la = parseFloat(document.getElementById('laIkLaEstimate')?.value) || 0;
-                    const lb = parseFloat(document.getElementById('laIkLbEstimate')?.value) || 47;
-                    this.enableIkPositioning(la, lb);
+                    const lc = parseFloat(document.getElementById('lcIkLcEstimate')?.value) || 0;
+                    const lb = parseFloat(document.getElementById('lcIkLbEstimate')?.value) || 47;
+                    this.enableIkPositioning(lc, lb);
                 } else {
                     this.useIkPositioning = false;
                 }
@@ -50,7 +50,7 @@ class StepLaMeasure {
         }
 
         // Z safety offset input
-        const zSafetyInput = document.getElementById('laZSafetyOffset');
+        const zSafetyInput = document.getElementById('lcZSafetyOffset');
         if (zSafetyInput) {
             zSafetyInput.addEventListener('change', (e) => {
                 this.zSafetyOffset = parseFloat(e.target.value) || 0;
@@ -60,21 +60,21 @@ class StepLaMeasure {
 
     /**
      * Enable IK-assisted positioning
-     * @param {number} la - Estimated LA value
+     * @param {number} lc - Estimated LC value
      * @param {number} lb - Estimated LB value
      */
-    enableIkPositioning(la = 0, lb = 47) {
+    enableIkPositioning(lc = 0, lb = 47) {
         this.useIkPositioning = true;
-        this.estimatedLa = la;
+        this.estimatedLc = lc;
         this.estimatedLb = lb;
     }
 
     /**
-     * Calculate IK position for a given A angle (B stays at 0)
-     * @param {number} aAngle - Target A angle
+     * Calculate IK position for a given C angle (B stays at 0)
+     * @param {number} cAngle - Target C angle
      * @returns {object} Machine position { x, y, z }
      */
-    calculateIkPosition(aAngle) {
+    calculateIkPosition(cAngle) {
         if (!this.referencePosition) return null;
 
         // Use MeasurementEngine's IK function
@@ -82,22 +82,22 @@ class StepLaMeasure {
             this.referencePosition.x,
             this.referencePosition.y,
             this.referencePosition.z,
-            aAngle,
-            0,  // B stays at 0 during LA measurement
-            this.estimatedLa,
+            cAngle,
+            0,  // B stays at 0 during LC measurement
+            this.estimatedLc,
             this.estimatedLb
         );
     }
 
     /**
-     * Move to IK-calculated position for given A angle
-     * @param {number} aAngle - Target A angle
+     * Move to IK-calculated position for given C angle
+     * @param {number} cAngle - Target C angle
      */
-    async moveToIkPosition(aAngle) {
-        const targetPos = this.calculateIkPosition(aAngle);
+    async moveToIkPosition(cAngle) {
+        const targetPos = this.calculateIkPosition(cAngle);
         if (!targetPos) {
-            console.warn('[LA Cal] No reference position set, falling back to simple rotation');
-            await this.app.printer.moveTo({ a: aAngle }, 1800);
+            console.warn('[LC Cal] No reference position set, falling back to simple rotation');
+            await this.app.printer.moveTo({ c: cAngle }, 1800);
             return;
         }
 
@@ -108,8 +108,8 @@ class StepLaMeasure {
             await this.app.printer.moveTo({ z: safeZ }, 3000);
         }
 
-        // Rotate A
-        await this.app.printer.moveTo({ a: aAngle }, 1800);
+        // Rotate C
+        await this.app.printer.moveTo({ c: cAngle }, 1800);
 
         // Move XY to target
         await this.app.printer.moveTo({ x: targetPos.x, y: targetPos.y }, 3000);
@@ -131,15 +131,15 @@ class StepLaMeasure {
      */
     async enter() {
         // Show correct panel for method
-        const cameraPanel = document.getElementById('laCameraPanel');
-        const conePanel = document.getElementById('laConePanel');
+        const cameraPanel = document.getElementById('lcCameraPanel');
+        const conePanel = document.getElementById('lcConePanel');
 
         if (cameraPanel) cameraPanel.style.display = this.app.selectedMethod === 'camera' ? 'block' : 'none';
         if (conePanel) conePanel.style.display = this.app.selectedMethod === 'cone' ? 'block' : 'none';
 
         // Attach camera if needed
         if (this.app.selectedMethod === 'camera' && this.app.camera.isActive()) {
-            this.app.camera.attachToElement('laCamera', 'laCrosshair');
+            this.app.camera.attachToElement('lcCamera', 'lcCrosshair');
         }
 
         // Reset calibration state
@@ -151,45 +151,45 @@ class StepLaMeasure {
             this.referencePosition = { ...this.app.referencePosition };
         }
 
-        // Move to A0 B0 at the start of LA measurement
-        await this.app.printer.moveTo({ a: 0, b: 0 }, 1800);
+        // Move to C0 B0 at the start of LC measurement
+        await this.app.printer.moveTo({ c: 0, b: 0 }, 1800);
 
-        // Load saved LA/LB values from storage, or use defaults
+        // Load saved LC/LB values from storage, or use defaults
         const savedResults = StorageManager.loadCalibrationResults();
-        const savedLa = savedResults?.la ?? 0;
+        const savedLc = savedResults?.lc ?? 0;
         const savedLb = savedResults?.lb ?? 47;
 
         // Update input fields with saved values if they exist
-        const laInput = document.getElementById('laIkLaEstimate');
-        const lbInput = document.getElementById('laIkLbEstimate');
-        if (laInput) laInput.value = savedLa;
+        const lcInput = document.getElementById('lcIkLcEstimate');
+        const lbInput = document.getElementById('lcIkLbEstimate');
+        if (lcInput) lcInput.value = savedLc;
         if (lbInput) lbInput.value = savedLb;
 
         // Update estimated values
-        this.estimatedLa = savedLa;
+        this.estimatedLc = savedLc;
         this.estimatedLb = savedLb;
 
         // Enable IK positioning by default (checkbox is checked by default in HTML)
-        const ikToggle = document.getElementById('laIkPositioningToggle');
+        const ikToggle = document.getElementById('lcIkPositioningToggle');
         if (ikToggle) {
             // Enable IK if toggle is checked (default: checked)
             if (ikToggle.checked) {
-                this.enableIkPositioning(this.estimatedLa, this.estimatedLb);
+                this.enableIkPositioning(this.estimatedLc, this.estimatedLb);
             }
-            const container = document.getElementById('laIkParamsContainer');
+            const container = document.getElementById('lcIkParamsContainer');
             if (container) container.style.display = ikToggle.checked ? 'flex' : 'none';
         }
 
         // Update Z safety offset from input (use ?? to allow 0)
-        const zSafetyInput = document.getElementById('laZSafetyOffset');
+        const zSafetyInput = document.getElementById('lcZSafetyOffset');
         this.zSafetyOffset = parseFloat(zSafetyInput?.value) ?? 0;
 
         this.updateUI();
 
         // Hide result preview initially
-        document.getElementById('laResultPreview').style.display = 'none';
+        document.getElementById('lcResultPreview').style.display = 'none';
 
-        // Disable next until LA is complete
+        // Disable next until LC is complete
         document.getElementById('nextBtn').disabled = true;
     }
 
@@ -202,16 +202,16 @@ class StepLaMeasure {
         const currentAngle = this.angles[this.currentStep];
 
         // Update current angle display
-        document.getElementById('laCurrentAngle').textContent = `A = ${currentAngle}°`;
+        document.getElementById('lcCurrentAngle').textContent = `C = ${currentAngle}°`;
 
         // Update instructions
         const instructionText = this.app.selectedMethod === 'camera'
-            ? `Align the nozzle tip with the camera crosshair at A = ${currentAngle}°`
-            : `Touch the nozzle tip to the cone tip at A = ${currentAngle}°`;
-        document.getElementById('laInstructions').textContent = instructionText;
+            ? `Align the nozzle tip with the camera crosshair at C = ${currentAngle}°`
+            : `Touch the nozzle tip to the cone tip at C = ${currentAngle}°`;
+        document.getElementById('lcInstructions').textContent = instructionText;
 
         // Update measurement item styling
-        document.querySelectorAll('#laMeasurements .measurement-item').forEach(item => {
+        document.querySelectorAll('#lcMeasurements .measurement-item').forEach(item => {
             const angle = parseInt(item.dataset.angle);
             item.classList.remove('current');
             if (angle === currentAngle && !item.classList.contains('completed')) {
@@ -231,23 +231,23 @@ class StepLaMeasure {
         const position = await this.app.printer.requestPosition();
 
 
-        // If this is A=0 and IK positioning is enabled, use this as the reference position
+        // If this is C=0 and IK positioning is enabled, use this as the reference position
         // This ensures IK calculations for subsequent angles use the correct reference
         if (currentAngle === 0 && this.useIkPositioning) {
             this.referencePosition = { x: position.x, y: position.y, z: position.z };
         }
 
         // Record the measurement
-        this.app.calibration.recordLaPosition(currentAngle, position);
+        this.app.calibration.recordLcPosition(currentAngle, position);
 
         // Update UI
-        const posDisplay = document.getElementById(`la-pos-${currentAngle}`);
+        const posDisplay = document.getElementById(`lc-pos-${currentAngle}`);
         if (posDisplay) {
             posDisplay.textContent = `X: ${position.x.toFixed(2)}, Y: ${position.y.toFixed(2)}`;
         }
 
         // Mark as completed
-        const measurementItem = document.querySelector(`#laMeasurements [data-angle="${currentAngle}"]`);
+        const measurementItem = document.querySelector(`#lcMeasurements [data-angle="${currentAngle}"]`);
         if (measurementItem) {
             measurementItem.classList.remove('current');
             measurementItem.classList.add('completed');
@@ -266,14 +266,14 @@ class StepLaMeasure {
                 // Use IK-assisted positioning
                 await this.moveToIkPosition(nextAngle);
             } else {
-                // Manual positioning: lift Z, rotate A, then lower Z
+                // Manual positioning: lift Z, rotate C, then lower Z
                 const zOffset = this.zSafetyOffset;
 
                 // Lift Z
                 await this.app.printer.moveRelative({ z: zOffset }, 3000);
 
-                // Rotate A
-                await this.app.printer.moveTo({ a: nextAngle }, 1800);
+                // Rotate C
+                await this.app.printer.moveTo({ c: nextAngle }, 1800);
 
                 // For cone method, lower Z less than we raised to avoid hitting the cone
                 // For camera method, lower Z back to the same height
@@ -292,111 +292,111 @@ class StepLaMeasure {
     }
 
     /**
-     * Complete LA calibration
+     * Complete LC calibration
      */
     complete() {
-        const result = this.app.calibration.calculateLa();
+        const result = this.app.calibration.calculateLc();
 
         if (result) {
             // Show result preview
-            const preview = document.getElementById('laResultPreview');
+            const preview = document.getElementById('lcResultPreview');
             preview.style.display = 'block';
 
-            document.getElementById('laResultValue').textContent =
+            document.getElementById('lcResultValue').textContent =
                 MeasurementEngine.formatValue(result.value);
 
-            document.getElementById('laConsistency').innerHTML =
+            document.getElementById('lcConsistency').innerHTML =
                 `Asymmetry: &plusmn;${MeasurementEngine.formatValue(result.consistency, 3)}mm`;
 
             // Disable confirm button since we're done
-            document.getElementById('laConfirmBtn').disabled = true;
+            document.getElementById('lcConfirmBtn').disabled = true;
 
             // Show redo button
-            const redoBtn = document.getElementById('laRedoBtn');
+            const redoBtn = document.getElementById('lcRedoBtn');
             if (redoBtn) redoBtn.style.display = 'inline-block';
 
             // Change Next button to "Save & Next" and set up save behavior
             const nextBtn = document.getElementById('nextBtn');
             nextBtn.disabled = false;
             nextBtn.textContent = 'Save & Next →';
-            nextBtn.dataset.saveAndNext = 'la';
+            nextBtn.dataset.saveAndNext = 'lc';
         }
     }
 
     /**
-     * Save LA value to storage and update footer
+     * Save LC value to storage and update footer
      */
     saveToStorage() {
         const results = this.app.calibration.getResults();
-        if (results.la !== null) {
+        if (results.lc !== null) {
             const savedResults = StorageManager.loadCalibrationResults() || {};
             const currentLb = savedResults.lb ?? 47;
-            StorageManager.saveCalibrationResults(results.la, currentLb, {
+            StorageManager.saveCalibrationResults(results.lc, currentLb, {
                 method: this.app.selectedMethod,
                 testMode: this.app.testMode
             });
 
             // Update footer display
-            const footerLaInput = document.getElementById('savedLaValue');
-            if (footerLaInput) footerLaInput.value = results.la.toFixed(2);
+            const footerLcInput = document.getElementById('savedLcValue');
+            if (footerLcInput) footerLcInput.value = results.lc.toFixed(2);
 
         }
     }
 
     /**
-     * Redo LA measurement using the just-measured value for IK positioning
+     * Redo LC measurement using the just-measured value for IK positioning
      */
     async redo() {
-        // Get the just-calculated LA value
+        // Get the just-calculated LC value
         const results = this.app.calibration.getResults();
-        if (results.la !== null) {
-            this.estimatedLa = results.la;
+        if (results.lc !== null) {
+            this.estimatedLc = results.lc;
             // Update the input field
-            const laInput = document.getElementById('laIkLaEstimate');
-            if (laInput) laInput.value = results.la.toFixed(2);
+            const lcInput = document.getElementById('lcIkLcEstimate');
+            if (lcInput) lcInput.value = results.lc.toFixed(2);
 
             // Save to storage and update footer
             const savedResults = StorageManager.loadCalibrationResults() || {};
             const currentLb = savedResults.lb ?? 47;
-            StorageManager.saveCalibrationResults(results.la, currentLb, {
+            StorageManager.saveCalibrationResults(results.lc, currentLb, {
                 method: this.app.selectedMethod,
                 testMode: this.app.testMode
             });
 
             // Update footer display
-            const footerLaInput = document.getElementById('savedLaValue');
-            if (footerLaInput) footerLaInput.value = results.la.toFixed(2);
+            const footerLcInput = document.getElementById('savedLcValue');
+            if (footerLcInput) footerLcInput.value = results.lc.toFixed(2);
         }
 
         // Reset state
         this.currentStep = 0;
-        this.app.calibration.resetLa();
+        this.app.calibration.resetLc();
 
         // Hide result preview
-        document.getElementById('laResultPreview').style.display = 'none';
+        document.getElementById('lcResultPreview').style.display = 'none';
 
         // Hide redo button
-        const redoBtn = document.getElementById('laRedoBtn');
+        const redoBtn = document.getElementById('lcRedoBtn');
         if (redoBtn) redoBtn.style.display = 'none';
 
         // Re-enable confirm button
-        document.getElementById('laConfirmBtn').disabled = false;
+        document.getElementById('lcConfirmBtn').disabled = false;
 
         // Disable next button
         document.getElementById('nextBtn').disabled = true;
 
         // Reset measurement items UI
-        document.querySelectorAll('#laMeasurements .measurement-item').forEach(item => {
+        document.querySelectorAll('#lcMeasurements .measurement-item').forEach(item => {
             item.classList.remove('completed', 'current');
         });
 
         // Reset position display texts
-        document.getElementById('la-pos-0').textContent = 'Waiting...';
-        document.getElementById('la-pos-90').textContent = 'Waiting...';
-        document.getElementById('la-pos-180').textContent = 'Waiting...';
-        document.getElementById('la-pos-270').textContent = 'Waiting...';
+        document.getElementById('lc-pos-0').textContent = 'Waiting...';
+        document.getElementById('lc-pos-90').textContent = 'Waiting...';
+        document.getElementById('lc-pos-180').textContent = 'Waiting...';
+        document.getElementById('lc-pos-270').textContent = 'Waiting...';
 
-        // Return to reference position (A=0, XY at reference)
+        // Return to reference position (C=0, XY at reference)
         await this.returnToReferencePosition();
 
         this.updateUI();
@@ -407,8 +407,8 @@ class StepLaMeasure {
      */
     async returnToReferencePosition() {
         if (!this.referencePosition) {
-            console.warn('[LA Cal] No reference position, just rotating to A=0');
-            await this.app.printer.moveTo({ a: 0 }, 1800);
+            console.warn('[LC Cal] No reference position, just rotating to C=0');
+            await this.app.printer.moveTo({ c: 0 }, 1800);
             return;
         }
 
@@ -419,8 +419,8 @@ class StepLaMeasure {
             await this.app.printer.moveTo({ z: safeZ }, 3000);
         }
 
-        // Rotate A back to 0
-        await this.app.printer.moveTo({ a: 0 }, 1800);
+        // Rotate C back to 0
+        await this.app.printer.moveTo({ c: 0 }, 1800);
 
         // Move XY back to reference position
         await this.app.printer.moveTo({

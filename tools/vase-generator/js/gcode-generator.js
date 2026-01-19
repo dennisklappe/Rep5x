@@ -16,7 +16,7 @@ class GcodeGenerator {
         }
 
         const { layerHeight, speed, nozzleDiameter, nozzleTemp, bedTemp, bedWidth, bedDepth } = printSettings;
-        const { enableKinematics, laParam, lbParam, enableAAxisOptimization, enableCalibration, calibrationCorrector, startGcode, endGcode } = advancedSettings;
+        const { enableKinematics, lcParam, lbParam, enableCAxisOptimization, enableCalibration, calibrationCorrector, startGcode, endGcode } = advancedSettings;
 
         const gcode = [];
         const totalHeight = shape.getTotalHeight(shapeParams);
@@ -45,24 +45,24 @@ class GcodeGenerator {
         gcode.push('; === Rep5x Parameters ===');
         gcode.push(`; Inverse Kinematics: ${enableKinematics ? 'enabled' : 'disabled'}`);
         if (enableKinematics) {
-            gcode.push(`; LA Parameter: ${laParam}`);
+            gcode.push(`; LC Parameter: ${lcParam}`);
             gcode.push(`; LB Parameter: ${lbParam}`);
             gcode.push('; IK Formulas:');
-            gcode.push("; X = X' + sin(A') × LA + cos(A') × sin(B') × LB");
-            gcode.push("; Y = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB");
+            gcode.push("; X = X' + sin(C') × LC + cos(C') × sin(B') × LB");
+            gcode.push("; Y = Y' - LC + cos(C') × LC - sin(C') × sin(B') × LB");
             gcode.push("; Z = Z' + cos(B') × LB - LB");
         }
-        gcode.push(`; A-axis Optimization: ${enableAAxisOptimization ? 'enabled' : 'disabled'}`);
+        gcode.push(`; C-axis Optimization: ${enableCAxisOptimization ? 'enabled' : 'disabled'}`);
 
         // Calibration correction info
         if (enableCalibration && calibrationCorrector?.loaded) {
             gcode.push('; Calibration Correction: enabled');
             const coeffs = calibrationCorrector.getCoefficients();
-            if (coeffs.a) {
-                gcode.push(`; Calibration A-axis coefficients (Fourier, ${coeffs.aHarmonics} harmonics):`);
-                gcode.push(`; CalibAX: ${coeffs.a.x.map(c => c.toFixed(6)).join(',')}`);
-                gcode.push(`; CalibAY: ${coeffs.a.y.map(c => c.toFixed(6)).join(',')}`);
-                gcode.push(`; CalibAZ: ${coeffs.a.z.map(c => c.toFixed(6)).join(',')}`);
+            if (coeffs.c) {
+                gcode.push(`; Calibration C-axis coefficients (Fourier, ${coeffs.cHarmonics} harmonics):`);
+                gcode.push(`; CalibCX: ${coeffs.c.x.map(c => c.toFixed(6)).join(',')}`);
+                gcode.push(`; CalibCY: ${coeffs.c.y.map(c => c.toFixed(6)).join(',')}`);
+                gcode.push(`; CalibCZ: ${coeffs.c.z.map(c => c.toFixed(6)).join(',')}`);
             }
             if (coeffs.b) {
                 gcode.push(`; Calibration B-axis coefficients (Harmonic, ${coeffs.bHarmonics} harmonics):`);
@@ -101,7 +101,7 @@ class GcodeGenerator {
 
         // Apply inverse kinematics if enabled
         if (enableKinematics) {
-            gcodeString = processInverseKinematics(gcodeString, enableKinematics, laParam, lbParam);
+            gcodeString = processInverseKinematics(gcodeString, enableKinematics, lcParam, lbParam);
         }
 
         // Apply calibration correction if enabled
@@ -109,10 +109,10 @@ class GcodeGenerator {
             gcodeString = this.applyCalibrationCorrection(gcodeString, calibrationCorrector);
         }
 
-        // Apply A-axis optimization if enabled
-        if (enableAAxisOptimization) {
-            gcodeString = optimizeAAxisRotation(gcodeString, enableAAxisOptimization);
-            gcodeString = addAAxisOptimizationComment(gcodeString);
+        // Apply C-axis optimization if enabled
+        if (enableCAxisOptimization) {
+            gcodeString = optimizeCAxisRotation(gcodeString, enableCAxisOptimization);
+            gcodeString = addCAxisOptimizationComment(gcodeString);
         }
 
         return {
@@ -126,7 +126,7 @@ class GcodeGenerator {
         const processedLines = [];
 
         // Track modal state
-        let modalA = 0;
+        let modalC = 0;
         let modalB = 0;
 
         for (const line of lines) {
@@ -138,14 +138,14 @@ class GcodeGenerator {
                 continue;
             }
 
-            // Update modal A/B values
-            const aMatch = trimmed.match(/A([-+]?\d*\.?\d+)/i);
+            // Update modal C/B values
+            const cMatch = trimmed.match(/C([-+]?\d*\.?\d+)/i);
             const bMatch = trimmed.match(/B([-+]?\d*\.?\d+)/i);
-            if (aMatch) modalA = parseFloat(aMatch[1]);
+            if (cMatch) modalC = parseFloat(cMatch[1]);
             if (bMatch) modalB = parseFloat(bMatch[1]);
 
             // Get calibration correction
-            const correction = corrector.getCorrection(modalA, modalB);
+            const correction = corrector.getCorrection(modalC, modalB);
 
             // Only process if there are XYZ coordinates
             const xMatch = trimmed.match(/X([-+]?\d*\.?\d+)/i);

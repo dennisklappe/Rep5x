@@ -2,23 +2,23 @@
 // Takes IK-corrected G-code and reverses it back to original coordinates
 
 class InverseKinematicsReverser {
-    constructor(laParameter = 0, lbParameter = 46) {
-        this.la = laParameter;
+    constructor(lcParameter = 0, lbParameter = 46) {
+        this.lc = lcParameter;
         this.lb = lbParameter;
     }
 
     // Reverse the Rep5x inverse kinematics to get original coordinates
-    reverseIK(x, y, z, a, b) {
-        const aRad = a * Math.PI / 180;
+    reverseIK(x, y, z, c, b) {
+        const cRad = c * Math.PI / 180;
         const bRad = b * Math.PI / 180;
 
-        // Forward: X = X' + sin(A)·LA + cos(A)·sin(B)·LB
-        // Reversed: X' = X - sin(A)·LA - cos(A)·sin(B)·LB
-        const originalX = x - Math.sin(aRad) * this.la - Math.cos(aRad) * Math.sin(bRad) * this.lb;
+        // Forward: X = X' + sin(C)·LC + cos(C)·sin(B)·LB
+        // Reversed: X' = X - sin(C)·LC - cos(C)·sin(B)·LB
+        const originalX = x - Math.sin(cRad) * this.lc - Math.cos(cRad) * Math.sin(bRad) * this.lb;
 
-        // Forward: Y = Y' + (cos(A) - 1)·LA - sin(A)·sin(B)·LB
-        // Reversed: Y' = Y - (cos(A) - 1)·LA + sin(A)·sin(B)·LB
-        const originalY = y - (Math.cos(aRad) - 1) * this.la + Math.sin(aRad) * Math.sin(bRad) * this.lb;
+        // Forward: Y = Y' + (cos(C) - 1)·LC - sin(C)·sin(B)·LB
+        // Reversed: Y' = Y - (cos(C) - 1)·LC + sin(C)·sin(B)·LB
+        const originalY = y - (Math.cos(cRad) - 1) * this.lc + Math.sin(cRad) * Math.sin(bRad) * this.lb;
 
         // Forward: Z = Z' + (cos(B) - 1)·LB
         // Reversed: Z' = Z - (cos(B) - 1)·LB
@@ -28,7 +28,7 @@ class InverseKinematicsReverser {
             x: originalX,
             y: originalY,
             z: originalZ,
-            a: a,
+            c: c,
             b: b
         };
     }
@@ -39,8 +39,8 @@ class InverseKinematicsReverser {
         const result = [];
         const chunkSize = 1000;
 
-        // Track modal values for A and B axes (G-code retains last set value)
-        let currentA = 0;
+        // Track modal values for C and B axes (G-code retains last set value)
+        let currentC = 0;
         let currentB = 0;
         let currentX = 0;
         let currentY = 0;
@@ -51,13 +51,13 @@ class InverseKinematicsReverser {
             const processedChunk = chunk.map(command => {
                 // Handle G92 reset commands - they set modal values without IK transformation
                 if (command.type === 'reset') {
-                    if (command.a !== null) currentA = command.a;
+                    if (command.c !== null) currentC = command.c;
                     return command;
                 }
 
                 if (command.hasMovement) {
                     // Update modal values when explicitly set
-                    if (command.a !== null) currentA = command.a;
+                    if (command.c !== null) currentC = command.c;
                     if (command.b !== null) currentB = command.b;
                     if (command.x !== null) currentX = command.x;
                     if (command.y !== null) currentY = command.y;
@@ -67,23 +67,23 @@ class InverseKinematicsReverser {
                     const x = currentX;
                     const y = currentY;
                     const z = currentZ;
-                    const a = currentA;
+                    const c = currentC;
                     const b = currentB;
 
-                    const reversed = this.reverseIK(x, y, z, a, b);
+                    const reversed = this.reverseIK(x, y, z, c, b);
 
                     return {
                         ...command,
                         x: command.x !== null ? reversed.x : null,
                         y: command.y !== null ? reversed.y : null,
                         z: command.z !== null ? reversed.z : null,
-                        a: command.a !== null ? reversed.a : null,
+                        c: command.c !== null ? reversed.c : null,
                         b: command.b !== null ? reversed.b : null,
                         original: { // Keep track of original IK-corrected values
                             x: command.x,
                             y: command.y,
                             z: command.z,
-                            a: command.a,
+                            c: command.c,
                             b: command.b
                         }
                     };
@@ -98,15 +98,15 @@ class InverseKinematicsReverser {
     }
 
     // Calculate the difference between original and IK-corrected positions
-    getIKCorrection(x, y, z, a, b) {
-        const aRad = a * Math.PI / 180;
+    getIKCorrection(x, y, z, c, b) {
+        const cRad = c * Math.PI / 180;
         const bRad = b * Math.PI / 180;
 
-        // X = X' + sin(A)·LA + cos(A)·sin(B)·LB
-        const correctedX = x + Math.sin(aRad) * this.la + Math.cos(aRad) * Math.sin(bRad) * this.lb;
+        // X = X' + sin(C)·LC + cos(C)·sin(B)·LB
+        const correctedX = x + Math.sin(cRad) * this.lc + Math.cos(cRad) * Math.sin(bRad) * this.lb;
 
-        // Y = Y' + (cos(A) - 1)·LA - sin(A)·sin(B)·LB
-        const correctedY = y + (Math.cos(aRad) - 1) * this.la - Math.sin(aRad) * Math.sin(bRad) * this.lb;
+        // Y = Y' + (cos(C) - 1)·LC - sin(C)·sin(B)·LB
+        const correctedY = y + (Math.cos(cRad) - 1) * this.lc - Math.sin(cRad) * Math.sin(bRad) * this.lb;
 
         // Z = Z' + (cos(B) - 1)·LB
         const correctedZ = z + (Math.cos(bRad) - 1) * this.lb;
@@ -128,14 +128,14 @@ class InverseKinematicsReverser {
         let count = 0;
 
         for (const command of commands) {
-            if (command.hasMovement && command.a !== null && command.b !== null) {
+            if (command.hasMovement && command.c !== null && command.b !== null) {
                 const x = command.x || 0;
                 const y = command.y || 0;
                 const z = command.z || 0;
-                const a = command.a || 0;
+                const c = command.c || 0;
                 const b = command.b || 0;
 
-                const correction = this.getIKCorrection(x, y, z, a, b);
+                const correction = this.getIKCorrection(x, y, z, c, b);
                 corrections.push(correction);
 
                 // Track maximum corrections

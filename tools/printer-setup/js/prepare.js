@@ -66,7 +66,7 @@ class StepPrepare {
             // Move X/Y/A/B to absolute positions, but Z moves down 50mm relative (safer since Z max varies)
             this.setItemActive('position');
             btn.textContent = 'Moving to starting position...';
-            await this.app.printer.sendCommandAndWait('G0 X100 Y100 A0 B0 F3000', 30000);
+            await this.app.printer.sendCommandAndWait('G0 X100 Y100 C0 B0 F3000', 30000);
             await this.app.printer.sendCommandAndWait('G91', 5000); // Relative mode
             await this.app.printer.sendCommandAndWait('G0 Z-50 F1800', 30000); // Move down 50mm
             await this.app.printer.sendCommandAndWait('G90', 5000); // Back to absolute mode

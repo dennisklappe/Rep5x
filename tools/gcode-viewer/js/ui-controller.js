@@ -34,7 +34,7 @@ class UIController {
             posX: document.getElementById('posX'),
             posY: document.getElementById('posY'),
             posZ: document.getElementById('posZ'),
-            posA: document.getElementById('posA'),
+            posC: document.getElementById('posC'),
             posB: document.getElementById('posB'),
             layer: document.getElementById('layer'),
 
@@ -46,7 +46,7 @@ class UIController {
             manualMode: document.getElementById('manualMode'),
             manualControls: document.getElementById('manualControls'),
             manualIK: document.getElementById('manualIK'),
-            manualLA: document.getElementById('manualLA'),
+            manualLC: document.getElementById('manualLC'),
             manualLB: document.getElementById('manualLB'),
             applyManual: document.getElementById('applyManual'),
 
@@ -124,12 +124,12 @@ class UIController {
             if (this.onManualModeChange) this.onManualModeChange(e.target.checked);
         });
 
-        // Load LA/LB from browser storage when IK is enabled
+        // Load LC/LB from browser storage when IK is enabled
         this.elements.manualIK.addEventListener('change', (e) => {
             if (e.target.checked) {
-                const la = StorageManager.loadLa();
+                const lc = StorageManager.loadLc();
                 const lb = StorageManager.loadLb();
-                if (la !== null) this.elements.manualLA.value = la;
+                if (lc !== null) this.elements.manualLC.value = lc;
                 if (lb !== null) this.elements.manualLB.value = lb;
             }
         });
@@ -210,7 +210,7 @@ class UIController {
         html += '<div class="mt-2 pt-2 border-t border-gray-300">';
         html += `<div><strong>Inverse Kinematics:</strong> ${metadata.inverseKinematics ? 'Yes' : 'No'}</div>`;
         if (metadata.inverseKinematics) {
-            html += `<div><strong>LA Parameter:</strong> ${metadata.laParameter}</div>`;
+            html += `<div><strong>LC Parameter:</strong> ${metadata.lcParameter}</div>`;
             html += `<div><strong>LB Parameter:</strong> ${metadata.lbParameter}</div>`;
         }
         html += '</div>';
@@ -240,7 +240,7 @@ class UIController {
         let calibHtml = '<div class="mt-2 pt-2 border-t border-gray-300">';
         calibHtml += '<div><strong>Calibration Correction:</strong></div>';
         calibHtml += `<div class="text-xs text-green-600">✓ Detected and reversed for display</div>`;
-        calibHtml += `<div class="text-xs">A-axis: ${summary.aHarmonics} Fourier harmonics</div>`;
+        calibHtml += `<div class="text-xs">C-axis: ${summary.cHarmonics} Fourier harmonics</div>`;
         calibHtml += `<div class="text-xs">B-axis: ${summary.bHarmonics} harmonics</div>`;
         calibHtml += '</div>';
 
@@ -275,7 +275,7 @@ class UIController {
         this.elements.posX.textContent = position.x.toFixed(3);
         this.elements.posY.textContent = position.y.toFixed(3);
         this.elements.posZ.textContent = position.z.toFixed(3);
-        this.elements.posA.textContent = position.a.toFixed(3);
+        this.elements.posC.textContent = position.c.toFixed(3);
         this.elements.posB.textContent = position.b.toFixed(3);
     }
 
@@ -330,7 +330,7 @@ class UIController {
 
     prefillAdvancedOptions(metadata) {
         this.elements.manualIK.checked = metadata.inverseKinematics || false;
-        this.elements.manualLA.value = metadata.laParameter || 0;
+        this.elements.manualLC.value = metadata.lcParameter || 0;
         this.elements.manualLB.value = metadata.lbParameter || 46;
     }
 
@@ -338,7 +338,7 @@ class UIController {
         const manualCalibration = document.getElementById('manualCalibration');
         return {
             inverseKinematics: this.elements.manualIK.checked,
-            laParameter: parseFloat(this.elements.manualLA.value) || 0,
+            lcParameter: parseFloat(this.elements.manualLC.value) || 0,
             lbParameter: parseFloat(this.elements.manualLB.value) || 46,
             reverseCalibration: manualCalibration ? manualCalibration.checked : true
         };

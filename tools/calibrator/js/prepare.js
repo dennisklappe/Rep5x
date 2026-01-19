@@ -92,7 +92,7 @@ class StepPrepare {
             // Step 4: Move to starting position
             this.setItemActive('position');
             btn.textContent = 'Moving to starting position...';
-            await this.app.printer.sendCommandAndWait('G0 X100 Y100 Z50 A0 B0 F3000', 30000);
+            await this.app.printer.sendCommandAndWait('G0 X100 Y100 Z50 C0 B0 F3000', 30000);
             await this.app.printer.sendCommandAndWait('M400', 30000); // Wait for move to complete
             await this.app.printer.requestPosition(); // Update position display
             this.setItemComplete('position');
@@ -158,7 +158,7 @@ class StepPrepare {
             x: position.x,
             y: position.y,
             z: position.z,
-            a: position.a,
+            a: position.c,
             b: position.b
         };
 

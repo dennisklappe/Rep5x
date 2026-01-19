@@ -39,12 +39,12 @@ class FileHandler {
             wallThickness: null,
             generatedOn: null,
             inverseKinematics: false,
-            laParameter: 0,
+            lcParameter: 0,
             lbParameter: 46,
-            aAxisOptimization: false,
+            cAxisOptimization: false,
             ikFormulas: {
-                x: "X' + sin(A') × LA + cos(A') × sin(B') × LB",
-                y: "Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB",
+                x: "X' + sin(C') × LC + cos(C') × sin(B') × LB",
+                y: "Y' - LC + cos(C') × LC - sin(C') × sin(B') × LB",
                 z: "Z' + cos(B') × LB - LB"
             }
         };

@@ -1,27 +1,27 @@
 /**
  * Shared Inverse Kinematics for Rep5x 5-axis printer
- * Converts tool-tip coordinates to machine coordinates based on A/B axis rotations
+ * Converts tool-tip coordinates to machine coordinates based on C/B axis rotations
  * Used by: Calibrator, Vase Generator, G-code Viewer
  */
 
 class InverseKinematics {
     /**
      * Create an IK instance with specified parameters
-     * @param {number} la - LA parameter (A-axis offset, default 0)
+     * @param {number} lc - LC parameter (C-axis offset, default 0)
      * @param {number} lb - LB parameter (B-axis offset, default 47.9)
      */
-    constructor(la = 0, lb = 47.9) {
-        this.la = la;
+    constructor(lc = 0, lb = 47.9) {
+        this.lc = lc;
         this.lb = lb;
     }
 
     /**
-     * Set LA/LB parameters
-     * @param {number} la - A-axis offset
+     * Set LC/LB parameters
+     * @param {number} lc - C-axis offset
      * @param {number} lb - B-axis offset
      */
-    setParameters(la, lb) {
-        this.la = la;
+    setParameters(lc, lb) {
+        this.lc = lc;
         this.lb = lb;
     }
 
@@ -30,19 +30,19 @@ class InverseKinematics {
      * @param {number} x - X coordinate (tool tip)
      * @param {number} y - Y coordinate (tool tip)
      * @param {number} z - Z coordinate (tool tip)
-     * @param {number} a - A axis rotation in degrees
+     * @param {number} c - C axis rotation in degrees
      * @param {number} b - B axis rotation in degrees
      * @returns {Object} Corrected machine coordinates {x, y, z}
      */
-    apply(x, y, z, a, b) {
-        const aRad = a * Math.PI / 180;
+    apply(x, y, z, c, b) {
+        const cRad = c * Math.PI / 180;
         const bRad = b * Math.PI / 180;
 
-        // X = X' + sin(A)·LA + cos(A)·sin(B)·LB
-        const machineX = x + Math.sin(aRad) * this.la + Math.cos(aRad) * Math.sin(bRad) * this.lb;
+        // X = X' + sin(C)·LC + cos(C)·sin(B)·LB
+        const machineX = x + Math.sin(cRad) * this.lc + Math.cos(cRad) * Math.sin(bRad) * this.lb;
 
-        // Y = Y' + (cos(A) - 1)·LA - sin(A)·sin(B)·LB
-        const machineY = y + (Math.cos(aRad) - 1) * this.la - Math.sin(aRad) * Math.sin(bRad) * this.lb;
+        // Y = Y' + (cos(C) - 1)·LC - sin(C)·sin(B)·LB
+        const machineY = y + (Math.cos(cRad) - 1) * this.lc - Math.sin(cRad) * Math.sin(bRad) * this.lb;
 
         // Z = Z' + (cos(B) - 1)·LB
         const machineZ = z + (Math.cos(bRad) - 1) * this.lb;
@@ -56,17 +56,17 @@ class InverseKinematics {
      * @param {number} x - X coordinate (machine)
      * @param {number} y - Y coordinate (machine)
      * @param {number} z - Z coordinate (machine)
-     * @param {number} a - A axis rotation in degrees
+     * @param {number} c - C axis rotation in degrees
      * @param {number} b - B axis rotation in degrees
      * @returns {Object} Tool-tip coordinates {x, y, z}
      */
-    forward(x, y, z, a, b) {
-        const aRad = a * Math.PI / 180;
+    forward(x, y, z, c, b) {
+        const cRad = c * Math.PI / 180;
         const bRad = b * Math.PI / 180;
 
         // Inverse of the IK formulas
-        const tipX = x - Math.sin(aRad) * this.la - Math.cos(aRad) * Math.sin(bRad) * this.lb;
-        const tipY = y - (Math.cos(aRad) - 1) * this.la + Math.sin(aRad) * Math.sin(bRad) * this.lb;
+        const tipX = x - Math.sin(cRad) * this.lc - Math.cos(cRad) * Math.sin(bRad) * this.lb;
+        const tipY = y - (Math.cos(cRad) - 1) * this.lc + Math.sin(cRad) * Math.sin(bRad) * this.lb;
         const tipZ = z - (Math.cos(bRad) - 1) * this.lb;
 
         return { x: tipX, y: tipY, z: tipZ };
@@ -78,25 +78,25 @@ class InverseKinematics {
  * @param {number} x - X coordinate (tool tip)
  * @param {number} y - Y coordinate (tool tip)
  * @param {number} z - Z coordinate (tool tip)
- * @param {number} a - A axis rotation in degrees
+ * @param {number} c - C axis rotation in degrees
  * @param {number} b - B axis rotation in degrees
- * @param {number} la - LA parameter (default 0)
+ * @param {number} lc - LC parameter (default 0)
  * @param {number} lb - LB parameter (default 47.9)
- * @returns {Object} Corrected coordinates {x, y, z, a, b}
+ * @returns {Object} Corrected coordinates {x, y, z, c, b}
  */
-function applyInverseKinematics(x, y, z, a, b, la = 0, lb = 47.9) {
-    const aRad = a * Math.PI / 180;
+function applyInverseKinematics(x, y, z, c, b, lc = 0, lb = 47.9) {
+    const cRad = c * Math.PI / 180;
     const bRad = b * Math.PI / 180;
 
-    const correctedX = x + Math.sin(aRad) * la + Math.cos(aRad) * Math.sin(bRad) * lb;
-    const correctedY = y + (Math.cos(aRad) - 1) * la - Math.sin(aRad) * Math.sin(bRad) * lb;
+    const correctedX = x + Math.sin(cRad) * lc + Math.cos(cRad) * Math.sin(bRad) * lb;
+    const correctedY = y + (Math.cos(cRad) - 1) * lc - Math.sin(cRad) * Math.sin(bRad) * lb;
     const correctedZ = z + (Math.cos(bRad) - 1) * lb;
 
     return {
         x: correctedX,
         y: correctedY,
         z: correctedZ,
-        a: a,
+        c: c,
         b: b
     };
 }
@@ -105,11 +105,11 @@ function applyInverseKinematics(x, y, z, a, b, la = 0, lb = 47.9) {
  * Process raw G-code and apply inverse kinematics corrections
  * @param {string} rawGcode - Raw G-code string
  * @param {boolean} enableKinematics - Whether to apply corrections
- * @param {number} la - LA parameter
+ * @param {number} lc - LC parameter
  * @param {number} lb - LB parameter
  * @returns {string} Processed G-code
  */
-function processGcodeWithIK(rawGcode, enableKinematics = true, la = 0, lb = 47.9) {
+function processGcodeWithIK(rawGcode, enableKinematics = true, lc = 0, lb = 47.9) {
     if (!enableKinematics) {
         return rawGcode;
     }
@@ -118,8 +118,8 @@ function processGcodeWithIK(rawGcode, enableKinematics = true, la = 0, lb = 47.9
     const processedLines = [];
 
     for (let line of lines) {
-        if (line.startsWith('G1') && (line.includes(' A') || line.includes(' B'))) {
-            const processedLine = applyKinematicCorrectionsToLine(line, la, lb);
+        if (line.startsWith('G1') && (line.includes(' C') || line.includes(' B'))) {
+            const processedLine = applyKinematicCorrectionsToLine(line, lc, lb);
             processedLines.push(processedLine);
         } else {
             processedLines.push(line);
@@ -132,11 +132,11 @@ function processGcodeWithIK(rawGcode, enableKinematics = true, la = 0, lb = 47.9
 /**
  * Apply IK corrections to a single G-code line
  * @param {string} gcodeLine - G-code line
- * @param {number} la - LA parameter
+ * @param {number} lc - LC parameter
  * @param {number} lb - LB parameter
  * @returns {string} Corrected G-code line
  */
-function applyKinematicCorrectionsToLine(gcodeLine, la, lb) {
+function applyKinematicCorrectionsToLine(gcodeLine, lc, lb) {
     const coords = parseGcodeLine(gcodeLine);
 
     if (!coords) {
@@ -145,8 +145,8 @@ function applyKinematicCorrectionsToLine(gcodeLine, la, lb) {
 
     const corrected = applyInverseKinematics(
         coords.x, coords.y, coords.z,
-        coords.a, coords.b,
-        la, lb
+        coords.c, coords.b,
+        lc, lb
     );
 
     return buildGcodeLine(coords, corrected);
@@ -159,16 +159,16 @@ function applyKinematicCorrectionsToLine(gcodeLine, la, lb) {
  */
 function parseGcodeLine(line) {
     const coords = {
-        x: 0, y: 0, z: 0, a: 0, b: 0,
+        x: 0, y: 0, z: 0, c: 0, b: 0,
         e: null, f: null,
-        hasA: false, hasB: false
+        hasC: false, hasB: false
     };
 
     const patterns = {
         x: /X([-+]?\d*\.?\d+)/i,
         y: /Y([-+]?\d*\.?\d+)/i,
         z: /Z([-+]?\d*\.?\d+)/i,
-        a: /A([-+]?\d*\.?\d+)/i,
+        c: /C([-+]?\d*\.?\d+)/i,
         b: /B([-+]?\d*\.?\d+)/i,
         e: /E([-+]?\d*\.?\d+)/i,
         f: /F([-+]?\d*\.?\d+)/i
@@ -177,13 +177,13 @@ function parseGcodeLine(line) {
     for (const [axis, pattern] of Object.entries(patterns)) {
         const match = line.match(pattern);
         if (match) {
-            if (axis === 'a') coords.hasA = true;
+            if (axis === 'c') coords.hasC = true;
             if (axis === 'b') coords.hasB = true;
             coords[axis] = parseFloat(match[1]);
         }
     }
 
-    if (!coords.hasA && !coords.hasB) {
+    if (!coords.hasC && !coords.hasB) {
         return null;
     }
 
@@ -202,7 +202,7 @@ function buildGcodeLine(originalCoords, correctedCoords) {
     line += ` X${correctedCoords.x.toFixed(3)}`;
     line += ` Y${correctedCoords.y.toFixed(3)}`;
     line += ` Z${correctedCoords.z.toFixed(3)}`;
-    line += ` A${correctedCoords.a.toFixed(3)}`;
+    line += ` C${correctedCoords.c.toFixed(3)}`;
     line += ` B${correctedCoords.b.toFixed(3)}`;
 
     if (originalCoords.e !== null) {

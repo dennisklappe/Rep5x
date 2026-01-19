@@ -188,39 +188,39 @@ class UIController {
             });
         }
 
-        // Save button for advanced LA/LB params
+        // Save button for advanced LC/LB params
         const saveAdvancedBtn = document.getElementById('saveAdvancedParams');
-        const laParamInput = document.getElementById('laParam');
+        const lcParamInput = document.getElementById('lcParam');
         const lbParamInput = document.getElementById('lbParam');
 
-        if (saveAdvancedBtn && laParamInput && lbParamInput) {
+        if (saveAdvancedBtn && lcParamInput && lbParamInput) {
             saveAdvancedBtn.addEventListener('click', () => {
-                const la = parseFloat(laParamInput.value) || 0;
+                const lc = parseFloat(lcParamInput.value) || 0;
                 const lb = parseFloat(lbParamInput.value) || 47;
 
                 if (typeof StorageManager !== 'undefined') {
-                    StorageManager.saveCalibrationResults(la, lb, {
+                    StorageManager.saveCalibrationResults(lc, lb, {
                         method: 'manual',
                         testMode: false
                     });
                 }
 
                 // Dispatch event so footer updates
-                document.dispatchEvent(new CustomEvent('laLbUpdated', {
-                    detail: { la, lb, source: 'advanced' }
+                document.dispatchEvent(new CustomEvent('lcLbUpdated', {
+                    detail: { lc, lb, source: 'advanced' }
                 }));
 
                 // Visual feedback
                 saveAdvancedBtn.textContent = 'Saved!';
                 setTimeout(() => {
-                    saveAdvancedBtn.textContent = 'Save LA/LB to browser';
+                    saveAdvancedBtn.textContent = 'Save LC/LB to browser';
                 }, 1500);
             });
 
             // Listen for updates from footer
-            document.addEventListener('laLbUpdated', (e) => {
+            document.addEventListener('lcLbUpdated', (e) => {
                 if (e.detail.source !== 'advanced') {
-                    if (e.detail.la !== undefined) laParamInput.value = e.detail.la.toFixed(2);
+                    if (e.detail.lc !== undefined) lcParamInput.value = e.detail.lc.toFixed(2);
                     if (e.detail.lb !== undefined) lbParamInput.value = e.detail.lb.toFixed(2);
                 }
             });
@@ -282,7 +282,7 @@ class UIController {
                 notLoadedDiv.classList.add('hidden');
                 loadedDiv.classList.remove('hidden');
                 if (detailsDiv && details) {
-                    detailsDiv.textContent = `${details.aSweepPoints} A-sweep + ${details.bSweepPoints} B-sweep points`;
+                    detailsDiv.textContent = `${details.cSweepPoints} C-sweep + ${details.bSweepPoints} B-sweep points`;
                 }
             } else {
                 notLoadedDiv.classList.remove('hidden');
@@ -317,24 +317,24 @@ class UIController {
         if (typeof StorageManager === 'undefined') return;
 
         const savedResults = StorageManager.loadCalibrationResults();
-        if (savedResults && (savedResults.la !== undefined || savedResults.lb !== undefined)) {
+        if (savedResults && (savedResults.lc !== undefined || savedResults.lb !== undefined)) {
             // Update footer display
             const display = document.getElementById('savedKinematicsDisplay');
-            const laSpan = document.getElementById('savedLaValue');
+            const lcSpan = document.getElementById('savedLcValue');
             const lbSpan = document.getElementById('savedLbValue');
 
-            if (display && laSpan && lbSpan) {
-                laSpan.textContent = savedResults.la?.toFixed(2) ?? '0';
+            if (display && lcSpan && lbSpan) {
+                lcSpan.textContent = savedResults.lc?.toFixed(2) ?? '0';
                 lbSpan.textContent = savedResults.lb?.toFixed(2) ?? '47';
                 display.classList.remove('hidden');
             }
 
-            // Prefill LA/LB input fields if they exist
-            const laInput = document.getElementById('laParam');
+            // Prefill LC/LB input fields if they exist
+            const lcInput = document.getElementById('lcParam');
             const lbInput = document.getElementById('lbParam');
 
-            if (laInput && savedResults.la !== undefined) {
-                laInput.value = savedResults.la.toFixed(2);
+            if (lcInput && savedResults.lc !== undefined) {
+                lcInput.value = savedResults.lc.toFixed(2);
             }
             if (lbInput && savedResults.lb !== undefined) {
                 lbInput.value = savedResults.lb.toFixed(2);
@@ -419,9 +419,9 @@ class UIController {
     getAdvancedSettings() {
         return {
             enableKinematics: document.getElementById('enableKinematics')?.checked || false,
-            laParam: parseFloat(document.getElementById('laParam')?.value || 0),
+            lcParam: parseFloat(document.getElementById('lcParam')?.value || 0),
             lbParam: parseFloat(document.getElementById('lbParam')?.value || 47.9),
-            enableAAxisOptimization: document.getElementById('enableAAxisOptimization')?.checked || false,
+            enableCAxisOptimization: document.getElementById('enableCAxisOptimization')?.checked || false,
             enableCalibration: document.getElementById('enableCalibration')?.checked || false,
             calibrationCorrector: this.calibrationCorrector || null,
             startGcode: document.getElementById('startGcode')?.value || '',
@@ -432,12 +432,12 @@ class UIController {
     updateShapeInfo(shape) {
         const shapeInfo = {
             'elbow-pipe': 'Elbow pipe demonstrates the B-axis (pitch) printing capability.',
-            'mushroom': 'Mushroom shape demonstrates both A-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form.'
+            'mushroom': 'Mushroom shape demonstrates both C-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form.'
         };
 
         const shapeDescriptions = {
             'elbow-pipe': 'Configurable elbow pipe to demonstrate B-axis (pitch) printing',
-            'mushroom': 'Organic mushroom shape demonstrating both A and B axis movements'
+            'mushroom': 'Organic mushroom shape demonstrating both C and B axis movements'
         };
 
         const infoElem = document.getElementById('shapeInfo');

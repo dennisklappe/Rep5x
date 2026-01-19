@@ -58,8 +58,8 @@
                             <div id="pos-z" class="pos-value font-medium">0.00</div>
                         </div>
                         <div class="bg-gray-50 rounded-lg p-3">
-                            <div class="text-xs text-gray-500 mb-1">A</div>
-                            <div id="pos-a" class="pos-value font-medium">0.00</div>
+                            <div class="text-xs text-gray-500 mb-1">C</div>
+                            <div id="pos-c" class="pos-value font-medium">0.00</div>
                         </div>
                         <div class="bg-gray-50 rounded-lg p-3">
                             <div class="text-xs text-gray-500 mb-1">B</div>
@@ -135,17 +135,17 @@
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-8">
-                            <!-- A Axis -->
+                            <!-- C Axis -->
                             <div>
-                                <div class="text-sm text-gray-500 mb-2 text-center">A (Yaw)</div>
+                                <div class="text-sm text-gray-500 mb-2 text-center">C (Yaw)</div>
                                 <div class="flex items-center justify-center gap-1">
-                                    <button class="jog-btn rounded-lg" data-axis="A" data-dir="-1">A-</button>
-                                    <button class="jog-btn rounded-lg" id="homeA" title="Home A">
+                                    <button class="jog-btn rounded-lg" data-axis="C" data-dir="-1">C-</button>
+                                    <button class="jog-btn rounded-lg" id="homeC" title="Home C">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                                         </svg>
                                     </button>
-                                    <button class="jog-btn rounded-lg" data-axis="A" data-dir="1">A+</button>
+                                    <button class="jog-btn rounded-lg" data-axis="C" data-dir="1">C+</button>
                                 </div>
                             </div>
 
@@ -173,11 +173,11 @@
                             </svg>
                             Home all
                         </button>
-                        <button id="homeABZero" class="flex-1 btn-outline py-3 rounded-lg font-medium flex items-center justify-center gap-2" title="Home A & B axes, then move to A0 B0">
+                        <button id="homeCBZero" class="flex-1 btn-outline py-3 rounded-lg font-medium flex items-center justify-center gap-2" title="Home C & B axes, then move to C0 B0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                             </svg>
-                            Home A/B → 0
+                            Home C/B → 0
                         </button>
                         <button id="emergencyStop" class="flex-1 btn-emergency py-3 rounded-lg font-medium flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,6 +282,8 @@
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="G90">Absolute mode</button>
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="G91">Relative mode</button>
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M105">Get temps</button>
+                <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm bg-green-50 border-green-300 hover:bg-green-100" data-cmd="M493 I1">IK on</button>
+                <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm bg-red-50 border-red-300 hover:bg-red-100" data-cmd="M493 I0">IK off</button>
             </div>
         </div>
     </main>

@@ -1,7 +1,7 @@
 /**
  * Shared Camera Manager
  * Handles camera access and overlay rendering (crosshair and line modes)
- * Used by: Calibrator, LA/LB Measure
+ * Used by: Calibrator, LC/LB Measure
  */
 
 class CameraManager {

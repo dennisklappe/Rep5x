@@ -18,10 +18,10 @@ class GcodeCorrectorApp {
         // Calibration visualizer
         this.visualizer = null;
 
-        // Load saved LA/LB
-        const la = StorageManager.loadLa() || 0;
+        // Load saved LC/LB
+        const lc = StorageManager.loadLc() || 0;
         const lb = StorageManager.loadLb() || 47;
-        this.processor.setIKParameters(la, lb);
+        this.processor.setIKParameters(lc, lb);
     }
 
     init() {
@@ -37,16 +37,16 @@ class GcodeCorrectorApp {
             this.graphRenderer = new CorrectionGraphRenderer(canvas);
 
             // Graph view toggle buttons
-            document.getElementById('graphViewA').addEventListener('click', () => {
-                this.graphRenderer.setViewMode('a');
-                document.getElementById('graphViewA').classList.add('active');
+            document.getElementById('graphViewC').addEventListener('click', () => {
+                this.graphRenderer.setViewMode('c');
+                document.getElementById('graphViewC').classList.add('active');
                 document.getElementById('graphViewB').classList.remove('active');
             });
 
             document.getElementById('graphViewB').addEventListener('click', () => {
                 this.graphRenderer.setViewMode('b');
                 document.getElementById('graphViewB').classList.add('active');
-                document.getElementById('graphViewA').classList.remove('active');
+                document.getElementById('graphViewC').classList.remove('active');
             });
         }
 
@@ -85,8 +85,8 @@ class GcodeCorrectorApp {
         });
 
         // Sweep mode buttons (Both is default)
-        const sweepButtons = ['vizSweepBoth', 'vizSweepA', 'vizSweepB', 'vizSweepCombined'];
-        const sweepModes = ['both', 'a', 'b', 'combined'];
+        const sweepButtons = ['vizSweepBoth', 'vizSweepC', 'vizSweepB', 'vizSweepCombined'];
+        const sweepModes = ['both', 'c', 'b', 'combined'];
 
         sweepButtons.forEach((btnId, index) => {
             document.getElementById(btnId).addEventListener('click', () => {
@@ -130,7 +130,7 @@ class GcodeCorrectorApp {
 
             const gcode = this.visualizer.generateDemoGcode({
                 mode: mode,
-                sweepMode: 'both',  // Always use 'both' for demo G-code (tests A and B sweeps)
+                sweepMode: 'both',  // Always use 'both' for demo G-code (tests C and B sweeps)
                 applyIK: applyIK,
                 centerX: centerX,
                 centerY: centerY,
@@ -201,17 +201,17 @@ class GcodeCorrectorApp {
         document.getElementById('applyCalibration').addEventListener('change', () => this.updateUI());
         document.getElementById('firmwareIK').addEventListener('change', () => this.updateUI());
 
-        // LA/LB inputs
-        document.getElementById('laParam').addEventListener('change', (e) => {
-            const la = parseFloat(e.target.value) || 0;
+        // LC/LB inputs
+        document.getElementById('lcParam').addEventListener('change', (e) => {
+            const lc = parseFloat(e.target.value) || 0;
             const lb = parseFloat(document.getElementById('lbParam').value) || 47;
-            this.processor.setIKParameters(la, lb);
+            this.processor.setIKParameters(lc, lb);
             this.updatePreview();
         });
         document.getElementById('lbParam').addEventListener('change', (e) => {
-            const la = parseFloat(document.getElementById('laParam').value) || 0;
+            const lc = parseFloat(document.getElementById('lcParam').value) || 0;
             const lb = parseFloat(e.target.value) || 47;
-            this.processor.setIKParameters(la, lb);
+            this.processor.setIKParameters(lc, lb);
             this.updatePreview();
         });
 
@@ -262,19 +262,19 @@ class GcodeCorrectorApp {
         try {
             const result = this.corrector.loadFromJSON(data);
 
-            // Update LA/LB from calibration data
+            // Update LC/LB from calibration data
             if (data.metadata) {
-                const la = data.metadata.la || 0;
+                const lc = data.metadata.lc || 0;
                 const lb = data.metadata.lb || 47;
-                document.getElementById('laParam').value = la.toFixed(2);
+                document.getElementById('lcParam').value = lc.toFixed(2);
                 document.getElementById('lbParam').value = lb.toFixed(2);
-                this.processor.setIKParameters(la, lb);
+                this.processor.setIKParameters(lc, lb);
             }
 
             // Show statistics
             const stats = this.corrector.getStatistics();
             this.showStatus('calibrationStatus',
-                `Loaded: ${result.aSweepPoints} A-sweep + ${result.bSweepPoints} B-sweep points. ` +
+                `Loaded: ${result.cSweepPoints} C-sweep + ${result.bSweepPoints} B-sweep points. ` +
                 `Max errors: X=${stats.x.absMax.toFixed(2)}mm, Y=${stats.y.absMax.toFixed(2)}mm, Z=${stats.z.absMax.toFixed(2)}mm`,
                 'success'
             );
@@ -400,8 +400,8 @@ class GcodeCorrectorApp {
         if (detected.ikType) {
             infoHtml += `<li>IK: ${detected.ikType === 'disabled' ? 'disabled' : detected.ikType}</li>`;
         }
-        if (detected.la !== null) {
-            infoHtml += `<li>LA: ${detected.la}</li>`;
+        if (detected.lc !== null) {
+            infoHtml += `<li>LC: ${detected.lc}</li>`;
         }
         if (detected.lb !== null) {
             infoHtml += `<li>LB: ${detected.lb}</li>`;
@@ -417,15 +417,15 @@ class GcodeCorrectorApp {
             infoDiv.classList.remove('hidden');
         }
 
-        // Prefill LA/LB from headers if available
-        if (detected.la !== null) {
-            document.getElementById('laParam').value = detected.la.toFixed(2);
+        // Prefill LC/LB from headers if available
+        if (detected.lc !== null) {
+            document.getElementById('lcParam').value = detected.lc.toFixed(2);
         }
         if (detected.lb !== null) {
             document.getElementById('lbParam').value = detected.lb.toFixed(2);
             // Update processor too
-            const la = parseFloat(document.getElementById('laParam').value) || 0;
-            this.processor.setIKParameters(la, detected.lb);
+            const lc = parseFloat(document.getElementById('lcParam').value) || 0;
+            this.processor.setIKParameters(lc, detected.lb);
         }
 
         // Handle warnings based on what's detected
@@ -555,7 +555,7 @@ class GcodeCorrectorApp {
 
         if (analysis.linesWithRotation === 0) {
             document.getElementById('previewContent').innerHTML =
-                '<p class="text-gray-500">No lines with A/B rotation found in G-code</p>';
+                '<p class="text-gray-500">No lines with C/B rotation found in G-code</p>';
             return;
         }
 
@@ -580,9 +580,9 @@ class GcodeCorrectorApp {
             html += '<div class="p-3 bg-blue-50 rounded-lg">';
             html += '<div class="font-medium text-blue-700 mb-2">Max IK corrections</div>';
             html += '<div class="grid grid-cols-3 gap-2 text-xs">';
-            html += `<div><span class="text-blue-600 font-semibold">ΔX: ${analysis.maxIK.x.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ A${analysis.maxIK.x.a.toFixed(0)}° B${analysis.maxIK.x.b.toFixed(0)}°</span></div>`;
-            html += `<div><span class="text-blue-600 font-semibold">ΔY: ${analysis.maxIK.y.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ A${analysis.maxIK.y.a.toFixed(0)}° B${analysis.maxIK.y.b.toFixed(0)}°</span></div>`;
-            html += `<div><span class="text-blue-600 font-semibold">ΔZ: ${analysis.maxIK.z.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ A${analysis.maxIK.z.a.toFixed(0)}° B${analysis.maxIK.z.b.toFixed(0)}°</span></div>`;
+            html += `<div><span class="text-blue-600 font-semibold">ΔX: ${analysis.maxIK.x.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ C${analysis.maxIK.x.a.toFixed(0)}° B${analysis.maxIK.x.b.toFixed(0)}°</span></div>`;
+            html += `<div><span class="text-blue-600 font-semibold">ΔY: ${analysis.maxIK.y.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ C${analysis.maxIK.y.a.toFixed(0)}° B${analysis.maxIK.y.b.toFixed(0)}°</span></div>`;
+            html += `<div><span class="text-blue-600 font-semibold">ΔZ: ${analysis.maxIK.z.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ C${analysis.maxIK.z.a.toFixed(0)}° B${analysis.maxIK.z.b.toFixed(0)}°</span></div>`;
             html += '</div></div>';
         }
 
@@ -591,9 +591,9 @@ class GcodeCorrectorApp {
             html += '<div class="p-3 bg-green-50 rounded-lg">';
             html += '<div class="font-medium text-green-700 mb-2">Max calibration corrections</div>';
             html += '<div class="grid grid-cols-3 gap-2 text-xs">';
-            html += `<div><span class="text-green-600 font-semibold">ΔX: ${analysis.maxCalib.x.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ A${analysis.maxCalib.x.a.toFixed(0)}° B${analysis.maxCalib.x.b.toFixed(0)}°</span></div>`;
-            html += `<div><span class="text-green-600 font-semibold">ΔY: ${analysis.maxCalib.y.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ A${analysis.maxCalib.y.a.toFixed(0)}° B${analysis.maxCalib.y.b.toFixed(0)}°</span></div>`;
-            html += `<div><span class="text-green-600 font-semibold">ΔZ: ${analysis.maxCalib.z.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ A${analysis.maxCalib.z.a.toFixed(0)}° B${analysis.maxCalib.z.b.toFixed(0)}°</span></div>`;
+            html += `<div><span class="text-green-600 font-semibold">ΔX: ${analysis.maxCalib.x.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ C${analysis.maxCalib.x.a.toFixed(0)}° B${analysis.maxCalib.x.b.toFixed(0)}°</span></div>`;
+            html += `<div><span class="text-green-600 font-semibold">ΔY: ${analysis.maxCalib.y.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ C${analysis.maxCalib.y.a.toFixed(0)}° B${analysis.maxCalib.y.b.toFixed(0)}°</span></div>`;
+            html += `<div><span class="text-green-600 font-semibold">ΔZ: ${analysis.maxCalib.z.val.toFixed(2)}mm</span><br><span class="text-gray-500">@ C${analysis.maxCalib.z.a.toFixed(0)}° B${analysis.maxCalib.z.b.toFixed(0)}°</span></div>`;
             html += '</div></div>';
         }
 

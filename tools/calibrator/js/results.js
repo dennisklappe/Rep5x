@@ -6,8 +6,8 @@
 class StepResults {
     constructor(app) {
         this.app = app;
-        this.graphRendererA = null;  // Graph for A sweep (shows A angles at B=0)
-        this.graphRendererB = null;  // Graph for B sweep (shows B angles at A=0)
+        this.graphRendererC = null;  // Graph for C sweep (shows C angles at B=0)
+        this.graphRendererB = null;  // Graph for B sweep (shows B angles at C=0)
         this.visualizer = null;      // 3D Nozzle position visualizer
         this.corrector = null;       // CalibrationCorrector for visualizer
     }
@@ -33,11 +33,11 @@ class StepResults {
         });
 
         // Initialise both graphs
-        const graphACanvas = document.getElementById('results-graph-a');
+        const graphACanvas = document.getElementById('results-graph-c');
         const graphBCanvas = document.getElementById('results-graph-b');
 
         if (graphACanvas) {
-            this.graphRendererA = new GraphRenderer(graphACanvas);
+            this.graphRendererC = new GraphRenderer(graphACanvas);
         }
         if (graphBCanvas) {
             this.graphRendererB = new GraphRenderer(graphBCanvas);
@@ -70,7 +70,7 @@ class StepResults {
 
             // Sweep mode buttons
             const sweepBtns = {
-                'results-viz-sweep-a': 'a',
+                'results-viz-sweep-c': 'c',
                 'results-viz-sweep-b': 'b',
                 'results-viz-sweep-both': 'both',
                 'results-viz-sweep-combined': 'combined'
@@ -152,17 +152,17 @@ class StepResults {
         document.getElementById('nextBtn').style.display = 'none';
 
         // Update both graphs - show all axes in results view
-        if (this.graphRendererA) {
-            this.graphRendererA.calibrationPhase = 'full';
-            this.graphRendererA.setDataFromEngine(this.app.engine);
-            this.graphRendererA.setViewMode('b', 0);  // Show A angles for B=0
-            this.graphRendererA.render();
+        if (this.graphRendererC) {
+            this.graphRendererC.calibrationPhase = 'full';
+            this.graphRendererC.setDataFromEngine(this.app.engine);
+            this.graphRendererC.setViewMode('b', 0);  // Show C angles for B=0
+            this.graphRendererC.render();
         }
 
         if (this.graphRendererB) {
             this.graphRendererB.calibrationPhase = 'full';
             this.graphRendererB.setDataFromEngine(this.app.engine);
-            this.graphRendererB.setViewMode('a', 0);  // Show B angles for A=0
+            this.graphRendererB.setViewMode('c', 0);  // Show B angles for C=0
             this.graphRendererB.render();
         }
 
@@ -178,7 +178,7 @@ class StepResults {
             this.visualizer.setSweepMode('both');
 
             // Update sweep mode button styles to show "both" as active
-            const sweepBtnIds = ['results-viz-sweep-a', 'results-viz-sweep-b', 'results-viz-sweep-both', 'results-viz-sweep-combined'];
+            const sweepBtnIds = ['results-viz-sweep-c', 'results-viz-sweep-b', 'results-viz-sweep-both', 'results-viz-sweep-combined'];
             sweepBtnIds.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) {

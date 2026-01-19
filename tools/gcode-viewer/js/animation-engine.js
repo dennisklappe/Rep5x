@@ -25,7 +25,7 @@ class AnimationEngine {
         this.collisionMarkers = null;
         this.collisionEnabled = false;
 
-        this.position = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+        this.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
 
         this.initThreeJS();
     }
@@ -65,7 +65,7 @@ class AnimationEngine {
         if (cmd.x !== null) pos.x = cmd.x;
         if (cmd.y !== null) pos.y = cmd.y;
         if (cmd.z !== null) pos.z = cmd.z;
-        if (cmd.a !== null) pos.a = cmd.a;
+        if (cmd.c !== null) pos.c = cmd.c;
         if (cmd.b !== null) pos.b = cmd.b;
     }
 
@@ -99,7 +99,7 @@ class AnimationEngine {
 
         this.currentStep = this.commands.length;
         this.rebuildPrintPath();
-        this.position = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+        this.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
         this.updatePrinthead();
     }
 
@@ -128,7 +128,7 @@ class AnimationEngine {
             this.scene.remove(this.printPath);
             this.printPath = null;
         }
-        this.position = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+        this.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
         this.updatePrinthead();
         this.updateProgressCallback(0);
     }
@@ -187,7 +187,7 @@ class AnimationEngine {
 
     rebuildPrintPath() {
         this.printedPath = [];
-        const pos = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+        const pos = { x: 0, y: 0, z: 0, c: 0, b: 0 };
 
         for (let i = 0; i < this.currentStep; i++) {
             const cmd = this.commands[i];
@@ -200,7 +200,7 @@ class AnimationEngine {
 
     syncPosition() {
         if (this.currentStep > 0) {
-            const pos = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+            const pos = { x: 0, y: 0, z: 0, c: 0, b: 0 };
             for (let i = 0; i < this.currentStep; i++) {
                 const cmd = this.commands[i];
                 if (cmd && cmd.type !== 'reset') this.applyCommand(cmd, pos);
@@ -223,14 +223,14 @@ class AnimationEngine {
 
     updatePrinthead() {
         const pos = this.toThreePos(this.position);
-        const aRad = -this.position.a * Math.PI / 180;
+        const cRad = -this.position.c * Math.PI / 180;
         const bRad = -this.position.b * Math.PI / 180;
 
         [this.printhead, this.realisticHead].forEach(head => {
             if (head) {
                 head.position.copy(pos);
                 head.rotation.set(0, 0, 0);
-                head.rotateY(aRad);
+                head.rotateY(cRad);
                 head.rotateZ(bRad);
             }
         });

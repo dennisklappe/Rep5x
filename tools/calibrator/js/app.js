@@ -61,20 +61,20 @@ class CalibratorApp {
         // Set up shared event listeners
         this.setupEventListeners();
 
-        // Load saved LA/LB values
-        this.loadSavedLaLb();
+        // Load saved LC/LB values
+        this.loadSavedLcLb();
 
         // Show initial step
         this.showStep(0);
     }
 
     /**
-     * Load saved LA/LB values
+     * Load saved LC/LB values
      */
-    loadSavedLaLb() {
-        const la = StorageManager.loadLa() || 0;
+    loadSavedLcLb() {
+        const lc =StorageManager.loadLc() || 0;
         const lb = StorageManager.loadLb() || 47;
-        this.engine.setLaLb(la, lb);
+        this.engine.setLcLb(lc, lb);
     }
 
     /**
@@ -121,7 +121,7 @@ class CalibratorApp {
 
             const distance = this.linearStepSize * dir;
 
-            if (['A', 'B'].includes(axis)) {
+            if (['C', 'B'].includes(axis)) {
                 await this.printer.sendCommand(`G91`);
                 await this.printer.sendCommand(`G0 ${axis}${distance}`);
                 await this.printer.sendCommand(`G90`);
@@ -350,7 +350,7 @@ class CalibratorApp {
     updatePositionDisplay(pos) {
         const formatPos = (val) => val !== undefined ? val.toFixed(2) : '---';
 
-        const displayText = `X: ${formatPos(pos.x)} Y: ${formatPos(pos.y)} Z: ${formatPos(pos.z)} A: ${formatPos(pos.a)} B: ${formatPos(pos.b)}`;
+        const displayText = `X: ${formatPos(pos.x)} Y: ${formatPos(pos.y)} Z: ${formatPos(pos.z)} A: ${formatPos(pos.c)} B: ${formatPos(pos.b)}`;
 
         ['prepare-position-display', 'calibration-position'].forEach(id => {
             const el = document.getElementById(id);

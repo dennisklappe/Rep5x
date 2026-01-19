@@ -1,6 +1,6 @@
 /**
  * Calibration Corrector
- * Applies calibration corrections to XYZ based on A/B angles
+ * Applies calibration corrections to XYZ based on C/B angles
  * Uses Fourier/trigonometric curve fitting for smooth, physically-motivated corrections
  *
  * Used by: Calibrator, G-code Corrector, G-code Viewer
@@ -9,13 +9,13 @@
 class CalibrationCorrector {
     constructor() {
         // Raw calibration data storage
-        this.aSweepData = [];  // {a, errorX, errorY, errorZ} at B=0
-        this.bSweepData = [];  // {b, errorX, errorY, errorZ} at A=0
+        this.cSweepData = [];  // {c, errorX, errorY, errorZ} at B=0
+        this.bSweepData = [];  // {b, errorX, errorY, errorZ} at C=0
 
-        // Fourier coefficients for A-axis (periodic, 0-360°)
+        // Fourier coefficients for C-axis (periodic, 0-360°)
         // Format: { x: [a0, a1, b1, a2, b2, ...], y: [...], z: [...] }
-        this.aCoeffs = null;
-        this.aHarmonics = 3;  // Number of harmonics to fit
+        this.cCoeffs = null;
+        this.cHarmonics = 3;  // Number of harmonics to fit
 
         // Trigonometric coefficients for B-axis (-90° to 90°)
         // Format: { x: [c0, c1, s1, c2, s2], y: [...], z: [...] }
@@ -23,7 +23,7 @@ class CalibrationCorrector {
         this.bHarmonics = 2;  // Number of harmonics for B-axis
 
         // Metadata
-        this.la = 0;
+        this.lc = 0;
         this.lb = 47;
         this.loaded = false;
 
@@ -41,23 +41,23 @@ class CalibrationCorrector {
         }
 
         // Clear existing data
-        this.aSweepData = [];
+        this.cSweepData = [];
         this.bSweepData = [];
-        this.aCoeffs = null;
+        this.cCoeffs = null;
         this.bCoeffs = null;
 
         // Load metadata
         if (data.metadata) {
-            this.la = data.metadata.la || 0;
+            this.lc = data.metadata.lc || 0;
             this.lb = data.metadata.lb || 47;
         }
 
-        // Separate A sweep (B=0) and B sweep (A=0)
+        // Separate C sweep (B=0) and B sweep (C=0)
         for (const m of data.measurements) {
             if (m.skipped) continue;
 
             const point = {
-                a: m.a,
+                c: m.c,
                 b: m.b,
                 errorX: m.error?.x || 0,
                 errorY: m.error?.y || 0,
@@ -65,15 +65,15 @@ class CalibrationCorrector {
             };
 
             if (m.b === 0) {
-                this.aSweepData.push(point);
+                this.cSweepData.push(point);
             }
-            if (m.a === 0) {
+            if (m.c === 0) {
                 this.bSweepData.push(point);
             }
         }
 
         // Sort by angle
-        this.aSweepData.sort((a, b) => a.a - b.a);
+        this.cSweepData.sort((a, b) => a.c - b.c);
         this.bSweepData.sort((a, b) => a.b - b.b);
 
         // Fit curves
@@ -82,7 +82,7 @@ class CalibrationCorrector {
         this.loaded = true;
 
         return {
-            aSweepPoints: this.aSweepData.length,
+            cSweepPoints: this.cSweepData.length,
             bSweepPoints: this.bSweepData.length
         };
     }
@@ -91,12 +91,12 @@ class CalibrationCorrector {
      * Fit Fourier/trigonometric curves to the calibration data
      */
     fitCurves() {
-        // Fit A-axis (Fourier series, periodic)
-        if (this.aSweepData.length >= 3) {
-            this.aCoeffs = {
-                x: this.fitFourierSeries(this.aSweepData, 'a', 'errorX', this.aHarmonics, true),
-                y: this.fitFourierSeries(this.aSweepData, 'a', 'errorY', this.aHarmonics, true),
-                z: this.fitFourierSeries(this.aSweepData, 'a', 'errorZ', this.aHarmonics, true)
+        // Fit C-axis (Fourier series, periodic)
+        if (this.cSweepData.length >= 3) {
+            this.cCoeffs = {
+                x: this.fitFourierSeries(this.cSweepData, 'c', 'errorX', this.cHarmonics, true),
+                y: this.fitFourierSeries(this.cSweepData, 'c', 'errorY', this.cHarmonics, true),
+                z: this.fitFourierSeries(this.cSweepData, 'c', 'errorZ', this.cHarmonics, true)
             };
         }
 
@@ -113,7 +113,7 @@ class CalibrationCorrector {
     /**
      * Fit a Fourier/trigonometric series using least squares
      * @param {Array} data - Array of data points
-     * @param {string} angleKey - Key for angle ('a' or 'b')
+     * @param {string} angleKey - Key for angle ('c' or 'b')
      * @param {string} errorKey - Key for error value ('errorX', 'errorY', 'errorZ')
      * @param {number} harmonics - Number of harmonics to fit
      * @param {boolean} periodic - If true, treat as periodic (0-360°)
@@ -132,7 +132,7 @@ class CalibrationCorrector {
             let angle = point[angleKey];
             // Convert to radians
             const theta = periodic
-                ? (angle * Math.PI / 180)  // A-axis: degrees directly
+                ? (angle * Math.PI / 180)  // C-axis: degrees directly
                 : (angle * Math.PI / 180); // B-axis: degrees to radians
 
             const row = [1];  // a0 (constant term)
@@ -179,46 +179,46 @@ class CalibrationCorrector {
     }
 
     /**
-     * Get correction for given A/B angles
+     * Get correction for given C/B angles
      * Uses fitted curves and additive model
-     * @param {number} a - A angle in degrees
+     * @param {number} c - C angle in degrees
      * @param {number} b - B angle in degrees
      * @returns {Object} {x, y, z} corrections to ADD to coordinates
      */
-    getCorrection(a, b) {
+    getCorrection(c, b) {
         if (!this.loaded) {
             return { x: 0, y: 0, z: 0 };
         }
 
-        // Normalize A to 0-360 range
-        a = ((a % 360) + 360) % 360;
+        // Normalize C to 0-360 range
+        c = ((c % 360) + 360) % 360;
 
         // Get corrections from fitted curves
-        const aCorrection = this.getACorrectionFitted(a);
+        const cCorrection = this.getCCorrectionFitted(c);
         const bCorrection = this.getBCorrectionFitted(b);
 
-        // Get baseline (correction at A=0, B=0) to avoid double-counting
+        // Get baseline (correction at C=0, B=0) to avoid double-counting
         const baseline = this.getBaselineFitted();
 
         return {
-            x: aCorrection.x + bCorrection.x - baseline.x,
-            y: aCorrection.y + bCorrection.y - baseline.y,
-            z: aCorrection.z + bCorrection.z - baseline.z
+            x: cCorrection.x + bCorrection.x - baseline.x,
+            y: cCorrection.y + bCorrection.y - baseline.y,
+            z: cCorrection.z + bCorrection.z - baseline.z
         };
     }
 
     /**
-     * Get A-axis correction using fitted Fourier curve
+     * Get C-axis correction using fitted Fourier curve
      */
-    getACorrectionFitted(a) {
-        if (!this.aCoeffs) {
-            return this.interpolateASweep(a);  // Fallback to linear
+    getCCorrectionFitted(c) {
+        if (!this.cCoeffs) {
+            return this.interpolateCSweep(c);  // Fallback to linear
         }
 
         return {
-            x: this.evaluateFourier(this.aCoeffs.x, a, true),
-            y: this.evaluateFourier(this.aCoeffs.y, a, true),
-            z: this.evaluateFourier(this.aCoeffs.z, a, true)
+            x: this.evaluateFourier(this.cCoeffs.x, c, true),
+            y: this.evaluateFourier(this.cCoeffs.y, c, true),
+            z: this.evaluateFourier(this.cCoeffs.z, c, true)
         };
     }
 
@@ -238,18 +238,18 @@ class CalibrationCorrector {
     }
 
     /**
-     * Get baseline correction at A=0, B=0 using fitted curves
+     * Get baseline correction at C=0, B=0 using fitted curves
      */
     getBaselineFitted() {
-        if (!this.aCoeffs || !this.bCoeffs) {
+        if (!this.cCoeffs || !this.bCoeffs) {
             return this.getBaseline();  // Fallback
         }
 
         // Evaluate both curves at 0°
         return {
-            x: this.evaluateFourier(this.aCoeffs.x, 0, true),
-            y: this.evaluateFourier(this.aCoeffs.y, 0, true),
-            z: this.evaluateFourier(this.aCoeffs.z, 0, true)
+            x: this.evaluateFourier(this.cCoeffs.x, 0, true),
+            y: this.evaluateFourier(this.cCoeffs.y, 0, true),
+            z: this.evaluateFourier(this.cCoeffs.z, 0, true)
         };
     }
 
@@ -361,35 +361,35 @@ class CalibrationCorrector {
     // ========== Fallback Linear Interpolation Methods ==========
 
     /**
-     * Get baseline correction at A=0, B=0 (fallback)
+     * Get baseline correction at C=0, B=0 (fallback)
      */
     getBaseline() {
-        const a0Point = this.aSweepData.find(p => p.a === 0);
-        if (a0Point) {
+        const c0Point = this.cSweepData.find(p => p.c === 0);
+        if (c0Point) {
             return {
-                x: a0Point.errorX,
-                y: a0Point.errorY,
-                z: a0Point.errorZ
+                x: c0Point.errorX,
+                y: c0Point.errorY,
+                z: c0Point.errorZ
             };
         }
         return { x: 0, y: 0, z: 0 };
     }
 
     /**
-     * Interpolate A sweep data (fallback)
+     * Interpolate C sweep data (fallback)
      */
-    interpolateASweep(a) {
-        if (this.aSweepData.length === 0) {
+    interpolateCSweep(c) {
+        if (this.cSweepData.length === 0) {
             return { x: 0, y: 0, z: 0 };
         }
 
-        const extended = [...this.aSweepData];
-        const first = this.aSweepData[0];
-        if (first.a === 0) {
-            extended.push({ ...first, a: 360 });
+        const extended = [...this.cSweepData];
+        const first = this.cSweepData[0];
+        if (first.c === 0) {
+            extended.push({ ...first, c: 360 });
         }
 
-        return this.interpolateArray(extended, a, 'a');
+        return this.interpolateArray(extended, c, 'c');
     }
 
     /**
@@ -436,25 +436,25 @@ class CalibrationCorrector {
     // ========== Residual Calculation ==========
 
     /**
-     * Get residual error (measured - fitted) at given A/B angles
+     * Get residual error (measured - fitted) at given C/B angles
      * This shows how much error remains after calibration correction
-     * @param {number} a - A angle in degrees
+     * @param {number} c - C angle in degrees
      * @param {number} b - B angle in degrees
      * @returns {Object} {x, y, z} residual errors
      */
-    getResidual(a, b) {
+    getResidual(c, b) {
         if (!this.loaded) {
             return { x: 0, y: 0, z: 0 };
         }
 
-        // Normalize A to 0-360 range
-        a = ((a % 360) + 360) % 360;
+        // Normalize C to 0-360 range
+        c = ((c % 360) + 360) % 360;
 
         // Get fitted correction at this point
-        const fitted = this.getCorrection(a, b);
+        const fitted = this.getCorrection(c, b);
 
         // Get interpolated raw measurement at this point
-        const raw = this.getRawInterpolated(a, b);
+        const raw = this.getRawInterpolated(c, b);
 
         // Residual = raw - fitted (what remains after correction)
         return {
@@ -465,20 +465,20 @@ class CalibrationCorrector {
     }
 
     /**
-     * Get raw measurement interpolated for given A/B angles
+     * Get raw measurement interpolated for given C/B angles
      * Uses linear interpolation between measured points
      */
-    getRawInterpolated(a, b) {
-        // Get A correction from raw data (linear interpolation)
-        const aRaw = this.interpolateASweep(a);
+    getRawInterpolated(c, b) {
+        // Get C correction from raw data (linear interpolation)
+        const cRaw = this.interpolateCSweep(c);
         const bRaw = this.interpolateBSweep(b);
         const baseline = this.getBaseline();
 
         // Additive model for raw data
         return {
-            x: aRaw.x + bRaw.x - baseline.x,
-            y: aRaw.y + bRaw.y - baseline.y,
-            z: aRaw.z + bRaw.z - baseline.z
+            x: cRaw.x + bRaw.x - baseline.x,
+            y: cRaw.y + bRaw.y - baseline.y,
+            z: cRaw.z + bRaw.z - baseline.z
         };
     }
 
@@ -490,7 +490,7 @@ class CalibrationCorrector {
     getStatistics() {
         if (!this.loaded) return null;
 
-        const allErrors = [...this.aSweepData, ...this.bSweepData];
+        const allErrors = [...this.cSweepData, ...this.bSweepData];
 
         const xErrors = allErrors.map(p => p.errorX);
         const yErrors = allErrors.map(p => p.errorY);
@@ -507,17 +507,17 @@ class CalibrationCorrector {
             x: calcStats(xErrors),
             y: calcStats(yErrors),
             z: calcStats(zErrors),
-            aSweepPoints: this.aSweepData.length,
+            cSweepPoints: this.cSweepData.length,
             bSweepPoints: this.bSweepData.length
         };
     }
 
     /**
-     * Get A sweep data for visualisation (raw measured points)
+     * Get C sweep data for visualisation (raw measured points)
      */
-    getASweepData() {
-        return this.aSweepData.map(p => ({
-            angle: p.a,
+    getCSweepData() {
+        return this.cSweepData.map(p => ({
+            angle: p.c,
             errorX: p.errorX,
             errorY: p.errorY,
             errorZ: p.errorZ
@@ -537,19 +537,19 @@ class CalibrationCorrector {
     }
 
     /**
-     * Get fitted A sweep curve for visualisation
+     * Get fitted C sweep curve for visualisation
      * Returns points at regular intervals for smooth curve display
      */
-    getASweepFitted(step = 5) {
-        if (!this.aCoeffs) return this.getASweepData();
+    getCSweepFitted(step = 5) {
+        if (!this.cCoeffs) return this.getCSweepData();
 
         const points = [];
-        for (let a = 0; a <= 360; a += step) {
+        for (let c = 0; c <= 360; c += step) {
             points.push({
-                angle: a,
-                errorX: this.evaluateFourier(this.aCoeffs.x, a, true),
-                errorY: this.evaluateFourier(this.aCoeffs.y, a, true),
-                errorZ: this.evaluateFourier(this.aCoeffs.z, a, true)
+                angle: c,
+                errorX: this.evaluateFourier(this.cCoeffs.x, c, true),
+                errorY: this.evaluateFourier(this.cCoeffs.y, c, true),
+                errorZ: this.evaluateFourier(this.cCoeffs.z, c, true)
             });
         }
         return points;
@@ -579,9 +579,9 @@ class CalibrationCorrector {
      */
     getCoefficients() {
         return {
-            a: this.aCoeffs,
+            c: this.cCoeffs,
             b: this.bCoeffs,
-            aHarmonics: this.aHarmonics,
+            cHarmonics: this.cHarmonics,
             bHarmonics: this.bHarmonics
         };
     }

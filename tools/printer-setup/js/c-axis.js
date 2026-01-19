@@ -1,9 +1,9 @@
 /**
- * Step 3: A-axis calibration
+ * Step 3: C-axis calibration
  * Measures two reference positions (0°, 360°) to calculate offset and steps/degree
  */
 
-class StepAAxis {
+class StepCAxis {
     constructor(app) {
         this.app = app;
         this.measurements = {
@@ -19,16 +19,16 @@ class StepAAxis {
      * Set up event listeners for this step
      */
     setup() {
-        document.getElementById('confirmAPosition').addEventListener('click', () => this.confirmPosition());
-        document.getElementById('skipAAxis').addEventListener('click', () => this.skip());
+        document.getElementById('confirmCPosition').addEventListener('click', () => this.confirmPosition());
+        document.getElementById('skipCAxis').addEventListener('click', () => this.skip());
     }
 
     /**
-     * Skip A-axis calibration (use current values)
+     * Skip C-axis calibration (use current values)
      */
     skip() {
         // Record dummy values that result in no correction
-        // a0 = 0, a360 = 360 means: no offset needed, no steps correction needed
+        // c0 = 0, c360 = 360 means: no offset needed, no steps correction needed
         this.measurements.recorded = { 0: 0, 360: 360 };
         this.app.nextStep();
     }
@@ -38,15 +38,15 @@ class StepAAxis {
      */
     async enter() {
         document.getElementById('nextBtn').disabled = true;
-        document.getElementById('confirmAPosition').disabled = true;
+        document.getElementById('confirmCPosition').disabled = true;
         this.measurements.currentIndex = 0;
         this.measurements.recorded = {};
 
         try {
             // Only home if restarting calibration (not on first pass after prepare)
             if (this.needsHoming) {
-                document.getElementById('confirmAPosition').textContent = 'Homing A...';
-                await this.app.printer.sendCommandAndWait('G28 A', 60000);
+                document.getElementById('confirmCPosition').textContent = 'Homing C...';
+                await this.app.printer.sendCommandAndWait('G28 C', 60000);
                 this.needsHoming = false;
             }
 
@@ -56,9 +56,9 @@ class StepAAxis {
             // Start calibration directly (direction check is now a separate step)
             await this.startCalibration();
         } catch (e) {
-            console.error('A-axis enter error:', e);
-            document.getElementById('confirmAPosition').textContent = 'Confirm position';
-            document.getElementById('confirmAPosition').disabled = false;
+            console.error('C-axis enter error:', e);
+            document.getElementById('confirmCPosition').textContent = 'Confirm position';
+            document.getElementById('confirmCPosition').disabled = false;
             this.needsHoming = false;
         }
     }
@@ -71,21 +71,21 @@ class StepAAxis {
         await this.moveToTarget(0);
         this.updateUI();
 
-        document.getElementById('confirmAPosition').textContent = 'Confirm position';
-        document.getElementById('confirmAPosition').disabled = false;
+        document.getElementById('confirmCPosition').textContent = 'Confirm position';
+        document.getElementById('confirmCPosition').disabled = false;
     }
 
     /**
      * Pre-move platform to target A position
      */
     async moveToTarget(target) {
-        const btn = document.getElementById('confirmAPosition');
+        const btn = document.getElementById('confirmCPosition');
         const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = `Moving to A${target}°...`;
+        btn.textContent = `Moving to C${target}°...`;
 
         try {
-            await this.app.printer.sendCommandAndWait(`G0 A${target} F1800`, 30000);
+            await this.app.printer.sendCommandAndWait(`G0 C${target} F1800`, 30000);
             await this.app.printer.sendCommandAndWait('M400', 30000);
             await this.app.printer.requestPosition();
         } catch (error) {
@@ -122,11 +122,11 @@ class StepAAxis {
             0: 'Nozzle facing forwards',
             360: 'Nozzle facing forwards again'
         };
-        document.getElementById('aTargetDescription').textContent = descriptions[target] || '';
-        document.getElementById('aTargetAngle').textContent = `Target: A = ${target}°`;
+        document.getElementById('cTargetDescription').textContent = descriptions[target] || '';
+        document.getElementById('cTargetAngle').textContent = `Target: C = ${target}°`;
 
         // Update measurement items
-        document.querySelectorAll('#aMeasurements .measurement-item').forEach(item => {
+        document.querySelectorAll('#cMeasurements .measurement-item').forEach(item => {
             const itemTarget = parseInt(item.dataset.target);
             item.classList.remove('current', 'completed');
 
@@ -142,7 +142,7 @@ class StepAAxis {
      * Update visual guide SVG
      */
     updateVisualGuide(target) {
-        const guide = document.getElementById('aVisualGuide');
+        const guide = document.getElementById('cVisualGuide');
         const rotation = target;
 
         const svg = `<svg class="w-24 h-24 mx-auto" viewBox="0 0 100 100">
@@ -170,16 +170,16 @@ class StepAAxis {
         const pos = await this.app.printer.requestPosition();
 
         // Record current firmware position for this physical target
-        this.measurements.recorded[target] = pos.a;
+        this.measurements.recorded[target] = pos.c;
 
         // Update display
-        const displayEl = document.getElementById(`a-recorded-${target}`);
+        const displayEl = document.getElementById(`c-recorded-${target}`);
         if (displayEl) {
-            displayEl.textContent = `${pos.a.toFixed(1)}°`;
+            displayEl.textContent = `${pos.c.toFixed(1)}°`;
         }
 
         // Mark as completed
-        const item = document.querySelector(`#aMeasurements [data-target="${target}"]`);
+        const item = document.querySelector(`#cMeasurements [data-target="${target}"]`);
         if (item) {
             item.classList.remove('current');
             item.classList.add('completed');
@@ -189,16 +189,16 @@ class StepAAxis {
         this.measurements.currentIndex++;
 
         if (this.measurements.currentIndex >= targets.length) {
-            // All A measurements done
-            // After A360 confirmation, we're physically at A0 again, so reset coordinate
-            await this.app.printer.sendCommandAndWait('G92 A0', 5000);
+            // All C measurements done
+            // After C360 confirmation, we're physically at C0 again, so reset coordinate
+            await this.app.printer.sendCommandAndWait('G92 C0', 5000);
             await this.app.printer.requestPosition();
 
             // Calibration complete, proceed to next step
             this.app.nextStep();
         } else {
             // Pre-move to next target position
-            // For A360, move to expected physical 360° based on a0 measurement
+            // For C360, move to expected physical 360° based on c0 measurement
             const nextTarget = targets[this.measurements.currentIndex];
             let moveTarget = nextTarget;
             if (nextTarget === 360 && this.measurements.recorded[0] !== undefined) {

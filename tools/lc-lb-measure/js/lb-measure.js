@@ -2,7 +2,7 @@
  * Step 3: LB Measurement
  * Measure B-axis offset by recording positions at B0°, B-90°, B+90°
  *
- * Uses inverse kinematics to pre-position the nozzle when LA/LB estimates are provided.
+ * Uses inverse kinematics to pre-position the nozzle when LC/LB estimates are provided.
  * This helps verify/refine the LB value.
  */
 
@@ -10,17 +10,17 @@ class StepLbMeasure {
     constructor(app) {
         this.app = app;
         this.currentStep = 0;
-        // Measurement sequence: B0@A0, B-90@A0, B+90@A180
-        // Using A=180 for B+90 helps validate LA and provides cross-check
+        // Measurement sequence: B0@C0, B-90@C0, B+90@C180
+        // Using C=180 for B+90 helps validate LC and provides cross-check
         this.measurementSteps = [
-            { a: 0, b: 0 },
-            { a: 0, b: -90 },
-            { a: 180, b: 90 }
+            { c: 0, b: 0 },
+            { c: 0, b: -90 },
+            { c: 180, b: 90 }
         ];
 
         // IK-assisted positioning parameters
         this.useIkPositioning = false;
-        this.estimatedLa = 0;
+        this.estimatedLc = 0;
         this.estimatedLb = 47;
         this.referencePosition = null;  // Tip position at B=0 (camera focus point)
         this.zSafetyOffset = 20;
@@ -46,9 +46,9 @@ class StepLbMeasure {
         if (ikToggle) {
             ikToggle.addEventListener('change', (e) => {
                 if (e.target.checked) {
-                    const la = parseFloat(document.getElementById('ikLaEstimate').value) || 0;
+                    const lc = parseFloat(document.getElementById('ikLcEstimate').value) || 0;
                     const lb = parseFloat(document.getElementById('ikLbEstimate').value) || 47;
-                    this.enableIkPositioning(la, lb);
+                    this.enableIkPositioning(lc, lb);
                     ikParams.style.display = 'flex';
                 } else {
                     this.useIkPositioning = false;
@@ -59,13 +59,13 @@ class StepLbMeasure {
         }
 
         // Update IK params when values change
-        const laInput = document.getElementById('ikLaEstimate');
+        const lcInput = document.getElementById('ikLcEstimate');
         const lbInput = document.getElementById('ikLbEstimate');
 
-        if (laInput) {
-            laInput.addEventListener('change', () => {
+        if (lcInput) {
+            lcInput.addEventListener('change', () => {
                 if (this.useIkPositioning) {
-                    this.estimatedLa = parseFloat(laInput.value) || 0;
+                    this.estimatedLc = parseFloat(lcInput.value) || 0;
                 }
             });
         }
@@ -84,12 +84,12 @@ class StepLbMeasure {
      * When enabled, the tool will pre-calculate machine positions using IK
      * to keep the nozzle tip at the camera focus point when rotating B
      *
-     * @param {number} la - Estimated LA value (default 0)
+     * @param {number} lc - Estimated LC value (default 0)
      * @param {number} lb - Estimated LB value (default 47)
      */
-    enableIkPositioning(la = 0, lb = 47) {
+    enableIkPositioning(lc = 0, lb = 47) {
         this.useIkPositioning = true;
-        this.estimatedLa = la;
+        this.estimatedLc = lc;
         this.estimatedLb = lb;
     }
 
@@ -104,27 +104,27 @@ class StepLbMeasure {
     }
 
     /**
-     * Calculate and move to the IK-corrected position for given A and B angles
+     * Calculate and move to the IK-corrected position for given C and B angles
      * Uses Z safety offset during travel
      *
-     * @param {number} aAngle - Target A-axis angle
+     * @param {number} cAngle - Target C-axis angle
      * @param {number} bAngle - Target B-axis angle
      */
-    async moveToIkPosition(aAngle, bAngle) {
+    async moveToIkPosition(cAngle, bAngle) {
         if (!this.referencePosition) {
             console.error('[LB Cal] No reference position set');
             return;
         }
 
 
-        // Calculate IK position for the target A and B angles
+        // Calculate IK position for the target C and B angles
         const targetMachine = MeasurementEngine.applyInverseKinematics(
             this.referencePosition.x,
             this.referencePosition.y,
             this.referencePosition.z,
-            aAngle,
+            cAngle,
             bAngle,
-            this.estimatedLa,
+            this.estimatedLc,
             this.estimatedLb
         );
 
@@ -139,15 +139,15 @@ class StepLbMeasure {
 
         // Safety move sequence:
         // 1. Raise Z to safe height
-        // 2. Rotate A and B
+        // 2. Rotate C and B
         // 3. Move XY to target
         // 4. Lower Z to target
 
         // Step 1: Raise Z for safety
         await this.app.printer.moveTo({ z: safeZ }, 3000);
 
-        // Step 2: Rotate A and B
-        await this.app.printer.moveTo({ a: aAngle, b: bAngle }, 1800);
+        // Step 2: Rotate C and B
+        await this.app.printer.moveTo({ c: cAngle, b: bAngle }, 1800);
 
         // Step 3: Move XY
         await this.app.printer.moveTo({
@@ -184,23 +184,23 @@ class StepLbMeasure {
             this.referencePosition = { ...this.app.referencePosition };
         }
 
-        // Load saved LA/LB values from storage, or use defaults
+        // Load saved LC/LB values from storage, or use defaults
         const savedResults = StorageManager.loadCalibrationResults();
-        const savedLa = savedResults?.la ?? 0;
+        const savedLc = savedResults?.lc ?? 0;
         const savedLb = savedResults?.lb ?? 47;
 
-        // If we just completed LA measurement, use that value instead of saved
-        if (this.app.calibration.laResult) {
-            this.estimatedLa = this.app.calibration.laResult.value;
+        // If we just completed LC measurement, use that value instead of saved
+        if (this.app.calibration.lcResult) {
+            this.estimatedLc = this.app.calibration.lcResult.value;
         } else {
-            this.estimatedLa = savedLa;
+            this.estimatedLc = savedLc;
         }
         this.estimatedLb = savedLb;
 
         // Update input fields with values
-        const laInput = document.getElementById('ikLaEstimate');
+        const lcInput = document.getElementById('ikLcEstimate');
         const lbInput = document.getElementById('ikLbEstimate');
-        if (laInput) laInput.value = this.estimatedLa.toFixed(2);
+        if (lcInput) lcInput.value = this.estimatedLc.toFixed(2);
         if (lbInput) lbInput.value = this.estimatedLb.toFixed(2);
 
         // Enable IK positioning by default (checkbox is checked by default in HTML)
@@ -208,7 +208,7 @@ class StepLbMeasure {
         if (ikToggle) {
             // Enable IK if toggle is checked (default: checked)
             if (ikToggle.checked) {
-                this.enableIkPositioning(this.estimatedLa, this.estimatedLb);
+                this.enableIkPositioning(this.estimatedLc, this.estimatedLb);
             }
             const container = document.getElementById('ikParamsContainer');
             if (container) container.style.display = ikToggle.checked ? 'flex' : 'none';
@@ -217,8 +217,8 @@ class StepLbMeasure {
         // Update Z safety offset from input
         this.zSafetyOffset = parseFloat(document.getElementById('zSafetyOffset').value) || 20;
 
-        // Move back to reference position (A=0, B=0) before starting LB measurement
-        // This is necessary because LA measurement ends at A=270°
+        // Move back to reference position (C=0, B=0) before starting LB measurement
+        // This is necessary because LC measurement ends at C=270°
         await this.returnToReference();
 
         this.updateUI();
@@ -231,7 +231,7 @@ class StepLbMeasure {
     }
 
     /**
-     * Return to reference position (A=0, B=0) before starting LB measurement
+     * Return to reference position (C=0, B=0) before starting LB measurement
      */
     async returnToReference() {
 
@@ -242,8 +242,8 @@ class StepLbMeasure {
                 const safeZ = this.referencePosition.z + this.zSafetyOffset;
                 await this.app.printer.moveTo({ z: safeZ }, 3000);
 
-                // Return to A=0, B=0
-                await this.app.printer.moveTo({ a: 0, b: 0 }, 1800);
+                // Return to C=0, B=0
+                await this.app.printer.moveTo({ c: 0, b: 0 }, 1800);
 
                 // Move to reference XY position
                 await this.app.printer.moveTo({
@@ -258,9 +258,9 @@ class StepLbMeasure {
                     await this.app.printer.moveTo({ z: this.referencePosition.z }, 3000);
                 }
             } else {
-                // No reference position (e.g. skipped Prepare), just rotate to A0 B0
-                console.warn('[LB Cal] No reference position, just rotating to A=0, B=0');
-                await this.app.printer.moveTo({ a: 0, b: 0 }, 1800);
+                // No reference position (e.g. skipped Prepare), just rotate to C0 B0
+                console.warn('[LB Cal] No reference position, just rotating to C=0, B=0');
+                await this.app.printer.moveTo({ c: 0, b: 0 }, 1800);
             }
 
         } catch (error) {
@@ -275,13 +275,13 @@ class StepLbMeasure {
         if (this.currentStep >= this.measurementSteps.length) return;
 
         const currentStep = this.measurementSteps[this.currentStep];
-        const { a: aAngle, b: bAngle } = currentStep;
+        const { c: cAngle, b: bAngle } = currentStep;
 
-        // Update current angle display - show both A and B for B+90@A180
-        if (aAngle === 0) {
+        // Update current angle display - show both C and B for B+90@C180
+        if (cAngle === 0) {
             document.getElementById('lbCurrentAngle').textContent = `B = ${bAngle}°`;
         } else {
-            document.getElementById('lbCurrentAngle').textContent = `A = ${aAngle}°, B = ${bAngle}°`;
+            document.getElementById('lbCurrentAngle').textContent = `C = ${cAngle}°, B = ${bAngle}°`;
         }
 
         // Update instructions
@@ -301,14 +301,14 @@ class StepLbMeasure {
                     this.referencePosition.x,
                     this.referencePosition.y,
                     this.referencePosition.z,
-                    aAngle,
+                    cAngle,
                     bAngle,
-                    this.estimatedLa,
+                    this.estimatedLc,
                     this.estimatedLb
                 );
                 instructionText = `IK moved to X=${targetMachine.x.toFixed(1)}, Z=${targetMachine.z.toFixed(1)}. Fine-tune alignment.`;
             } else {
-                const angleStr = aAngle === 0 ? `B = ${bAngle}°` : `A = ${aAngle}°, B = ${bAngle}°`;
+                const angleStr = cAngle === 0 ? `B = ${bAngle}°` : `C = ${cAngle}°, B = ${bAngle}°`;
                 instructionText = this.app.selectedMethod === 'camera'
                     ? `Lower Z and align with crosshair at ${angleStr}`
                     : `Lower Z and touch the cone tip at ${angleStr}`;
@@ -331,7 +331,7 @@ class StepLbMeasure {
      */
     async confirmPosition() {
         const currentMeasurement = this.measurementSteps[this.currentStep];
-        const { a: aAngle, b: bAngle } = currentMeasurement;
+        const { c: cAngle, b: bAngle } = currentMeasurement;
 
         // Request fresh position from printer via M114 before recording
         // This ensures we get the actual position, not a cached/estimated one
@@ -344,8 +344,8 @@ class StepLbMeasure {
             this.setReferencePosition(position);
         }
 
-        // Record the measurement (pass A angle for B+90@A180 calculation)
-        this.app.calibration.recordLbPosition(bAngle, position, aAngle);
+        // Record the measurement (pass C angle for B+90@C180 calculation)
+        this.app.calibration.recordLbPosition(bAngle, position, cAngle);
 
         // Update UI - use step index for element lookup
         const posDisplay = document.getElementById(`lb-pos-step-${this.currentStep}`);
@@ -368,21 +368,21 @@ class StepLbMeasure {
             this.complete();
         } else {
             const nextMeasurement = this.measurementSteps[this.currentStep];
-            const { a: nextA, b: nextB } = nextMeasurement;
+            const { c: nextC, b: nextB } = nextMeasurement;
 
 
             if (this.useIkPositioning && this.referencePosition) {
                 // Use IK-assisted positioning
-                await this.moveToIkPosition(nextA, nextB);
+                await this.moveToIkPosition(nextC, nextB);
             } else {
-                // Manual positioning: lift Z, rotate A and B, then lower Z
+                // Manual positioning: lift Z, rotate C and B, then lower Z
                 const zOffset = parseFloat(document.getElementById('zSafetyOffset').value) || 50;
 
                 // Lift Z
                 await this.app.printer.moveRelative({ z: zOffset }, 3000);
 
-                // Rotate A and B
-                await this.app.printer.moveTo({ a: nextA, b: nextB }, 1800);
+                // Rotate C and B
+                await this.app.printer.moveTo({ c: nextC, b: nextB }, 1800);
 
                 // For cone method, lower Z less than we raised to avoid hitting the cone
                 // For camera method, lower Z back to the same height
@@ -444,8 +444,8 @@ class StepLbMeasure {
         const results = this.app.calibration.getResults();
         if (results.lb !== null) {
             const savedResults = StorageManager.loadCalibrationResults() || {};
-            const currentLa = savedResults.la ?? results.la ?? 0;
-            StorageManager.saveCalibrationResults(currentLa, results.lb, {
+            const currentLc = savedResults.lc ?? results.lc ?? 0;
+            StorageManager.saveCalibrationResults(currentLc, results.lb, {
                 method: this.app.selectedMethod,
                 testMode: this.app.testMode
             });
@@ -471,8 +471,8 @@ class StepLbMeasure {
 
             // Save to storage and update footer
             const savedResults = StorageManager.loadCalibrationResults() || {};
-            const currentLa = savedResults.la ?? 0;
-            StorageManager.saveCalibrationResults(currentLa, results.lb, {
+            const currentLc = savedResults.lc ?? 0;
+            StorageManager.saveCalibrationResults(currentLc, results.lb, {
                 method: this.app.selectedMethod,
                 testMode: this.app.testMode
             });
@@ -520,8 +520,8 @@ class StepLbMeasure {
     async returnToStartingPosition() {
         if (!this.referencePosition) {
             console.warn('[LB Cal] No reference position available for return');
-            // Still return to A0 B0 even without reference
-            await this.app.printer.moveTo({ a: 0, b: 0 }, 1800);
+            // Still return to C0 B0 even without reference
+            await this.app.printer.moveTo({ c: 0, b: 0 }, 1800);
             return;
         }
 
@@ -533,8 +533,8 @@ class StepLbMeasure {
             // Step 1: Lift Z for safety
             await this.app.printer.moveTo({ z: safeZ }, 3000);
 
-            // Step 2: Rotate A and B back to 0 (we end at A180 B90)
-            await this.app.printer.moveTo({ a: 0, b: 0 }, 1800);
+            // Step 2: Rotate C and B back to 0 (we end at C180 B90)
+            await this.app.printer.moveTo({ c: 0, b: 0 }, 1800);
 
             // Step 3: Move XY back to reference position
             await this.app.printer.moveTo({
