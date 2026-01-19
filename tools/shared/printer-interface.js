@@ -2,7 +2,7 @@
  * Printer Interface for Rep5x Tools
  * Handles serial communication with the printer via Web Serial API
  *
- * Shared across: printer-control, la-lb-measure, printer-setup
+ * Used by: Printer Control, LA/LB Measure, Printer Setup, Calibrator
  */
 
 class PrinterInterface {

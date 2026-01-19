@@ -9,7 +9,12 @@ class GcodePreviewerApp {
         this.animationEngine = null;
         this.collisionDetector = new CollisionDetector();
         this.ikReverser = null;
+        this.calibrationReverser = null;
         this.currentData = null;
+
+        // Reversal settings
+        this.reverseIK = true;           // Auto-reverse IK if detected
+        this.reverseCalibration = true;  // Auto-reverse calibration if detected
 
         this.initializeApp();
     }
@@ -110,17 +115,35 @@ class GcodePreviewerApp {
     }
 
     processCommands(parseResult) {
-        if (parseResult.metadata.inverseKinematics) {
+        let commands = parseResult.commands;
+
+        // Check for calibration correction in G-code
+        this.calibrationReverser = new CalibrationReverser();
+        const hasCalibration = this.calibrationReverser.parseFromGcode(this.fileHandler.lastFileContent || '');
+
+        // Step 1: Reverse calibration if present and enabled
+        if (hasCalibration && this.reverseCalibration) {
+            commands = this.calibrationReverser.reverseCommandArray(commands);
+            this.ui.displayCalibrationInfo(this.calibrationReverser.getSummary());
+        }
+
+        // Step 2: Reverse IK if present and enabled
+        if (parseResult.metadata.inverseKinematics && this.reverseIK) {
             this.ikReverser = new InverseKinematicsReverser(
                 parseResult.metadata.laParameter,
                 parseResult.metadata.lbParameter
             );
-            const reversedCommands = this.ikReverser.reverseCommandArray(parseResult.commands);
-            this.animationEngine.loadCommands(reversedCommands);
+            commands = this.ikReverser.reverseCommandArray(commands);
             this.ui.displayIKAnalysis(this.ikReverser.analyzeIKCorrections(parseResult.commands));
-        } else {
-            this.animationEngine.loadCommands(parseResult.commands);
         }
+
+        this.animationEngine.loadCommands(commands);
+
+        // Update UI to show what reversals are active
+        this.ui.updateReversalStatus({
+            ik: parseResult.metadata.inverseKinematics && this.reverseIK,
+            calibration: hasCalibration && this.reverseCalibration
+        });
     }
 
     togglePlayPause() {
@@ -216,17 +239,31 @@ class GcodePreviewerApp {
     }
 
     processWithSettings(metadata) {
+        let commands = this.currentData.commands;
+
+        // Check for calibration in file and apply reversal if enabled
+        const reverseCalibration = metadata.reverseCalibration !== false;
+        if (reverseCalibration && this.calibrationReverser?.isEnabled()) {
+            commands = this.calibrationReverser.reverseCommandArray(commands);
+        }
+
+        // Apply IK reversal if enabled
         if (metadata.inverseKinematics) {
             this.ikReverser = new InverseKinematicsReverser(
                 metadata.laParameter,
                 metadata.lbParameter
             );
-            const reversedCommands = this.ikReverser.reverseCommandArray(this.currentData.commands);
-            this.animationEngine.loadCommands(reversedCommands);
+            commands = this.ikReverser.reverseCommandArray(commands);
             this.ui.displayIKAnalysis(this.ikReverser.analyzeIKCorrections(this.currentData.commands));
-        } else {
-            this.animationEngine.loadCommands(this.currentData.commands);
         }
+
+        this.animationEngine.loadCommands(commands);
+
+        // Update reversal status
+        this.ui.updateReversalStatus({
+            ik: metadata.inverseKinematics,
+            calibration: reverseCalibration && this.calibrationReverser?.isEnabled()
+        });
 
         this.animationEngine.currentStep = this.animationEngine.commands.length;
         this.animationEngine.rebuildPrintPath();

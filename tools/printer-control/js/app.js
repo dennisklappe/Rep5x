@@ -17,6 +17,9 @@ class PrinterControlApp {
         // Temperature polling interval
         this.tempPollInterval = null;
 
+        // Console auto-scroll control
+        this.consoleAutoScroll = true;
+
         // Bind printer callbacks
         this.printer.onPositionUpdate = (pos) => this.updatePositionDisplay(pos);
         this.printer.onConnectionChange = (connected) => this.updateConnectionStatus(connected);
@@ -207,7 +210,16 @@ class PrinterControlApp {
         // Clear console
         document.getElementById('clearConsole').addEventListener('click', () => {
             document.getElementById('console').innerHTML = '';
+            this.consoleAutoScroll = true;  // Re-enable auto-scroll after clearing
             this.logToConsole('[Console cleared]', 'info');
+        });
+
+        // Console scroll detection
+        const consoleEl = document.getElementById('console');
+        consoleEl.addEventListener('scroll', () => {
+            // Check if user is scrolled to bottom (within 10px threshold)
+            const isAtBottom = consoleEl.scrollHeight - consoleEl.scrollTop - consoleEl.clientHeight < 10;
+            this.consoleAutoScroll = isAtBottom;
         });
 
         // Keyboard shortcuts
@@ -246,12 +258,54 @@ class PrinterControlApp {
             case ' ':
                 this.emergencyStop();
                 break;
+            case '1':
+                this.setStepSize('linear', 0.1);
+                this.setStepSize('angle', 1);
+                break;
+            case '2':
+                this.setStepSize('linear', 1);
+                this.setStepSize('angle', 5);
+                break;
+            case '3':
+                this.setStepSize('linear', 10);
+                this.setStepSize('angle', 15);
+                break;
+            case '5':
+                this.setStepSize('linear', 50);
+                this.setStepSize('angle', 45);
+                break;
             default:
                 handled = false;
         }
 
         if (handled) {
             e.preventDefault();
+        }
+    }
+
+    setStepSize(type, value) {
+        if (type === 'linear') {
+            this.linearStep = value;
+            // Update UI
+            document.querySelectorAll('.linear-step').forEach(btn => {
+                const btnValue = parseFloat(btn.dataset.step);
+                if (btnValue === value) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        } else if (type === 'angle') {
+            this.angleStep = value;
+            // Update UI
+            document.querySelectorAll('.angle-step').forEach(btn => {
+                const btnValue = parseFloat(btn.dataset.step);
+                if (btnValue === value) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
         }
     }
 
@@ -498,7 +552,11 @@ class PrinterControlApp {
         }
 
         console.appendChild(line);
-        console.scrollTop = console.scrollHeight;
+
+        // Only auto-scroll if user hasn't scrolled up
+        if (this.consoleAutoScroll) {
+            console.scrollTop = console.scrollHeight;
+        }
     }
 }
 

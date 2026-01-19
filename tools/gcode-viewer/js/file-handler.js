@@ -4,6 +4,7 @@
 class FileHandler {
     constructor(parser) {
         this.parser = parser;
+        this.lastFileContent = '';  // Store header section for calibration parsing
     }
 
     formatFileSize(bytes) {
@@ -64,6 +65,11 @@ class FileHandler {
         while (offset < fileSize) {
             const chunk = await this.readFileChunk(file, offset, chunkSize);
             buffer += chunk;
+
+            // Store first chunk for header parsing (calibration coefficients, etc.)
+            if (offset === 0) {
+                this.lastFileContent = chunk.substring(0, 10000);  // First 10KB
+            }
 
             // Process complete lines from buffer
             const lines = buffer.split('\n');

@@ -16,7 +16,7 @@ class GcodeGenerator {
         }
 
         const { layerHeight, speed, nozzleDiameter, nozzleTemp, bedTemp, bedWidth, bedDepth } = printSettings;
-        const { enableKinematics, laParam, lbParam, enableAAxisOptimization, startGcode, endGcode } = advancedSettings;
+        const { enableKinematics, laParam, lbParam, enableAAxisOptimization, enableCalibration, calibrationCorrector, startGcode, endGcode } = advancedSettings;
 
         const gcode = [];
         const totalHeight = shape.getTotalHeight(shapeParams);
@@ -53,6 +53,24 @@ class GcodeGenerator {
             gcode.push("; Z = Z' + cos(B') × LB - LB");
         }
         gcode.push(`; A-axis Optimization: ${enableAAxisOptimization ? 'enabled' : 'disabled'}`);
+
+        // Calibration correction info
+        if (enableCalibration && calibrationCorrector?.loaded) {
+            gcode.push('; Calibration Correction: enabled');
+            const coeffs = calibrationCorrector.getCoefficients();
+            if (coeffs.a) {
+                gcode.push(`; Calibration A-axis coefficients (Fourier, ${coeffs.aHarmonics} harmonics):`);
+                gcode.push(`; CalibAX: ${coeffs.a.x.map(c => c.toFixed(6)).join(',')}`);
+                gcode.push(`; CalibAY: ${coeffs.a.y.map(c => c.toFixed(6)).join(',')}`);
+                gcode.push(`; CalibAZ: ${coeffs.a.z.map(c => c.toFixed(6)).join(',')}`);
+            }
+            if (coeffs.b) {
+                gcode.push(`; Calibration B-axis coefficients (Harmonic, ${coeffs.bHarmonics} harmonics):`);
+                gcode.push(`; CalibBX: ${coeffs.b.x.map(c => c.toFixed(6)).join(',')}`);
+                gcode.push(`; CalibBY: ${coeffs.b.y.map(c => c.toFixed(6)).join(',')}`);
+                gcode.push(`; CalibBZ: ${coeffs.b.z.map(c => c.toFixed(6)).join(',')}`);
+            }
+        }
         gcode.push('');
 
         // Start sequence
@@ -86,6 +104,11 @@ class GcodeGenerator {
             gcodeString = processInverseKinematics(gcodeString, enableKinematics, laParam, lbParam);
         }
 
+        // Apply calibration correction if enabled
+        if (enableCalibration && calibrationCorrector?.loaded) {
+            gcodeString = this.applyCalibrationCorrection(gcodeString, calibrationCorrector);
+        }
+
         // Apply A-axis optimization if enabled
         if (enableAAxisOptimization) {
             gcodeString = optimizeAAxisRotation(gcodeString, enableAAxisOptimization);
@@ -96,6 +119,63 @@ class GcodeGenerator {
             gcode: gcodeString,
             filename: shape.getFilename(shapeParams)
         };
+    }
+
+    applyCalibrationCorrection(gcodeString, corrector) {
+        const lines = gcodeString.split('\n');
+        const processedLines = [];
+
+        // Track modal state
+        let modalA = 0;
+        let modalB = 0;
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+
+            // Pass through comments and non-movement commands
+            if (!trimmed || trimmed.startsWith(';') || !trimmed.match(/^G[01]\s/i)) {
+                processedLines.push(line);
+                continue;
+            }
+
+            // Update modal A/B values
+            const aMatch = trimmed.match(/A([-+]?\d*\.?\d+)/i);
+            const bMatch = trimmed.match(/B([-+]?\d*\.?\d+)/i);
+            if (aMatch) modalA = parseFloat(aMatch[1]);
+            if (bMatch) modalB = parseFloat(bMatch[1]);
+
+            // Get calibration correction
+            const correction = corrector.getCorrection(modalA, modalB);
+
+            // Only process if there are XYZ coordinates
+            const xMatch = trimmed.match(/X([-+]?\d*\.?\d+)/i);
+            const yMatch = trimmed.match(/Y([-+]?\d*\.?\d+)/i);
+            const zMatch = trimmed.match(/Z([-+]?\d*\.?\d+)/i);
+
+            if (!xMatch && !yMatch && !zMatch) {
+                processedLines.push(line);
+                continue;
+            }
+
+            // Apply correction (SUBTRACT error to compensate)
+            let newLine = trimmed;
+            if (xMatch) {
+                const correctedX = parseFloat(xMatch[1]) - correction.x;
+                newLine = newLine.replace(/X[-+]?\d*\.?\d+/i, `X${correctedX.toFixed(3)}`);
+            }
+            if (yMatch) {
+                const correctedY = parseFloat(yMatch[1]) - correction.y;
+                newLine = newLine.replace(/Y[-+]?\d*\.?\d+/i, `Y${correctedY.toFixed(3)}`);
+            }
+            if (zMatch) {
+                const correctedZ = parseFloat(zMatch[1]) - correction.z;
+                newLine = newLine.replace(/Z[-+]?\d*\.?\d+/i, `Z${correctedZ.toFixed(3)}`);
+            }
+
+            processedLines.push(newLine);
+        }
+
+        return processedLines.join('\n');
     }
 
     processTemplatePlaceholders(template, values) {

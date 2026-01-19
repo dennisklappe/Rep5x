@@ -10,12 +10,16 @@ class CameraManager {
         this.videoElements = [];
         this.canvasElements = [];
         this.animationFrameId = null;
+        this.reconnecting = false;
 
         // Overlay settings
         this.mode = 'crosshair'; // 'crosshair' or 'line'
         this.primaryColour = '#32D74B';
         this.shadowColour = 'rgba(0, 0, 0, 0.5)';
-        this.lineWidth = 2;
+        this.lineWidth = 1;
+
+        // Track stream end events for auto-reconnect
+        this.onStreamEnded = null;
     }
 
     /**
@@ -45,11 +49,63 @@ class CameraManager {
                 audio: false
             });
 
+            // Listen for stream ending (browser may stop it)
+            const videoTrack = this.stream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.addEventListener('ended', () => {
+                    console.warn('Camera stream ended unexpectedly');
+                    this.handleStreamEnded();
+                });
+            }
+
             return this.stream;
         } catch (error) {
             console.error('Camera access error:', error);
             throw new Error(`Camera access denied: ${error.message}`);
         }
+    }
+
+    /**
+     * Handle stream ended event - attempt reconnection
+     */
+    async handleStreamEnded() {
+        if (this.reconnecting) return;
+        this.reconnecting = true;
+
+        console.log('Attempting to reconnect camera...');
+
+        try {
+            // Wait a moment before reconnecting
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Request new stream
+            await this.requestAccess();
+
+            // Re-attach to all tracked video elements
+            for (const video of this.videoElements) {
+                if (this.stream) {
+                    video.srcObject = this.stream;
+                    video.play().catch(e => console.warn('Video autoplay blocked:', e));
+                }
+            }
+
+            console.log('Camera reconnected successfully');
+        } catch (error) {
+            console.error('Failed to reconnect camera:', error);
+        } finally {
+            this.reconnecting = false;
+        }
+    }
+
+    /**
+     * Ensure camera is active, reconnect if needed
+     */
+    async ensureActive() {
+        if (!this.isActive()) {
+            console.log('Camera not active, requesting access...');
+            await this.requestAccess();
+        }
+        return this.isActive();
     }
 
     /**
@@ -73,7 +129,7 @@ class CameraManager {
      * @param {string|HTMLVideoElement} videoElement - Video element or ID
      * @param {string|HTMLCanvasElement} canvasElement - Canvas for overlay (optional)
      */
-    attachToElement(videoElement, canvasElement = null) {
+    async attachToElement(videoElement, canvasElement = null) {
         const video = typeof videoElement === 'string'
             ? document.getElementById(videoElement)
             : videoElement;
@@ -81,6 +137,17 @@ class CameraManager {
         if (!video) {
             console.error('Video element not found');
             return;
+        }
+
+        // Ensure camera is active before attaching
+        if (!this.isActive()) {
+            console.log('Camera not active, requesting access...');
+            try {
+                await this.requestAccess();
+            } catch (error) {
+                console.error('Failed to get camera access:', error);
+                return;
+            }
         }
 
         if (!this.stream) {
