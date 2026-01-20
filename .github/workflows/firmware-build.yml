@@ -164,11 +164,11 @@ jobs:
           IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')
 
           if [ -n "$IK_LC" ]; then
-            sed -i "s/^  #define DEFAULT_ROTATIONAL_JOINT_OFFSET_Y.*/  #define DEFAULT_ROTATIONAL_JOINT_OFFSET_Y $IK_LC/" marlin/Marlin/Configuration.h
+            sed -i "s/^#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Y.*/#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Y $IK_LC/" marlin/Marlin/Configuration.h
             echo "Set LC (OFFSET_Y) to $IK_LC"
           fi
           if [ -n "$IK_LB" ]; then
-            sed -i "s/^  #define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z.*/  #define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z $IK_LB/" marlin/Marlin/Configuration.h
+            sed -i "s/^#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z.*/#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z $IK_LB/" marlin/Marlin/Configuration.h
             echo "Set LB (OFFSET_Z) to $IK_LB"
           fi
 
@@ -177,27 +177,27 @@ jobs:
           if [ -n "$NEOPIXEL_COLOR" ]; then
             case "$NEOPIXEL_COLOR" in
               "red")
-                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 255, 0, 0, 0 }/' marlin/Marlin/Configuration_adv.h
+                sed -i 's/^  #define NEOPIXEL_BKGD_COLOR.*/  #define NEOPIXEL_BKGD_COLOR         { 255, 0, 0, 0 }/' marlin/Marlin/Configuration.h
                 echo "Set neopixel color to red"
                 ;;
               "green")
-                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 0, 255, 0, 0 }/' marlin/Marlin/Configuration_adv.h
+                sed -i 's/^  #define NEOPIXEL_BKGD_COLOR.*/  #define NEOPIXEL_BKGD_COLOR         { 0, 255, 0, 0 }/' marlin/Marlin/Configuration.h
                 echo "Set neopixel color to green"
                 ;;
               "blue")
-                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 0, 0, 255, 0 }/' marlin/Marlin/Configuration_adv.h
+                sed -i 's/^  #define NEOPIXEL_BKGD_COLOR.*/  #define NEOPIXEL_BKGD_COLOR         { 0, 0, 255, 0 }/' marlin/Marlin/Configuration.h
                 echo "Set neopixel color to blue"
                 ;;
               "white")
-                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 255, 255, 255, 0 }/' marlin/Marlin/Configuration_adv.h
+                sed -i 's/^  #define NEOPIXEL_BKGD_COLOR.*/  #define NEOPIXEL_BKGD_COLOR         { 255, 255, 255, 0 }/' marlin/Marlin/Configuration.h
                 echo "Set neopixel color to white"
                 ;;
               "purple")
-                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 175, 82, 222, 0 }/' marlin/Marlin/Configuration_adv.h
+                sed -i 's/^  #define NEOPIXEL_BKGD_COLOR.*/  #define NEOPIXEL_BKGD_COLOR         { 175, 82, 222, 0 }/' marlin/Marlin/Configuration.h
                 echo "Set neopixel color to purple"
                 ;;
               "orange")
-                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 255, 149, 0, 0 }/' marlin/Marlin/Configuration_adv.h
+                sed -i 's/^  #define NEOPIXEL_BKGD_COLOR.*/  #define NEOPIXEL_BKGD_COLOR         { 255, 149, 0, 0 }/' marlin/Marlin/Configuration.h
                 echo "Set neopixel color to orange"
                 ;;
             esac
