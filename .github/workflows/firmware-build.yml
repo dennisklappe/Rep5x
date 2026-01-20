@@ -172,6 +172,13 @@ jobs:
             echo "Set LB (OFFSET_Z) to $IK_LB"
           fi
 
+          # === IK ENABLED (Tool Centerpoint Control) ===
+          IK_ENABLED=$(echo "$CUSTOMIZATIONS" | jq -r '.ikEnabled // empty')
+          if [ -n "$IK_ENABLED" ]; then
+            sed -i "s/^#define DEFAULT_TOOL_CENTERPOINT_CONTROL.*/#define DEFAULT_TOOL_CENTERPOINT_CONTROL $IK_ENABLED/" marlin/Marlin/Configuration.h
+            echo "Set DEFAULT_TOOL_CENTERPOINT_CONTROL to $IK_ENABLED"
+          fi
+
           # === NEOPIXEL COLOR ===
           NEOPIXEL_COLOR=$(echo "$CUSTOMIZATIONS" | jq -r '.neopixelColor // empty')
           if [ -n "$NEOPIXEL_COLOR" ]; then
