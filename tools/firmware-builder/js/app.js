@@ -785,15 +785,18 @@ async function buildFirmware() {
             throw new Error('No build ID received');
         }
 
+        // Store buildId for error handling
+        window.currentBuildId = buildId;
+
         // Poll for build status
-        updateBuildButton(btn, 'Building...', 'Compiling firmware (2-3 min)');
+        updateBuildButton(btn, 'Building...', `Build ID: ${buildId}`);
 
         const firmware = await pollBuildStatus(buildId, btn);
 
         // Download the firmware
         downloadFirmwareBlob(firmware);
 
-        // Show success state
+        // Show success state with build ID
         btn.innerHTML = `
             <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -802,19 +805,20 @@ async function buildFirmware() {
             </div>
             <div>
                 <div class="font-semibold">Build complete!</div>
-                <div class="text-sm opacity-80">firmware.bin downloaded</div>
+                <div class="text-sm opacity-80">Build ID: ${buildId}</div>
             </div>
         `;
 
         setTimeout(() => {
             btn.innerHTML = originalHTML;
             btn.disabled = false;
-        }, 5000);
+        }, 8000);
 
     } catch (error) {
         console.error('Build failed:', error);
+        const failedBuildId = window.currentBuildId || 'unknown';
 
-        // Show error state
+        // Show error state with build ID for troubleshooting
         btn.innerHTML = `
             <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -823,14 +827,14 @@ async function buildFirmware() {
             </div>
             <div>
                 <div class="font-semibold">${error.message || 'Build failed'}</div>
-                <div class="text-sm opacity-80">Download config files instead</div>
+                <div class="text-sm opacity-80">Build ID: ${failedBuildId}</div>
             </div>
         `;
 
         setTimeout(() => {
             btn.innerHTML = originalHTML;
             btn.disabled = false;
-        }, 5000);
+        }, 10000);
     }
 }
 

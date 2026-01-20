@@ -256,20 +256,41 @@ jobs:
           echo "path=$FIRMWARE_PATH" >> $GITHUB_OUTPUT
           echo "Found firmware at: $FIRMWARE_PATH"
 
-      - name: Upload firmware to R2
+      - name: Setup AWS CLI for R2
+        if: always()
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
-          # Install AWS CLI for S3-compatible upload
           pip install awscli
-
-          # Configure AWS CLI for R2
           aws configure set aws_access_key_id $R2_ACCESS_KEY_ID
           aws configure set aws_secret_access_key $R2_SECRET_ACCESS_KEY
 
-          # Upload firmware to R2
+      - name: Upload config files to R2
+        if: always()
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          # Upload config files for troubleshooting (always, even on failure)
+          aws --endpoint-url $R2_ENDPOINT s3 cp \
+            "marlin/Marlin/Configuration.h" \
+            "s3://rep5x-firmware/${{ github.event.inputs.build_id }}/Configuration.h"
+
+          aws --endpoint-url $R2_ENDPOINT s3 cp \
+            "marlin/Marlin/Configuration_adv.h" \
+            "s3://rep5x-firmware/${{ github.event.inputs.build_id }}/Configuration_adv.h"
+
+          # Also save the customizations JSON
+          aws --endpoint-url $R2_ENDPOINT s3 cp \
+            "customizations.json" \
+            "s3://rep5x-firmware/${{ github.event.inputs.build_id }}/customizations.json"
+
+          echo "Config files uploaded to R2"
+
+      - name: Upload firmware to R2
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
           aws --endpoint-url $R2_ENDPOINT s3 cp \
             "${{ steps.firmware.outputs.path }}" \
             "s3://rep5x-firmware/${{ github.event.inputs.build_id }}/firmware.bin"
