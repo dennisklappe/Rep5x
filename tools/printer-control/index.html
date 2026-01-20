@@ -277,13 +277,11 @@
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M500">Save EEPROM</button>
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M501">Load EEPROM</button>
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M502">Reset defaults</button>
-                <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M18">Disable motors</button>
-                <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M17">Enable motors</button>
+                <button id="motorsToggle" class="toggle-btn btn-outline py-2 px-3 rounded-lg text-sm bg-green-50 border-green-300" data-state="on" data-cmd-on="M17" data-cmd-off="M18">Motors: ON</button>
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="G90">Absolute mode</button>
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="G91">Relative mode</button>
                 <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M105">Get temps</button>
-                <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm bg-green-50 border-green-300 hover:bg-green-100" data-cmd="M493 I1">IK on</button>
-                <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm bg-red-50 border-red-300 hover:bg-red-100" data-cmd="M493 I0">IK off</button>
+                <button id="ikToggle" class="toggle-btn btn-outline py-2 px-3 rounded-lg text-sm bg-green-50 border-green-300" data-state="on" data-cmd-on="G43.4" data-cmd-off="G49">IK: ON</button>
             </div>
         </div>
     </main>

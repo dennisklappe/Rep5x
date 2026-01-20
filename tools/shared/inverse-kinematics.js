@@ -38,11 +38,11 @@ class InverseKinematics {
         const cRad = c * Math.PI / 180;
         const bRad = b * Math.PI / 180;
 
-        // X = X' + sin(C)·LC + cos(C)·sin(B)·LB
-        const machineX = x + Math.sin(cRad) * this.lc + Math.cos(cRad) * Math.sin(bRad) * this.lb;
+        // X = X' - sin(C)·LC + cos(C)·sin(B)·LB
+        const machineX = x - Math.sin(cRad) * this.lc + Math.cos(cRad) * Math.sin(bRad) * this.lb;
 
-        // Y = Y' + (cos(C) - 1)·LC - sin(C)·sin(B)·LB
-        const machineY = y + (Math.cos(cRad) - 1) * this.lc - Math.sin(cRad) * Math.sin(bRad) * this.lb;
+        // Y = Y' + (cos(C) - 1)·LC + sin(C)·sin(B)·LB
+        const machineY = y + (Math.cos(cRad) - 1) * this.lc + Math.sin(cRad) * Math.sin(bRad) * this.lb;
 
         // Z = Z' + (cos(B) - 1)·LB
         const machineZ = z + (Math.cos(bRad) - 1) * this.lb;
@@ -65,8 +65,8 @@ class InverseKinematics {
         const bRad = b * Math.PI / 180;
 
         // Inverse of the IK formulas
-        const tipX = x - Math.sin(cRad) * this.lc - Math.cos(cRad) * Math.sin(bRad) * this.lb;
-        const tipY = y - (Math.cos(cRad) - 1) * this.lc + Math.sin(cRad) * Math.sin(bRad) * this.lb;
+        const tipX = x + Math.sin(cRad) * this.lc - Math.cos(cRad) * Math.sin(bRad) * this.lb;
+        const tipY = y - (Math.cos(cRad) - 1) * this.lc - Math.sin(cRad) * Math.sin(bRad) * this.lb;
         const tipZ = z - (Math.cos(bRad) - 1) * this.lb;
 
         return { x: tipX, y: tipY, z: tipZ };
@@ -88,8 +88,8 @@ function applyInverseKinematics(x, y, z, c, b, lc = 0, lb = 47.9) {
     const cRad = c * Math.PI / 180;
     const bRad = b * Math.PI / 180;
 
-    const correctedX = x + Math.sin(cRad) * lc + Math.cos(cRad) * Math.sin(bRad) * lb;
-    const correctedY = y + (Math.cos(cRad) - 1) * lc - Math.sin(cRad) * Math.sin(bRad) * lb;
+    const correctedX = x - Math.sin(cRad) * lc + Math.cos(cRad) * Math.sin(bRad) * lb;
+    const correctedY = y + (Math.cos(cRad) - 1) * lc + Math.sin(cRad) * Math.sin(bRad) * lb;
     const correctedZ = z + (Math.cos(bRad) - 1) * lb;
 
     return {

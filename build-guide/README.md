@@ -44,7 +44,7 @@ Contains files specific to individual printer models:
 - **Cost**: ~$150 in additional components
 
 ### Key components added
-- **2x stepper motors** - A-axis (yaw) and B-axis (tilt) rotation
+- **2x stepper motors** - C-axis (yaw) and B-axis (tilt) rotation
 - **Control board upgrade** - 6+ stepper driver capability required  
 - **Slip ring** - Continuous rotation without cable tangling
 - **3D printed parts** - Custom mounting and drive components

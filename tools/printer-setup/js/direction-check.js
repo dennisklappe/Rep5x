@@ -124,7 +124,7 @@ class StepDirectionCheck {
 
             // Ask user about direction
             if (axis === 'c') {
-                document.getElementById('cDirectionStatus').textContent = 'Did it rotate clockwise (viewed from above)?';
+                document.getElementById('cDirectionStatus').textContent = 'Did it rotate counter-clockwise (viewed from above)?';
             } else {
                 document.getElementById('bDirectionStatus').textContent = 'Did the nozzle tilt to the LEFT?';
             }

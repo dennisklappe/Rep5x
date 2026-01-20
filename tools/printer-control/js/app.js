@@ -196,6 +196,31 @@ class PrinterControlApp {
             });
         });
 
+        // Toggle buttons (IK, Motors)
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const currentState = btn.dataset.state;
+                const newState = currentState === 'on' ? 'off' : 'on';
+                const cmd = newState === 'on' ? btn.dataset.cmdOn : btn.dataset.cmdOff;
+
+                // Update button state and appearance
+                btn.dataset.state = newState;
+                const label = btn.textContent.split(':')[0];
+                btn.textContent = `${label}: ${newState.toUpperCase()}`;
+
+                // Update styling based on state
+                if (newState === 'on') {
+                    btn.classList.add('bg-green-50', 'border-green-300');
+                    btn.classList.remove('bg-red-50', 'border-red-300');
+                } else {
+                    btn.classList.add('bg-red-50', 'border-red-300');
+                    btn.classList.remove('bg-green-50', 'border-green-300');
+                }
+
+                this.sendCommand(cmd);
+            });
+        });
+
         // Command form
         document.getElementById('commandForm').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -475,10 +500,20 @@ class PrinterControlApp {
         }
 
         try {
+            // Disable IK during homing
+            this.logToConsole('Disabling IK for homing...', 'info');
+            await this.printer.sendCommand('G49');
+
             this.logToConsole('Homing C & B axes...', 'info');
             await this.printer.home(['C', 'B']);
+
             this.logToConsole('Moving to C0 B0...', 'info');
             await this.printer.moveTo({ c: 0, b: 0 });
+
+            // Re-enable IK
+            this.logToConsole('Re-enabling IK...', 'info');
+            await this.printer.sendCommand('G43.4');
+
             this.logToConsole('C/B at zero position', 'info');
         } catch (error) {
             this.logToConsole(`Home C/B error: ${error.message}`, 'error');
