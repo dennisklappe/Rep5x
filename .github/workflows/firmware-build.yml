@@ -1,0 +1,291 @@
+# Rep5x Firmware Builder - GitHub Actions Workflow
+# Triggered by Cloudflare Worker to compile custom firmware configurations
+
+name: Build Firmware
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: 'Unique build identifier'
+        required: true
+        type: string
+      board:
+        description: 'Target board'
+        required: true
+        default: 'octopus_v1.1'
+        type: string
+
+env:
+  WORKER_URL: https://rep5x-firmware-builder.klappe.workers.dev
+  MARLIN_REPO: https://github.com/dennisklappe/Rep5x-Marlin.git
+  MARLIN_BRANCH: Marlin2ForPipetBot
+  BASE_CONFIG: config/examples/Rep5x/Ender3V3SE_OctopusV1.1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Log build info
+        run: |
+          echo "Build ID: ${{ github.event.inputs.build_id }}"
+          echo "Board: ${{ github.event.inputs.board }}"
+
+      - name: Clone Rep5x-Marlin
+        run: |
+          git clone --depth 1 --branch ${{ env.MARLIN_BRANCH }} ${{ env.MARLIN_REPO }} marlin
+          echo "Marlin cloned successfully"
+
+      - name: Copy base configuration
+        run: |
+          cp marlin/${{ env.BASE_CONFIG }}/Configuration.h marlin/Marlin/Configuration.h
+          cp marlin/${{ env.BASE_CONFIG }}/Configuration_adv.h marlin/Marlin/Configuration_adv.h
+          echo "Base configuration copied"
+
+      - name: Fetch and apply customizations
+        id: fetch-config
+        run: |
+          # Fetch customizations from worker
+          CUSTOMIZATIONS=$(curl -s "${{ env.WORKER_URL }}/config/${{ github.event.inputs.build_id }}")
+          echo "Fetched customizations"
+          echo "$CUSTOMIZATIONS" | jq .
+
+          # Save customizations for debugging
+          echo "$CUSTOMIZATIONS" > customizations.json
+
+          # === DIMENSIONS ===
+          X_BED_SIZE=$(echo "$CUSTOMIZATIONS" | jq -r '.xBedSize // empty')
+          Y_BED_SIZE=$(echo "$CUSTOMIZATIONS" | jq -r '.yBedSize // empty')
+          Z_MAX_POS=$(echo "$CUSTOMIZATIONS" | jq -r '.zMaxPos // empty')
+
+          if [ -n "$X_BED_SIZE" ]; then
+            sed -i "s/^#define X_BED_SIZE.*/#define X_BED_SIZE $X_BED_SIZE/" marlin/Marlin/Configuration.h
+            echo "Set X_BED_SIZE to $X_BED_SIZE"
+          fi
+          if [ -n "$Y_BED_SIZE" ]; then
+            sed -i "s/^#define Y_BED_SIZE.*/#define Y_BED_SIZE $Y_BED_SIZE/" marlin/Marlin/Configuration.h
+            echo "Set Y_BED_SIZE to $Y_BED_SIZE"
+          fi
+          if [ -n "$Z_MAX_POS" ]; then
+            sed -i "s/^#define Z_MAX_POS.*/#define Z_MAX_POS $Z_MAX_POS/" marlin/Marlin/Configuration.h
+            echo "Set Z_MAX_POS to $Z_MAX_POS"
+          fi
+
+          # === HOMING DIRECTIONS ===
+          X_HOME_DIR=$(echo "$CUSTOMIZATIONS" | jq -r '.xHomeDir // empty')
+          Y_HOME_DIR=$(echo "$CUSTOMIZATIONS" | jq -r '.yHomeDir // empty')
+          Z_HOME_DIR=$(echo "$CUSTOMIZATIONS" | jq -r '.zHomeDir // empty')
+
+          if [ -n "$X_HOME_DIR" ]; then
+            sed -i "s/^#define X_HOME_DIR.*/#define X_HOME_DIR $X_HOME_DIR/" marlin/Marlin/Configuration.h
+            echo "Set X_HOME_DIR to $X_HOME_DIR"
+          fi
+          if [ -n "$Y_HOME_DIR" ]; then
+            sed -i "s/^#define Y_HOME_DIR.*/#define Y_HOME_DIR $Y_HOME_DIR/" marlin/Marlin/Configuration.h
+            echo "Set Y_HOME_DIR to $Y_HOME_DIR"
+          fi
+          if [ -n "$Z_HOME_DIR" ]; then
+            sed -i "s/^#define Z_HOME_DIR.*/#define Z_HOME_DIR $Z_HOME_DIR/" marlin/Marlin/Configuration.h
+            echo "Set Z_HOME_DIR to $Z_HOME_DIR"
+          fi
+
+          # === STEPPER DRIVERS ===
+          DRIVER_X=$(echo "$CUSTOMIZATIONS" | jq -r '.driverX // empty')
+          DRIVER_Y=$(echo "$CUSTOMIZATIONS" | jq -r '.driverY // empty')
+          DRIVER_Z=$(echo "$CUSTOMIZATIONS" | jq -r '.driverZ // empty')
+          DRIVER_C=$(echo "$CUSTOMIZATIONS" | jq -r '.driverC // empty')
+          DRIVER_B=$(echo "$CUSTOMIZATIONS" | jq -r '.driverB // empty')
+          DRIVER_E=$(echo "$CUSTOMIZATIONS" | jq -r '.driverE // empty')
+
+          if [ -n "$DRIVER_X" ]; then
+            sed -i "s/^#define X_DRIVER_TYPE.*/#define X_DRIVER_TYPE $DRIVER_X/" marlin/Marlin/Configuration.h
+            echo "Set X_DRIVER_TYPE to $DRIVER_X"
+          fi
+          if [ -n "$DRIVER_Y" ]; then
+            sed -i "s/^#define Y_DRIVER_TYPE.*/#define Y_DRIVER_TYPE $DRIVER_Y/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$DRIVER_Z" ]; then
+            sed -i "s/^#define Z_DRIVER_TYPE.*/#define Z_DRIVER_TYPE $DRIVER_Z/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$DRIVER_C" ]; then
+            sed -i "s/^#define I_DRIVER_TYPE.*/#define I_DRIVER_TYPE $DRIVER_C/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$DRIVER_B" ]; then
+            sed -i "s/^#define J_DRIVER_TYPE.*/#define J_DRIVER_TYPE $DRIVER_B/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$DRIVER_E" ]; then
+            sed -i "s/^#define E0_DRIVER_TYPE.*/#define E0_DRIVER_TYPE $DRIVER_E/" marlin/Marlin/Configuration.h
+          fi
+
+          # === STEPS PER UNIT ===
+          STEPS_X=$(echo "$CUSTOMIZATIONS" | jq -r '.stepsX // empty')
+          STEPS_Y=$(echo "$CUSTOMIZATIONS" | jq -r '.stepsY // empty')
+          STEPS_Z=$(echo "$CUSTOMIZATIONS" | jq -r '.stepsZ // empty')
+          STEPS_C=$(echo "$CUSTOMIZATIONS" | jq -r '.stepsC // empty')
+          STEPS_B=$(echo "$CUSTOMIZATIONS" | jq -r '.stepsB // empty')
+          STEPS_E=$(echo "$CUSTOMIZATIONS" | jq -r '.stepsE // empty')
+
+          if [ -n "$STEPS_X" ] && [ -n "$STEPS_Y" ] && [ -n "$STEPS_Z" ] && [ -n "$STEPS_C" ] && [ -n "$STEPS_B" ] && [ -n "$STEPS_E" ]; then
+            sed -i "s/^#define DEFAULT_AXIS_STEPS_PER_UNIT.*/#define DEFAULT_AXIS_STEPS_PER_UNIT   { $STEPS_X, $STEPS_Y, $STEPS_Z, $STEPS_C, $STEPS_B, $STEPS_E }/" marlin/Marlin/Configuration.h
+            echo "Set steps per unit: $STEPS_X, $STEPS_Y, $STEPS_Z, $STEPS_C, $STEPS_B, $STEPS_E"
+          fi
+
+          # === MOTOR DIRECTIONS ===
+          INVERT_X=$(echo "$CUSTOMIZATIONS" | jq -r '.invertX // empty')
+          INVERT_Y=$(echo "$CUSTOMIZATIONS" | jq -r '.invertY // empty')
+          INVERT_Z=$(echo "$CUSTOMIZATIONS" | jq -r '.invertZ // empty')
+          INVERT_C=$(echo "$CUSTOMIZATIONS" | jq -r '.invertC // empty')
+          INVERT_B=$(echo "$CUSTOMIZATIONS" | jq -r '.invertB // empty')
+          INVERT_E=$(echo "$CUSTOMIZATIONS" | jq -r '.invertE // empty')
+
+          if [ -n "$INVERT_X" ]; then
+            sed -i "s/^#define INVERT_X_DIR.*/#define INVERT_X_DIR $INVERT_X/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$INVERT_Y" ]; then
+            sed -i "s/^#define INVERT_Y_DIR.*/#define INVERT_Y_DIR $INVERT_Y/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$INVERT_Z" ]; then
+            sed -i "s/^#define INVERT_Z_DIR.*/#define INVERT_Z_DIR $INVERT_Z/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$INVERT_C" ]; then
+            sed -i "s/^#define INVERT_I_DIR.*/#define INVERT_I_DIR $INVERT_C/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$INVERT_B" ]; then
+            sed -i "s/^#define INVERT_J_DIR.*/#define INVERT_J_DIR $INVERT_B/" marlin/Marlin/Configuration.h
+          fi
+          if [ -n "$INVERT_E" ]; then
+            sed -i "s/^#define INVERT_E0_DIR.*/#define INVERT_E0_DIR $INVERT_E/" marlin/Marlin/Configuration.h
+          fi
+
+          # === IK PARAMETERS ===
+          IK_LC=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLC // empty')
+          IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')
+
+          if [ -n "$IK_LC" ]; then
+            sed -i "s/^  #define DEFAULT_ROTATIONAL_JOINT_OFFSET_Y.*/  #define DEFAULT_ROTATIONAL_JOINT_OFFSET_Y $IK_LC/" marlin/Marlin/Configuration.h
+            echo "Set LC (OFFSET_Y) to $IK_LC"
+          fi
+          if [ -n "$IK_LB" ]; then
+            sed -i "s/^  #define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z.*/  #define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z $IK_LB/" marlin/Marlin/Configuration.h
+            echo "Set LB (OFFSET_Z) to $IK_LB"
+          fi
+
+          # === NEOPIXEL COLOR ===
+          NEOPIXEL_COLOR=$(echo "$CUSTOMIZATIONS" | jq -r '.neopixelColor // empty')
+          if [ -n "$NEOPIXEL_COLOR" ]; then
+            case "$NEOPIXEL_COLOR" in
+              "red")
+                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 255, 0, 0, 0 }/' marlin/Marlin/Configuration_adv.h
+                echo "Set neopixel color to red"
+                ;;
+              "green")
+                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 0, 255, 0, 0 }/' marlin/Marlin/Configuration_adv.h
+                echo "Set neopixel color to green"
+                ;;
+              "blue")
+                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 0, 0, 255, 0 }/' marlin/Marlin/Configuration_adv.h
+                echo "Set neopixel color to blue"
+                ;;
+              "white")
+                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 255, 255, 255, 0 }/' marlin/Marlin/Configuration_adv.h
+                echo "Set neopixel color to white"
+                ;;
+              "purple")
+                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 175, 82, 222, 0 }/' marlin/Marlin/Configuration_adv.h
+                echo "Set neopixel color to purple"
+                ;;
+              "orange")
+                sed -i 's/^  #define NEO_DEFAULT_BACKLIGHT_COLOR.*/  #define NEO_DEFAULT_BACKLIGHT_COLOR { 255, 149, 0, 0 }/' marlin/Marlin/Configuration_adv.h
+                echo "Set neopixel color to orange"
+                ;;
+            esac
+          fi
+
+          echo "All customizations applied"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: |
+          pip install --upgrade pip
+          pip install platformio
+          echo "PlatformIO installed"
+
+      - name: Get PlatformIO environment
+        id: pio-env
+        run: |
+          # Map board to PlatformIO environment
+          case "${{ github.event.inputs.board }}" in
+            "octopus_v1.1")
+              echo "env=STM32F446ZE_btt" >> $GITHUB_OUTPUT
+              ;;
+            "octopus_pro")
+              echo "env=BIGTREE_OCTOPUS_PRO_V1_F429" >> $GITHUB_OUTPUT
+              ;;
+            "skr_2")
+              echo "env=BIGTREE_SKR_2" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "env=STM32F446ZE_btt" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Build firmware
+        id: build
+        run: |
+          cd marlin
+          platformio run -e ${{ steps.pio-env.outputs.env }}
+          echo "Build completed"
+
+      - name: Locate firmware binary
+        id: firmware
+        run: |
+          # Find the firmware binary
+          FIRMWARE_PATH=$(find marlin/.pio/build -name "firmware*.bin" | head -1)
+
+          if [ -z "$FIRMWARE_PATH" ]; then
+            echo "Firmware binary not found"
+            exit 1
+          fi
+
+          echo "path=$FIRMWARE_PATH" >> $GITHUB_OUTPUT
+          echo "Found firmware at: $FIRMWARE_PATH"
+
+      - name: Upload firmware to R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          # Install AWS CLI for S3-compatible upload
+          pip install awscli
+
+          # Configure AWS CLI for R2
+          aws configure set aws_access_key_id $R2_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $R2_SECRET_ACCESS_KEY
+
+          # Upload firmware to R2
+          aws --endpoint-url $R2_ENDPOINT s3 cp \
+            "${{ steps.firmware.outputs.path }}" \
+            "s3://rep5x-firmware/${{ github.event.inputs.build_id }}/firmware.bin"
+
+          echo "Firmware uploaded to R2"
+
+      - name: Notify worker - Success
+        if: success()
+        run: |
+          curl -X POST "${{ env.WORKER_URL }}/webhook" \
+            -H "Content-Type: application/json" \
+            -d '{"buildId": "${{ github.event.inputs.build_id }}", "status": "complete"}'
+
+      - name: Notify worker - Failure
+        if: failure()
+        run: |
+          curl -X POST "${{ env.WORKER_URL }}/webhook" \
+            -H "Content-Type: application/json" \
+            -d '{"buildId": "${{ github.event.inputs.build_id }}", "status": "failed", "error": "Build failed"}'
