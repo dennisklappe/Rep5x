@@ -281,6 +281,94 @@
         .animate-spin {
             animation: spin 1s linear infinite;
         }
+
+        /* Config action buttons */
+        .config-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #4b5563;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .config-action-btn:hover {
+            color: var(--color-primary);
+            background: var(--color-light);
+            border-color: var(--color-primary);
+            transform: translateY(-1px);
+        }
+
+        .config-action-btn:active {
+            transform: translateY(0);
+        }
+
+        .config-action-btn svg {
+            transition: transform 0.15s ease;
+        }
+
+        .config-action-btn:hover svg {
+            transform: scale(1.1);
+        }
+
+        /* Config loaded toast notification */
+        .config-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: white;
+            padding: 0.875rem 1.25rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .config-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .config-toast .toast-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            background: var(--color-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .config-toast .toast-icon svg {
+            width: 0.875rem;
+            height: 0.875rem;
+            color: white;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .config-action-btn span {
+                display: none;
+            }
+            .config-action-btn {
+                padding: 0.5rem;
+            }
+        }
     </style>
 </head>
 
@@ -293,7 +381,26 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-gray-900">Build your Rep5x Marlin firmware</h2>
-                <span id="stepCounter" class="text-sm text-gray-500">Step 1 of 6</span>
+                <div class="flex items-center gap-3">
+                    <!-- Config Management Buttons -->
+                    <div class="config-actions flex items-center gap-2">
+                        <button onclick="importConfigTrigger()" class="config-action-btn" title="Load a previously saved configuration">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            <span>Load</span>
+                        </button>
+                        <button onclick="exportConfig()" class="config-action-btn" title="Save your current configuration">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            <span>Save</span>
+                        </button>
+                        <input type="file" id="configFileInput" accept=".json" onchange="handleConfigImport(event)" class="hidden">
+                    </div>
+                    <div class="w-px h-6 bg-gray-200"></div>
+                    <span id="stepCounter" class="text-sm text-gray-500">Step 1 of 6</span>
+                </div>
             </div>
 
             <!-- Step Indicators -->

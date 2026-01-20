@@ -672,16 +672,21 @@ async function copyConfig() {
 function downloadConfigFiles() {
     const config = wizardState.config;
 
+    // Also save the JSON config so they can reload it later
+    exportConfig(false);
+
     if (typeof ConfigGenerator !== 'undefined') {
         // Generate Configuration.h
-        const configH = ConfigGenerator.generateConfigurationH(config);
-        downloadFile('Configuration.h', configH);
+        setTimeout(() => {
+            const configH = ConfigGenerator.generateConfigurationH(config);
+            downloadFile('Configuration.h', configH);
+        }, 300);
 
         // Generate Configuration_adv.h
-        const configAdvH = ConfigGenerator.generateConfigurationAdvH(config);
         setTimeout(() => {
+            const configAdvH = ConfigGenerator.generateConfigurationAdvH(config);
             downloadFile('Configuration_adv.h', configAdvH);
-        }, 500);
+        }, 600);
     }
 }
 
@@ -708,6 +713,9 @@ const BUILDER_URL = 'https://rep5x-firmware-builder.klappe.workers.dev';
 async function buildFirmware() {
     const btn = document.getElementById('buildFirmwareBtn');
     const originalHTML = btn.innerHTML;
+
+    // Save config file for the user (they'll need it if something goes wrong)
+    exportConfig(false);
 
     // Show starting state
     btn.disabled = true;
@@ -909,6 +917,243 @@ function downloadFirmwareBlob(blob) {
  */
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Export current configuration as JSON file
+ * @param {boolean} showToast - Whether to show toast notification (default true)
+ */
+function exportConfig(showToast = true) {
+    const config = wizardState.config;
+
+    // Create export object with metadata
+    const exportData = {
+        _meta: {
+            version: '1.0',
+            exportedAt: new Date().toISOString(),
+            tool: 'Rep5x Firmware Builder'
+        },
+        config: config
+    };
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `rep5x-firmware-config-${timestamp}.json`;
+
+    // Download as JSON
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Show feedback toast
+    if (showToast) {
+        showConfigToast('Configuration saved', 'save');
+    }
+}
+
+/**
+ * Trigger file input for importing config
+ */
+function importConfigTrigger() {
+    document.getElementById('configFileInput').click();
+}
+
+/**
+ * Handle config file import
+ */
+function handleConfigImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            // Validate the imported data
+            if (!data.config) {
+                throw new Error('Invalid config file format');
+            }
+
+            // Apply the imported configuration
+            applyImportedConfig(data.config);
+
+            // Show success toast
+            showConfigToast('Configuration loaded', 'load');
+
+        } catch (error) {
+            console.error('Import error:', error);
+            showConfigToast('Invalid config file', 'error');
+        }
+    };
+
+    reader.readAsText(file);
+
+    // Reset file input so same file can be selected again
+    event.target.value = '';
+}
+
+/**
+ * Apply imported configuration to wizard state and UI
+ */
+function applyImportedConfig(config) {
+    // Merge imported config with current state (preserves any missing fields)
+    Object.assign(wizardState.config, config);
+
+    // Update all form elements to reflect imported values
+
+    // === Board Selection ===
+    const boardCards = document.querySelectorAll('#step1 .option-card');
+    boardCards.forEach(card => {
+        card.classList.remove('selected');
+        const icon = card.querySelector('.check-icon');
+        if (icon) icon.classList.add('hidden');
+        if (card.dataset.value === config.board) {
+            card.classList.add('selected');
+            if (icon) icon.classList.remove('hidden');
+        }
+    });
+
+    // === Dimensions ===
+    // For dimensions, we need to reverse the Rep5x offset calculation
+    // The stored config has the adjusted values, but the form shows original values
+    if (wizardState.applyRep5xOffsets) {
+        document.getElementById('xBedSize').value = config.xBedSize + rep5xOffsets.xy;
+        document.getElementById('yBedSize').value = config.yBedSize + rep5xOffsets.xy;
+        document.getElementById('zMaxPos').value = config.zMaxPos + rep5xOffsets.z;
+    } else {
+        document.getElementById('xBedSize').value = config.xBedSize;
+        document.getElementById('yBedSize').value = config.yBedSize;
+        document.getElementById('zMaxPos').value = config.zMaxPos;
+    }
+    updateAdjustedValues();
+
+    // === Homing Directions ===
+    document.getElementById('xHomeDir').value = config.xHomeDir;
+    document.getElementById('yHomeDir').value = config.yHomeDir;
+    document.getElementById('zHomeDir').value = config.zHomeDir;
+    updateZHomingWarning();
+
+    // === Display Selection ===
+    const displayCards = document.querySelectorAll('#step3 .option-card');
+    displayCards.forEach(card => {
+        card.classList.remove('selected');
+        const icon = card.querySelector('.check-icon');
+        if (icon) icon.classList.add('hidden');
+        if (card.dataset.value === config.display) {
+            card.classList.add('selected');
+            if (icon) icon.classList.remove('hidden');
+        }
+    });
+
+    // Show/hide neopixel options based on display
+    const neopixelOptions = document.getElementById('neopixelOptions');
+    if (neopixelOptions) {
+        neopixelOptions.style.display = config.display === 'btt_mini_12864' ? 'block' : 'none';
+    }
+
+    // === Neopixel Color ===
+    document.querySelectorAll('.neopixel-color').forEach(btn => {
+        btn.classList.remove('selected');
+        btn.style.boxShadow = 'none';
+        if (btn.dataset.color === config.neopixelColor) {
+            btn.classList.add('selected');
+            btn.style.boxShadow = '0 0 0 3px rgba(50, 215, 75, 0.5)';
+        }
+    });
+
+    // === Stepper Drivers ===
+    const driverFields = ['driverX', 'driverY', 'driverZ', 'driverC', 'driverB', 'driverE'];
+    const allSameDriver = driverFields.every(f => config[f] === config.driverX);
+
+    document.getElementById('sameDriverAll').checked = allSameDriver;
+    if (allSameDriver) {
+        document.getElementById('driverAll').value = config.driverX;
+        document.getElementById('singleDriverSelect').classList.remove('hidden');
+        document.getElementById('individualDriverSelect').classList.add('hidden');
+    } else {
+        document.getElementById('singleDriverSelect').classList.add('hidden');
+        document.getElementById('individualDriverSelect').classList.remove('hidden');
+    }
+
+    driverFields.forEach(field => {
+        const el = document.getElementById(field);
+        if (el) el.value = config[field];
+    });
+
+    // === Motor Sockets ===
+    const socketFields = ['socketX', 'socketY', 'socketZ', 'socketC', 'socketB', 'socketE'];
+    socketFields.forEach(field => {
+        const el = document.getElementById(field);
+        if (el) el.value = config[field];
+    });
+
+    // === Steps Per Unit ===
+    const stepsFields = ['stepsX', 'stepsY', 'stepsZ', 'stepsC', 'stepsB', 'stepsE'];
+    stepsFields.forEach(field => {
+        const el = document.getElementById(field);
+        if (el) el.value = config[field];
+    });
+
+    // === Motor Directions (Invert) ===
+    const invertFields = ['invertX', 'invertY', 'invertZ', 'invertC', 'invertB', 'invertE'];
+    invertFields.forEach(field => {
+        const el = document.getElementById(field);
+        if (el) el.checked = config[field];
+    });
+
+    // === IK Parameters ===
+    document.getElementById('ikEnabled').checked = config.ikEnabled;
+    document.getElementById('ikLC').value = config.ikLC;
+    document.getElementById('ikLB').value = config.ikLB;
+    document.getElementById('segmentsPerSecond').value = config.segmentsPerSecond;
+}
+
+/**
+ * Show a toast notification for config actions
+ */
+function showConfigToast(message, type = 'save') {
+    // Remove existing toast if any
+    const existingToast = document.querySelector('.config-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'config-toast';
+
+    const iconSvg = type === 'error'
+        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'
+        : type === 'load'
+        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>'
+        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
+
+    toast.innerHTML = `
+        <div class="toast-icon" style="${type === 'error' ? 'background: #ef4444;' : ''}">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">${iconSvg}</svg>
+        </div>
+        <span>${message}</span>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
+
+    // Auto-remove after delay
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
 }
 
 // Initialize on DOM ready
