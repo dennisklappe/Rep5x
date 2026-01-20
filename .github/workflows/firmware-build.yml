@@ -1,0 +1,148 @@
+# Rep5x Firmware Builder - GitHub Actions Workflow
+# Triggered by Cloudflare Worker to compile custom firmware configurations
+
+name: Build Firmware
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: 'Unique build identifier'
+        required: true
+        type: string
+      board:
+        description: 'Target board'
+        required: true
+        default: 'octopus_v1.1'
+        type: string
+
+env:
+  WORKER_URL: https://rep5x-firmware-builder.klappe.workers.dev
+  MARLIN_REPO: https://github.com/DerAndere1/Marlin.git
+  MARLIN_BRANCH: 6axis_XYZBCE_4
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Log build info
+        run: |
+          echo "Build ID: ${{ github.event.inputs.build_id }}"
+          echo "Board: ${{ github.event.inputs.board }}"
+
+      - name: Fetch configuration files
+        id: fetch-config
+        run: |
+          # Fetch config from worker
+          BUILD_DATA=$(curl -s "${{ env.WORKER_URL }}/config/${{ github.event.inputs.build_id }}")
+
+          # Extract configuration files
+          echo "$BUILD_DATA" | jq -r '.configurationH' > Configuration.h
+          echo "$BUILD_DATA" | jq -r '.configurationAdvH' > Configuration_adv.h
+
+          # Verify files were created
+          if [ ! -s Configuration.h ] || [ ! -s Configuration_adv.h ]; then
+            echo "Failed to fetch configuration files"
+            exit 1
+          fi
+
+          echo "Configuration files fetched successfully"
+
+      - name: Clone DerAndere-Marlin
+        run: |
+          git clone --depth 1 --branch ${{ env.MARLIN_BRANCH }} ${{ env.MARLIN_REPO }} marlin
+          cd marlin
+          echo "Marlin cloned successfully"
+
+      - name: Replace configuration files
+        run: |
+          cp Configuration.h marlin/Marlin/Configuration.h
+          cp Configuration_adv.h marlin/Marlin/Configuration_adv.h
+          echo "Configuration files replaced"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: |
+          pip install --upgrade pip
+          pip install platformio
+          echo "PlatformIO installed"
+
+      - name: Get PlatformIO environment
+        id: pio-env
+        run: |
+          # Map board to PlatformIO environment
+          case "${{ github.event.inputs.board }}" in
+            "octopus_v1.1")
+              echo "env=BTT_OCTOPUS_V1_1" >> $GITHUB_OUTPUT
+              ;;
+            "octopus_pro")
+              echo "env=BTT_OCTOPUS_PRO_V1_0" >> $GITHUB_OUTPUT
+              ;;
+            "skr_3")
+              echo "env=BTT_SKR_V3_0" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "env=BTT_OCTOPUS_V1_1" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Build firmware
+        id: build
+        run: |
+          cd marlin
+          platformio run -e ${{ steps.pio-env.outputs.env }}
+          echo "Build completed"
+
+      - name: Locate firmware binary
+        id: firmware
+        run: |
+          # Find the firmware binary
+          FIRMWARE_PATH=$(find marlin/.pio/build -name "firmware*.bin" | head -1)
+
+          if [ -z "$FIRMWARE_PATH" ]; then
+            echo "Firmware binary not found"
+            exit 1
+          fi
+
+          echo "path=$FIRMWARE_PATH" >> $GITHUB_OUTPUT
+          echo "Found firmware at: $FIRMWARE_PATH"
+
+      - name: Upload firmware to R2
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          # Install AWS CLI for S3-compatible upload
+          pip install awscli
+
+          # Configure AWS CLI for R2
+          aws configure set aws_access_key_id $R2_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $R2_SECRET_ACCESS_KEY
+
+          # Upload firmware to R2
+          aws --endpoint-url $R2_ENDPOINT s3 cp \
+            "${{ steps.firmware.outputs.path }}" \
+            "s3://rep5x-firmware/${{ github.event.inputs.build_id }}/firmware.bin"
+
+          echo "Firmware uploaded to R2"
+
+      - name: Notify worker - Success
+        if: success()
+        run: |
+          curl -X POST "${{ env.WORKER_URL }}/webhook" \
+            -H "Content-Type: application/json" \
+            -d '{"buildId": "${{ github.event.inputs.build_id }}", "status": "complete"}'
+
+      - name: Notify worker - Failure
+        if: failure()
+        run: |
+          curl -X POST "${{ env.WORKER_URL }}/webhook" \
+            -H "Content-Type: application/json" \
+            -d '{"buildId": "${{ github.event.inputs.build_id }}", "status": "failed", "error": "Build failed"}'
