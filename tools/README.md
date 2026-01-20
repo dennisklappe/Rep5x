@@ -6,6 +6,9 @@ Web-based tools for Rep5x 5-axis 3D printing.
 
 ## Available tools
 
+### [Firmware Builder](https://tools.rep5x.com/firmware-builder/)
+Configure and build custom Rep5x Marlin firmware with cloud compilation. No local toolchain required.
+
 ### [Printer Control](https://tools.rep5x.com/printer-control/)
 Control your printer directly from the browser. Jog all 5 axes, send G-code commands, and monitor position.
 
@@ -47,6 +50,7 @@ tools/
 │   ├── calibration-visualizer.js
 │   ├── calibration-visualizer-3d.js
 │   └── correction-graph-renderer.js
+├── firmware-builder/
 ├── printer-control/
 ├── printer-setup/
 ├── la-lb-measure/

@@ -30,7 +30,7 @@ Currently supported printers:
 - **3D printed parts**: `build-guide/printer-specific/[your-printer]/3d-printed-parts/`
 - **Parts list**: `build-guide/universal-parts/bill-of-materials/bom-shared.md`
 - **Assembly guide**: `build-guide/assembly-instructions-universal.md`
-- **Firmware**: `build-guide/printer-specific/[your-printer]/firmware/`
+- **Firmware**: Use the [Firmware Builder](https://tools.rep5x.com/firmware-builder/) to generate custom firmware for your setup
 
 ### 3. Join the community
 **Discord**: https://discord.gg/GNdah82VBg for build support and discussions

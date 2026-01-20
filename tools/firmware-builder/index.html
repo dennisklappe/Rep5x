@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rep5x Firmware Builder</title>
+    <meta name="description" content="Build custom Rep5x 5-axis printer firmware with an easy step-by-step wizard">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="../shared/styles.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Firmware Builder specific styles */
+        .wizard-container {
+            /* No min-height - let content determine size */
+        }
+
+        .step-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fffe 100%);
+            border: 2px solid var(--color-border);
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 8px 30px rgba(50, 215, 75, 0.12);
+        }
+
+        .step-card.selected {
+            border-color: var(--color-primary);
+            background: linear-gradient(135deg, #f0fff4 0%, #f7fffe 100%);
+            box-shadow: 0 4px 20px rgba(50, 215, 75, 0.15);
+        }
+
+        .option-card {
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .option-card:hover:not(.disabled) {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .option-card.selected {
+            border-color: var(--color-primary);
+            background: var(--color-light);
+        }
+
+        .option-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .option-card .check-indicator {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--color-border);
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .option-card.selected .check-indicator {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            background: var(--color-border);
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: var(--color-primary);
+            height: 100%;
+            transition: width 0.4s ease;
+        }
+
+        /* Step indicators */
+        .step-indicator {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: white;
+            border: 2px solid var(--color-border);
+            color: var(--color-text-muted);
+        }
+
+        .step-indicator.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+            box-shadow: 0 0 0 4px rgba(50, 215, 75, 0.2);
+        }
+
+        .step-indicator.completed {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        .step-connector {
+            width: 40px;
+            height: 2px;
+            background: var(--color-border);
+            transition: background 0.3s;
+        }
+
+        .step-connector.completed {
+            background: var(--color-primary);
+        }
+
+        /* Input styling */
+        .config-input {
+            font-family: 'JetBrains Mono', monospace;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .config-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(50, 215, 75, 0.15);
+        }
+
+        .config-input:hover:not(:focus) {
+            border-color: #c0c0c0;
+        }
+
+        /* Config preview */
+        .config-preview {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+
+        .config-preview .comment {
+            color: #6a9955;
+        }
+
+        .config-preview .define {
+            color: #569cd6;
+        }
+
+        .config-preview .value {
+            color: #ce9178;
+        }
+
+        .config-preview .number {
+            color: #b5cea8;
+        }
+
+        /* Tooltips */
+        .tooltip-trigger {
+            cursor: help;
+            border-bottom: 1px dashed var(--color-text-muted);
+        }
+
+        /* Section divider */
+        .section-divider {
+            position: relative;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .section-divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: var(--color-border);
+        }
+
+        .section-divider span {
+            position: relative;
+            background: var(--color-body);
+            padding: 0 1rem;
+            color: var(--color-text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Fade in animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.4s ease forwards;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-primary {
+            background: var(--color-light);
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+        }
+
+        .badge-gray {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .badge-warning {
+            background: var(--color-warning-light);
+            color: var(--color-warning-text);
+        }
+
+        /* Toggle switch */
+        .bg-primary {
+            background-color: var(--color-primary);
+        }
+
+        .bg-gray-300 {
+            background-color: #d1d5db;
+        }
+
+        .translate-x-5 {
+            transform: translateX(1.25rem);
+        }
+
+        .translate-x-0 {
+            transform: translateX(0);
+        }
+
+        .text-primary {
+            color: var(--color-primary);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Config action buttons */
+        .config-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #4b5563;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .config-action-btn:hover {
+            color: var(--color-primary);
+            background: var(--color-light);
+            border-color: var(--color-primary);
+            transform: translateY(-1px);
+        }
+
+        .config-action-btn:active {
+            transform: translateY(0);
+        }
+
+        .config-action-btn svg {
+            transition: transform 0.15s ease;
+        }
+
+        .config-action-btn:hover svg {
+            transform: scale(1.1);
+        }
+
+        /* Config loaded toast notification */
+        .config-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: white;
+            padding: 0.875rem 1.25rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .config-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .config-toast .toast-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            background: var(--color-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .config-toast .toast-icon svg {
+            width: 0.875rem;
+            height: 0.875rem;
+            color: white;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .config-action-btn span {
+                display: none;
+            }
+            .config-action-btn {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body data-tool-name="Firmware Builder" class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <div id="shared-header"></div>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Progress Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Build your Rep5x Marlin firmware</h2>
+                <div class="flex items-center gap-3">
+                    <!-- Config Management Buttons -->
+                    <div class="config-actions flex items-center gap-2">
+                        <button onclick="importConfigTrigger()" class="config-action-btn" title="Load a previously saved configuration">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            <span>Load</span>
+                        </button>
+                        <button onclick="exportConfig()" class="config-action-btn" title="Save your current configuration">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            <span>Save</span>
+                        </button>
+                        <input type="file" id="configFileInput" accept=".json" onchange="handleConfigImport(event)" class="hidden">
+                    </div>
+                    <div class="w-px h-6 bg-gray-200"></div>
+                    <span id="stepCounter" class="text-sm text-gray-500">Step 1 of 6</span>
+                </div>
+            </div>
+
+            <!-- Step Indicators -->
+            <div class="flex items-center justify-center mb-4">
+                <div class="step-indicator active" data-step="1">1</div>
+                <div class="step-connector" data-step="1"></div>
+                <div class="step-indicator" data-step="2">2</div>
+                <div class="step-connector" data-step="2"></div>
+                <div class="step-indicator" data-step="3">3</div>
+                <div class="step-connector" data-step="3"></div>
+                <div class="step-indicator" data-step="4">4</div>
+                <div class="step-connector" data-step="4"></div>
+                <div class="step-indicator" data-step="5">5</div>
+                <div class="step-connector" data-step="5"></div>
+                <div class="step-indicator" data-step="6">6</div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 16.67%"></div>
+            </div>
+
+            <!-- Step Labels -->
+            <div class="flex justify-between mt-3 text-xs text-gray-500">
+                <span class="w-14 text-center">Board</span>
+                <span class="w-14 text-center">Size</span>
+                <span class="w-14 text-center">Display</span>
+                <span class="w-14 text-center">Motors</span>
+                <span class="w-14 text-center">IK</span>
+                <span class="w-14 text-center">Build</span>
+            </div>
+        </div>
+
+        <!-- Wizard Content -->
+        <div class="wizard-container">
+            <!-- Step 1: Board Selection -->
+            <div id="step1" class="wizard-step active animate-in">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Select your control board</h3>
+                        <p class="text-gray-600">Rep5x requires a board with at least 6 stepper drivers (X, Y, Z, E, C, B).</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                        <div class="option-card selected" data-value="octopus_v1.1" onclick="selectOption(this, 'board')">
+                            <div class="flex items-start gap-4">
+                                <div class="check-indicator flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">BTT Octopus V1.1</h4>
+                                    <p class="text-sm text-gray-500 mb-2">8 stepper drivers, STM32F446, abundant I/O</p>
+                                    <span class="badge badge-primary">Recommended</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="option-card disabled" data-value="octopus_pro" onclick="selectOption(this, 'board')">
+                            <div class="flex items-start gap-4">
+                                <div class="check-indicator flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">BTT Octopus Pro</h4>
+                                    <p class="text-sm text-gray-500 mb-2">Enhanced version with more features</p>
+                                    <span class="badge badge-warning">Coming soon</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="option-card disabled" data-value="skr_3" onclick="selectOption(this, 'board')">
+                            <div class="flex items-start gap-4">
+                                <div class="check-indicator flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">BTT SKR 3</h4>
+                                    <p class="text-sm text-gray-500 mb-2">Compact board, requires expansion</p>
+                                    <span class="badge badge-warning">Coming soon</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="option-card disabled" data-value="custom_board" onclick="selectOption(this, 'board')">
+                            <div class="flex items-start gap-4">
+                                <div class="check-indicator flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">Other board</h4>
+                                    <p class="text-sm text-gray-500 mb-2">Manual board configuration</p>
+                                    <span class="badge badge-warning">Coming soon</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 p-4 bg-purple-50 border border-purple-200 rounded-lg max-w-2xl mx-auto">
+                        <div class="flex gap-3 items-center">
+                            <svg class="w-6 h-6 text-purple-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                            </svg>
+                            <p class="text-sm text-purple-800">
+                                <strong>Need a different board?</strong> <a href="https://discord.gg/GNdah82VBg" target="_blank" class="underline hover:no-underline">Ask on Discord</a> and I'll add support within a couple of days!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Dimensions -->
+            <div id="step2" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Printer dimensions</h3>
+                        <p class="text-gray-600">Configure your build volume and motion limits.</p>
+                    </div>
+
+                    <div class="max-w-xl mx-auto space-y-6">
+                        <!-- Printer Preset -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Load preset
+                                <span class="text-gray-400 font-normal">- Quick-fill values for your printer</span>
+                            </label>
+                            <select id="printerPreset" class="config-input w-full" onchange="applyPrinterPreset(this.value)">
+                                <option value="">Custom values</option>
+                                <option value="ender3v3se" selected>Ender 3 V3 SE (220×220×270)</option>
+                                <option value="ender3pro">Ender 3 Pro (220×220×250)</option>
+                                <option value="ender3v2">Ender 3 V2 (220×220×250)</option>
+                            </select>
+                        </div>
+
+                        <div class="section-divider">
+                            <span>Build volume</span>
+                        </div>
+
+                        <!-- Rep5x Auto-adjust toggle -->
+                        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                                </svg>
+                                <span class="text-sm text-gray-700">Auto-adjust for Rep5x toolhead</span>
+                            </div>
+                            <button
+                                id="offsetToggle"
+                                type="button"
+                                onclick="toggleRep5xOffsets()"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-primary transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                role="switch"
+                                aria-checked="true"
+                            >
+                                <span id="offsetToggleDot" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"></span>
+                            </button>
+                        </div>
+
+                        <!-- Bed Size -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    X bed size (mm)
+                                </label>
+                                <input type="number" id="xBedSize" class="config-input w-full" value="220" min="100" max="500" oninput="updateAdjustedValues()">
+                                <p id="xAdjusted" class="text-xs text-primary mt-1 font-medium">→ 200mm used (−20mm for Rep5x)</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Y bed size (mm)
+                                </label>
+                                <input type="number" id="yBedSize" class="config-input w-full" value="220" min="100" max="500" oninput="updateAdjustedValues()">
+                                <p id="yAdjusted" class="text-xs text-primary mt-1 font-medium">→ 200mm used (−20mm for Rep5x)</p>
+                            </div>
+                        </div>
+
+                        <!-- Z Height -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Z max height (mm)
+                            </label>
+                            <input type="number" id="zMaxPos" class="config-input w-full" value="270" min="50" max="500" step="0.1" oninput="updateAdjustedValues()">
+                            <p id="zAdjusted" class="text-xs text-primary mt-1 font-medium">→ 170mm used (−100mm for Rep5x)</p>
+                        </div>
+
+                        <div class="section-divider">
+                            <span>Homing directions</span>
+                        </div>
+
+                        <!-- Homing Directions -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">X homes to</label>
+                                <select id="xHomeDir" class="config-input w-full">
+                                    <option value="1">MAX (+)</option>
+                                    <option value="-1">MIN (-)</option>
+                                </select>
+                                <p class="text-xs text-gray-400 mt-1">Depends on endstop location</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Y homes to</label>
+                                <select id="yHomeDir" class="config-input w-full">
+                                    <option value="1">MAX (+)</option>
+                                    <option value="-1">MIN (-)</option>
+                                </select>
+                                <p class="text-xs text-gray-400 mt-1">Depends on endstop location</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Z homes to</label>
+                                <select id="zHomeDir" class="config-input w-full" onchange="updateZHomingWarning()">
+                                    <option value="1" selected>MAX (+)</option>
+                                    <option value="-1">MIN (-)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="zMinWarning" class="p-4 bg-red-50 border border-red-200 rounded-lg hidden">
+                            <div class="flex gap-3">
+                                <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                                <p class="text-sm text-red-800">
+                                    <strong>Warning: Z MIN homing is risky.</strong> The Rep5x toolhead hangs below the X-gantry at varying heights depending on the yaw (C-axis) angle. Homing to Z MIN may crash the nozzle into the bed. Z MAX homing with an endstop at the top is strongly recommended.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Display Selection -->
+            <div id="step3" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Select your display</h3>
+                        <p class="text-gray-600">Choose the LCD screen you'll be using with your printer.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                        <div class="option-card selected" data-value="btt_mini_12864" onclick="selectOption(this, 'display')">
+                            <div class="flex items-start gap-4">
+                                <div class="check-indicator flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">BTT Mini 12864</h4>
+                                    <p class="text-sm text-gray-500 mb-2">Compact display with RGB backlight, encoder knob</p>
+                                    <span class="badge badge-primary">Recommended</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="option-card" data-value="reprap_full_graphic" onclick="selectOption(this, 'display')">
+                            <div class="flex items-start gap-4">
+                                <div class="check-indicator flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">RepRap Full Graphic</h4>
+                                    <p class="text-sm text-gray-500 mb-2">Standard 128x64 LCD with SD card slot</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="option-card" data-value="tft35" onclick="selectOption(this, 'display')">
+                            <div class="flex items-start gap-4">
+                                <div class="check-indicator flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">BTT TFT35</h4>
+                                    <p class="text-sm text-gray-500 mb-2">Touchscreen display with dual mode support</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="option-card" data-value="none" onclick="selectOption(this, 'display')">
+                            <div class="flex items-start gap-4">
+                                <div class="check-indicator flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 mb-1">No display</h4>
+                                    <p class="text-sm text-gray-500 mb-2">USB/Serial control only (headless)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Neopixel options for BTT Mini 12864 -->
+                    <div id="neopixelOptions" class="mt-6 max-w-2xl mx-auto">
+                        <div class="section-divider">
+                            <span>Backlight colour</span>
+                        </div>
+                        <div class="flex gap-3 justify-center">
+                            <button class="neopixel-color w-10 h-10 rounded-full border-2 border-gray-300 hover:scale-110 transition-transform selected" data-color="green" style="background: #32D74B" onclick="selectNeopixelColor(this)"></button>
+                            <button class="neopixel-color w-10 h-10 rounded-full border-2 border-gray-300 hover:scale-110 transition-transform" data-color="blue" style="background: #007AFF" onclick="selectNeopixelColor(this)"></button>
+                            <button class="neopixel-color w-10 h-10 rounded-full border-2 border-gray-300 hover:scale-110 transition-transform" data-color="red" style="background: #FF3B30" onclick="selectNeopixelColor(this)"></button>
+                            <button class="neopixel-color w-10 h-10 rounded-full border-2 border-gray-300 hover:scale-110 transition-transform" data-color="white" style="background: #FFFFFF" onclick="selectNeopixelColor(this)"></button>
+                            <button class="neopixel-color w-10 h-10 rounded-full border-2 border-gray-300 hover:scale-110 transition-transform" data-color="purple" style="background: #AF52DE" onclick="selectNeopixelColor(this)"></button>
+                            <button class="neopixel-color w-10 h-10 rounded-full border-2 border-gray-300 hover:scale-110 transition-transform" data-color="orange" style="background: #FF9500" onclick="selectNeopixelColor(this)"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Motor Settings -->
+            <div id="step4" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Motor configuration</h3>
+                        <p class="text-gray-600">Configure stepper drivers, steps per unit, and motor directions.</p>
+                    </div>
+
+                    <div class="max-w-2xl mx-auto space-y-6">
+                        <!-- Stepper Drivers -->
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-4">Stepper drivers</h4>
+
+                            <!-- All same driver option -->
+                            <div class="mb-4">
+                                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                    <input type="checkbox" id="sameDriverAll" class="w-4 h-4 text-primary rounded" checked onchange="toggleSameDriverAll()">
+                                    <span class="text-sm">Use same driver for all axes</span>
+                                </label>
+                            </div>
+
+                            <!-- Single driver selector (when same for all) -->
+                            <div id="singleDriverSelect" class="mb-4">
+                                <label class="block text-sm text-gray-600 mb-2">Driver type</label>
+                                <select id="driverAll" class="config-input w-full" onchange="updateAllDrivers()">
+                                    <option value="TMC2208" selected>TMC2208 (UART)</option>
+                                    <option value="TMC2209">TMC2209 (UART)</option>
+                                    <option value="TMC2226">TMC2226 (UART)</option>
+                                    <option value="TMC5160">TMC5160 (SPI)</option>
+                                    <option value="TMC2130">TMC2130 (SPI)</option>
+                                    <option value="A4988">A4988 (Step/Dir)</option>
+                                    <option value="DRV8825">DRV8825 (Step/Dir)</option>
+                                </select>
+                            </div>
+
+                            <!-- Individual driver selectors (when different) -->
+                            <div id="individualDriverSelect" class="hidden grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">X driver</label>
+                                    <select id="driverX" class="config-input w-full text-sm">
+                                        <option value="TMC2208" selected>TMC2208</option>
+                                        <option value="TMC2209">TMC2209</option>
+                                        <option value="TMC2226">TMC2226</option>
+                                        <option value="TMC5160">TMC5160</option>
+                                        <option value="TMC2130">TMC2130</option>
+                                        <option value="A4988">A4988</option>
+                                        <option value="DRV8825">DRV8825</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Y driver</label>
+                                    <select id="driverY" class="config-input w-full text-sm">
+                                        <option value="TMC2208" selected>TMC2208</option>
+                                        <option value="TMC2209">TMC2209</option>
+                                        <option value="TMC2226">TMC2226</option>
+                                        <option value="TMC5160">TMC5160</option>
+                                        <option value="TMC2130">TMC2130</option>
+                                        <option value="A4988">A4988</option>
+                                        <option value="DRV8825">DRV8825</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Z driver</label>
+                                    <select id="driverZ" class="config-input w-full text-sm">
+                                        <option value="TMC2208" selected>TMC2208</option>
+                                        <option value="TMC2209">TMC2209</option>
+                                        <option value="TMC2226">TMC2226</option>
+                                        <option value="TMC5160">TMC5160</option>
+                                        <option value="TMC2130">TMC2130</option>
+                                        <option value="A4988">A4988</option>
+                                        <option value="DRV8825">DRV8825</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">C driver</label>
+                                    <select id="driverC" class="config-input w-full text-sm">
+                                        <option value="TMC2208" selected>TMC2208</option>
+                                        <option value="TMC2209">TMC2209</option>
+                                        <option value="TMC2226">TMC2226</option>
+                                        <option value="TMC5160">TMC5160</option>
+                                        <option value="TMC2130">TMC2130</option>
+                                        <option value="A4988">A4988</option>
+                                        <option value="DRV8825">DRV8825</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">B driver</label>
+                                    <select id="driverB" class="config-input w-full text-sm">
+                                        <option value="TMC2208" selected>TMC2208</option>
+                                        <option value="TMC2209">TMC2209</option>
+                                        <option value="TMC2226">TMC2226</option>
+                                        <option value="TMC5160">TMC5160</option>
+                                        <option value="TMC2130">TMC2130</option>
+                                        <option value="A4988">A4988</option>
+                                        <option value="DRV8825">DRV8825</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">E driver</label>
+                                    <select id="driverE" class="config-input w-full text-sm">
+                                        <option value="TMC2208" selected>TMC2208</option>
+                                        <option value="TMC2209">TMC2209</option>
+                                        <option value="TMC2226">TMC2226</option>
+                                        <option value="TMC5160">TMC5160</option>
+                                        <option value="TMC2130">TMC2130</option>
+                                        <option value="A4988">A4988</option>
+                                        <option value="DRV8825">DRV8825</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-divider">
+                            <span>Motor socket assignment</span>
+                        </div>
+
+                        <!-- Motor socket assignment -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">X motor</label>
+                                <select id="socketX" class="config-input w-full text-sm">
+                                    <option value="MOTOR0" selected>MOTOR0</option>
+                                    <option value="MOTOR1">MOTOR1</option>
+                                    <option value="MOTOR2_1">MOTOR2_1</option>
+                                    <option value="MOTOR3">MOTOR3</option>
+                                    <option value="MOTOR4">MOTOR4</option>
+                                    <option value="MOTOR5">MOTOR5</option>
+                                    <option value="MOTOR6">MOTOR6</option>
+                                    <option value="MOTOR7">MOTOR7</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Y motor</label>
+                                <select id="socketY" class="config-input w-full text-sm">
+                                    <option value="MOTOR0">MOTOR0</option>
+                                    <option value="MOTOR1" selected>MOTOR1</option>
+                                    <option value="MOTOR2_1">MOTOR2_1</option>
+                                    <option value="MOTOR3">MOTOR3</option>
+                                    <option value="MOTOR4">MOTOR4</option>
+                                    <option value="MOTOR5">MOTOR5</option>
+                                    <option value="MOTOR6">MOTOR6</option>
+                                    <option value="MOTOR7">MOTOR7</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Z motor</label>
+                                <select id="socketZ" class="config-input w-full text-sm">
+                                    <option value="MOTOR0">MOTOR0</option>
+                                    <option value="MOTOR1">MOTOR1</option>
+                                    <option value="MOTOR2_1" selected>MOTOR2_1</option>
+                                    <option value="MOTOR3">MOTOR3</option>
+                                    <option value="MOTOR4">MOTOR4</option>
+                                    <option value="MOTOR5">MOTOR5</option>
+                                    <option value="MOTOR6">MOTOR6</option>
+                                    <option value="MOTOR7">MOTOR7</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">C motor (yaw)</label>
+                                <select id="socketC" class="config-input w-full text-sm">
+                                    <option value="MOTOR0">MOTOR0</option>
+                                    <option value="MOTOR1">MOTOR1</option>
+                                    <option value="MOTOR2_1">MOTOR2_1</option>
+                                    <option value="MOTOR3">MOTOR3</option>
+                                    <option value="MOTOR4" selected>MOTOR4</option>
+                                    <option value="MOTOR5">MOTOR5</option>
+                                    <option value="MOTOR6">MOTOR6</option>
+                                    <option value="MOTOR7">MOTOR7</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">B motor (tilt)</label>
+                                <select id="socketB" class="config-input w-full text-sm">
+                                    <option value="MOTOR0">MOTOR0</option>
+                                    <option value="MOTOR1">MOTOR1</option>
+                                    <option value="MOTOR2_1">MOTOR2_1</option>
+                                    <option value="MOTOR3">MOTOR3</option>
+                                    <option value="MOTOR4">MOTOR4</option>
+                                    <option value="MOTOR5" selected>MOTOR5</option>
+                                    <option value="MOTOR6">MOTOR6</option>
+                                    <option value="MOTOR7">MOTOR7</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">E motor</label>
+                                <select id="socketE" class="config-input w-full text-sm">
+                                    <option value="MOTOR0">MOTOR0</option>
+                                    <option value="MOTOR1">MOTOR1</option>
+                                    <option value="MOTOR2_1">MOTOR2_1</option>
+                                    <option value="MOTOR3" selected>MOTOR3</option>
+                                    <option value="MOTOR4">MOTOR4</option>
+                                    <option value="MOTOR5">MOTOR5</option>
+                                    <option value="MOTOR6">MOTOR6</option>
+                                    <option value="MOTOR7">MOTOR7</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex gap-3">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <p class="text-sm text-blue-800">
+                                    <strong>Default assignment:</strong> X=MOTOR0, Y=MOTOR1, Z=MOTOR2_1, E=MOTOR3, C=MOTOR4, B=MOTOR5. This matches the standard Rep5x wiring for BTT Octopus.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="section-divider">
+                            <span>Steps per unit</span>
+                        </div>
+
+                        <!-- Steps per unit -->
+                        <div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">X (steps/mm)</label>
+                                    <input type="number" id="stepsX" class="config-input w-full" value="80" step="0.001">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Y (steps/mm)</label>
+                                    <input type="number" id="stepsY" class="config-input w-full" value="80" step="0.001">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">Z (steps/mm)</label>
+                                    <input type="number" id="stepsZ" class="config-input w-full" value="400" step="0.001">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">C (steps/deg)</label>
+                                    <input type="number" id="stepsC" class="config-input w-full" value="26.666" step="0.001">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">B (steps/deg)</label>
+                                    <input type="number" id="stepsB" class="config-input w-full" value="26.68" step="0.001">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-1">E (steps/mm)</label>
+                                    <input type="number" id="stepsE" class="config-input w-full" value="415" step="0.001">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-divider">
+                            <span>Motor directions</span>
+                        </div>
+
+                        <!-- Motor directions -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="invertX" class="w-4 h-4 text-primary rounded">
+                                <span class="text-sm">Invert X</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="invertY" class="w-4 h-4 text-primary rounded" checked>
+                                <span class="text-sm">Invert Y</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="invertZ" class="w-4 h-4 text-primary rounded">
+                                <span class="text-sm">Invert Z</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="invertC" class="w-4 h-4 text-primary rounded" checked>
+                                <span class="text-sm">Invert C (yaw)</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="invertB" class="w-4 h-4 text-primary rounded">
+                                <span class="text-sm">Invert B (tilt)</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="invertE" class="w-4 h-4 text-primary rounded">
+                                <span class="text-sm">Invert E</span>
+                            </label>
+                        </div>
+
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex gap-3">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <p class="text-sm text-blue-800">
+                                    <strong>C-axis (yaw):</strong> Inverted by default for CNC convention where positive C = clockwise when viewed from above.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Kinematics -->
+            <div id="step5" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Inverse kinematics parameters</h3>
+                        <p class="text-gray-600">Configure the 5-axis inverse kinematics for your Rep5x toolhead.</p>
+                    </div>
+
+                    <div class="max-w-xl mx-auto space-y-6">
+                        <!-- IK Enable -->
+                        <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                            <div>
+                                <span class="font-medium text-gray-900">Enable IK by default</span>
+                                <p class="text-sm text-gray-500">Inverse kinematics enabled on startup (G43.4)</p>
+                            </div>
+                            <input type="checkbox" id="ikEnabled" class="w-5 h-5 text-primary rounded" checked>
+                        </label>
+
+                        <div class="section-divider">
+                            <span>Toolhead geometry</span>
+                        </div>
+
+                        <!-- LC and LB -->
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    LC (mm)
+                                    <span class="text-gray-400 font-normal">- Y offset</span>
+                                </label>
+                                <input type="number" id="ikLC" class="config-input w-full" value="0" step="0.01">
+                                <p class="text-xs text-gray-500 mt-1">Y-offset from yaw axis to nozzle (usually 0)</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    LB (mm)
+                                    <span class="text-gray-400 font-normal">- Z offset</span>
+                                </label>
+                                <input type="number" id="ikLB" class="config-input w-full" value="47.9" step="0.01">
+                                <p class="text-xs text-gray-500 mt-1">Z-offset from tilt axis to nozzle tip</p>
+                            </div>
+                        </div>
+
+                        <!-- Visual diagram placeholder -->
+                        <div class="bg-gray-100 rounded-lg p-6 text-center">
+                            <svg class="w-48 h-32 mx-auto mb-2" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Simplified toolhead diagram -->
+                                <rect x="70" y="10" width="60" height="30" rx="4" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                <circle cx="100" cy="40" r="8" fill="#32D74B" stroke="#22c55e" stroke-width="2"/>
+                                <line x1="100" y1="48" x2="100" y2="85" stroke="#1f2937" stroke-width="3"/>
+                                <circle cx="100" cy="90" r="5" fill="#1f2937"/>
+                                <!-- LB arrow -->
+                                <line x1="120" y1="40" x2="120" y2="90" stroke="#32D74B" stroke-width="2" stroke-dasharray="4"/>
+                                <text x="130" y="65" fill="#32D74B" font-size="12" font-weight="bold">LB</text>
+                                <!-- Labels -->
+                                <text x="100" y="25" fill="#6b7280" font-size="10" text-anchor="middle">B-axis</text>
+                            </svg>
+                            <p class="text-sm text-gray-600">LB is the distance from the B-axis pivot to the nozzle tip</p>
+                        </div>
+
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex gap-3">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <p class="text-sm text-blue-800">
+                                    <strong>Don't worry about exact values.</strong> LC and LB can be fine-tuned later using the <a href="../calibration/" class="underline hover:no-underline">IK Calibration tool</a> after your printer is assembled. Start with the defaults and calibrate once everything is working.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Segments per second -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Segments per second
+                            </label>
+                            <input type="number" id="segmentsPerSecond" class="config-input w-full" value="200" min="50" max="500">
+                            <p class="text-xs text-gray-500 mt-1">Higher = smoother motion but more CPU load</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6: Review & Build -->
+            <div id="step6" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Review and build</h3>
+                        <p class="text-gray-600">Review your configuration and download the firmware files.</p>
+                    </div>
+
+                    <div class="max-w-3xl mx-auto">
+                        <!-- Configuration Summary -->
+                        <div id="configSummary" class="grid md:grid-cols-2 gap-4 mb-6">
+                            <!-- Summary cards will be populated by JavaScript -->
+                        </div>
+
+                        <!-- Config Preview -->
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="font-medium text-gray-900">Configuration preview</h4>
+                                <div class="flex gap-2">
+                                    <button onclick="copyConfig()" class="btn-outline px-3 py-1 rounded text-sm flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                        </svg>
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+                            <pre id="configPreview" class="config-preview"></pre>
+                        </div>
+
+                        <!-- Download Options -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <h4 class="font-medium text-gray-900 mb-4">Download options</h4>
+
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <button onclick="downloadConfigFiles()" class="btn-outline p-4 rounded-xl flex items-center gap-4 text-left">
+                                    <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-gray-900">Download config files</div>
+                                        <div class="text-sm text-gray-500">Configuration.h & Configuration_adv.h</div>
+                                    </div>
+                                </button>
+
+                                <button id="buildFirmwareBtn" onclick="buildFirmware()" class="btn-primary p-4 rounded-xl flex items-center gap-4 text-left">
+                                    <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold">Build firmware.bin</div>
+                                        <div class="text-sm opacity-80">Compile in the cloud</div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                <h5 class="font-medium text-gray-900 mb-2">Manual build instructions</h5>
+                                <ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+                                    <li>Download the config files above</li>
+                                    <li>Clone <a href="https://github.com/DerAndere1/Marlin" class="text-primary hover:underline" target="_blank">DerAndere-Marlin</a> repository</li>
+                                    <li>Replace files in <code class="bg-gray-200 px-1 rounded">Marlin/</code> with downloaded configs</li>
+                                    <li>Build with PlatformIO: <code class="bg-gray-200 px-1 rounded">pio run -e BTT_OCTOPUS_V1_1</code></li>
+                                    <li>Find <code class="bg-gray-200 px-1 rounded">firmware.bin</code> in <code class="bg-gray-200 px-1 rounded">.pio/build/</code></li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between mt-6">
+            <button id="prevBtn" onclick="previousStep()" class="btn-secondary px-6 py-3 rounded-lg font-medium flex items-center gap-2 invisible">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Previous
+            </button>
+            <button id="nextBtn" onclick="nextStep()" class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center gap-2">
+                Next
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="shared-footer"></div>
+
+    <!-- Load config file template (hidden) -->
+    <script id="configTemplate" type="text/template">
+// Rep5x Firmware Configuration
+// Generated by Rep5x Firmware Builder
+// https://tools.rep5x.com/firmware-builder
+    </script>
+
+    <!-- Shared components -->
+    <script src="../shared/theme.js"></script>
+    <script src="../shared/header.js"></script>
+    <script src="../shared/footer.js"></script>
+    <script src="../shared/storage-manager.js"></script>
+
+    <!-- Tool-specific scripts -->
+    <script src="js/config-generator.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
