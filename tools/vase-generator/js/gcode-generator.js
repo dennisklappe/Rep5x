@@ -16,7 +16,7 @@ class GcodeGenerator {
         }
 
         const { layerHeight, speed, nozzleDiameter, nozzleTemp, bedTemp, bedWidth, bedDepth } = printSettings;
-        const { enableKinematics, lcParam, lbParam, enableCAxisOptimization, enableCalibration, calibrationCorrector, startGcode, endGcode } = advancedSettings;
+        const { enableCAxisOptimization, enableCalibration, calibrationCorrector, startGcode, endGcode } = advancedSettings;
 
         const gcode = [];
         const totalHeight = shape.getTotalHeight(shapeParams);
@@ -41,17 +41,9 @@ class GcodeGenerator {
         gcode.push(`; Generated on: ${new Date().toISOString()}`);
         gcode.push('');
 
-        // 5-axis and IK parameters
+        // 5-axis parameters
         gcode.push('; === Rep5x Parameters ===');
-        gcode.push(`; Inverse Kinematics: ${enableKinematics ? 'enabled' : 'disabled'}`);
-        if (enableKinematics) {
-            gcode.push(`; LC Parameter: ${lcParam}`);
-            gcode.push(`; LB Parameter: ${lbParam}`);
-            gcode.push('; IK Formulas:');
-            gcode.push("; X = X' + sin(C') × LC + cos(C') × sin(B') × LB");
-            gcode.push("; Y = Y' - LC + cos(C') × LC - sin(C') × sin(B') × LB");
-            gcode.push("; Z = Z' + cos(B') × LB - LB");
-        }
+        gcode.push('; Inverse Kinematics: firmware-side (G43.4)');
         gcode.push(`; C-axis Optimization: ${enableCAxisOptimization ? 'enabled' : 'disabled'}`);
 
         // Calibration correction info
@@ -98,11 +90,6 @@ class GcodeGenerator {
         }
 
         let gcodeString = gcode.join('\n');
-
-        // Apply inverse kinematics if enabled
-        if (enableKinematics) {
-            gcodeString = processInverseKinematics(gcodeString, enableKinematics, lcParam, lbParam);
-        }
 
         // Apply calibration correction if enabled
         if (enableCalibration && calibrationCorrector?.loaded) {

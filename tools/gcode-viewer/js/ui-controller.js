@@ -124,14 +124,9 @@ class UIController {
             if (this.onManualModeChange) this.onManualModeChange(e.target.checked);
         });
 
-        // Load LC/LB from browser storage when IK is enabled
+        // Manual IK toggle (values come from G-code metadata or manual entry)
         this.elements.manualIK.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                const lc = StorageManager.loadLc();
-                const lb = StorageManager.loadLb();
-                if (lc !== null) this.elements.manualLC.value = lc;
-                if (lb !== null) this.elements.manualLB.value = lb;
-            }
+            // Values are prefilled from G-code metadata when file is loaded
         });
 
         this.elements.applyManual.addEventListener('click', () => {

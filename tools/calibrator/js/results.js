@@ -147,7 +147,16 @@ class StepResults {
     /**
      * Called when entering this step
      */
-    enter() {
+    async enter() {
+        // Re-enable IK now that calibration is complete
+        if (this.app.printer && this.app.printer.isConnected()) {
+            try {
+                await this.app.printer.sendCommandAndWait('G43.4', 5000);
+            } catch (e) {
+                console.warn('Could not re-enable IK:', e);
+            }
+        }
+
         // Hide next button on results page
         document.getElementById('nextBtn').style.display = 'none';
 

@@ -307,6 +307,15 @@
                                 </svg>
                                 <span>Disable software endstops</span>
                             </div>
+                            <div class="flex items-center text-gray-400" id="prep-ik">
+                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor"
+                                    viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <span>Disable inverse kinematics</span>
+                            </div>
                             <div class="flex items-center text-gray-400" id="prep-homing">
                                 <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor"
                                     viewBox="0 0 20 20">
@@ -958,11 +967,11 @@
                     <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
                         <h3 class="font-semibold text-gray-900 mb-4">Save results</h3>
                         <div class="space-y-3">
-                            <button id="saveToStorage" class="w-full btn-success py-3 rounded-lg font-medium">
-                                Save to browser storage
-                            </button>
-                            <button id="exportJson" class="w-full btn-secondary py-3 rounded-lg font-medium">
-                                Export as JSON
+                            <button id="sendToPrinter" class="w-full btn-primary py-3 rounded-lg font-medium flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                                Send to printer (save to EEPROM)
                             </button>
                             <button id="copyValues" class="w-full btn-secondary py-3 rounded-lg font-medium">
                                 Copy values to clipboard
@@ -972,10 +981,10 @@
 
                     <!-- Usage Instructions -->
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h4 class="font-medium text-blue-800 mb-2">Using your parameters</h4>
+                        <h4 class="font-medium text-blue-800 mb-2">Values saved to printer</h4>
                         <p class="text-sm text-blue-700">
-                            Use these values in the <a href="../vase-generator/" class="underline">Vase Generator</a>
-                            under Advanced &rarr; 5-Axis Kinematics, or in your slicer's post-processing configuration.
+                            Click "Send to printer" to store LC/LB values in your printer's EEPROM.
+                            The firmware will automatically apply inverse kinematics during printing.
                         </p>
                     </div>
                 </div>

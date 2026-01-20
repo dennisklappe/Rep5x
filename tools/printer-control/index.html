@@ -284,6 +284,40 @@
                 <button id="ikToggle" class="toggle-btn btn-outline py-2 px-3 rounded-lg text-sm bg-green-50 border-green-300" data-state="on" data-cmd-on="G43.4" data-cmd-off="G49">IK: ON</button>
             </div>
         </div>
+
+        <!-- IK Parameters Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-md font-semibold">IK parameters (LC/LB)</h3>
+                <button id="queryIkParams" class="btn-outline py-1.5 px-3 rounded-lg text-sm">
+                    Query from printer
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">LC (C-axis offset)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="ikLcValue" step="0.01" value="0.00"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:border-primary">
+                        <span class="text-xs text-gray-400">mm</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">LB (B-axis offset)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="ikLbValue" step="0.01" value="47.90"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:border-primary">
+                        <span class="text-xs text-gray-400">mm</span>
+                    </div>
+                </div>
+            </div>
+            <button id="setIkParams" class="w-full btn-primary py-2 px-3 rounded-lg text-sm font-medium">
+                Set LC/LB + Save EEPROM
+            </button>
+            <p class="text-xs text-gray-400 mt-2">
+                Use <a href="../lc-lb-measure/" class="text-primary underline">LC/LB Measure</a> to calibrate these values
+            </p>
+        </div>
     </main>
 
     <!-- Footer -->

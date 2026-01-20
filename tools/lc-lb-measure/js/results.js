@@ -1,6 +1,6 @@
 /**
  * Step 4: Results
- * Display final LC/LB values and save/export options
+ * Display final LC/LB values and send to printer
  */
 
 class StepResults {
@@ -12,15 +12,23 @@ class StepResults {
      * Set up event listeners for this step
      */
     setup() {
-        document.getElementById('saveToStorage').addEventListener('click', () => this.saveResults());
-        document.getElementById('exportJson').addEventListener('click', () => StorageManager.downloadJSON());
+        document.getElementById('sendToPrinter').addEventListener('click', () => this.sendToPrinter());
         document.getElementById('copyValues').addEventListener('click', () => this.copyToClipboard());
     }
 
     /**
      * Called when entering this step
      */
-    enter() {
+    async enter() {
+        // Re-enable IK now that measurements are complete
+        if (this.app.printer && this.app.printer.isConnected()) {
+            try {
+                await this.app.printer.sendCommandAndWait('G43.4', 5000);
+            } catch (e) {
+                console.warn('Could not re-enable IK:', e);
+            }
+        }
+
         const results = this.app.calibration.getResults();
 
         // Display LC
@@ -44,34 +52,6 @@ class StepResults {
     }
 
     /**
-     * Save results to browser storage
-     */
-    saveResults() {
-        const results = this.app.calibration.getResults();
-
-        StorageManager.saveCalibrationResults(results.lc, results.lb, {
-            lcConsistency: results.lcConsistency,
-            lbAsymmetry: results.lbAsymmetry,
-            method: this.app.selectedMethod,
-            testMode: this.app.testMode
-        });
-
-        // Update footer display immediately
-        const footerLcInput = document.getElementById('savedLcValue');
-        const footerLbInput = document.getElementById('savedLbValue');
-        if (footerLcInput && results.lc !== null) footerLcInput.value = results.lc.toFixed(2);
-        if (footerLbInput && results.lb !== null) footerLbInput.value = results.lb.toFixed(2);
-
-        // Visual feedback on save button
-        const saveBtn = document.getElementById('saveToStorage');
-        const originalText = saveBtn.textContent;
-        saveBtn.textContent = 'Saved!';
-        setTimeout(() => {
-            saveBtn.textContent = originalText;
-        }, 1500);
-    }
-
-    /**
      * Copy values to clipboard
      */
     async copyToClipboard() {
@@ -80,9 +60,59 @@ class StepResults {
 
         try {
             await navigator.clipboard.writeText(text);
-            alert('Values copied to clipboard!');
+            const btn = document.getElementById('copyValues');
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 1500);
         } catch (error) {
             prompt('Copy these values:', text);
+        }
+    }
+
+    /**
+     * Send LC/LB values to printer firmware EEPROM
+     */
+    async sendToPrinter() {
+        const results = this.app.calibration.getResults();
+        const btn = document.getElementById('sendToPrinter');
+        const originalText = btn.textContent;
+
+        // Check if printer is connected
+        if (!this.app.printer || !this.app.printer.isConnected()) {
+            alert('Printer not connected. Please reconnect to send values.');
+            return;
+        }
+
+        try {
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            // Format values with 2 decimal places
+            const lc = results.lc !== null ? results.lc.toFixed(2) : '0.00';
+            const lb = results.lb !== null ? results.lb.toFixed(2) : '0.00';
+
+            // Send M665 J<LC> K<LB> to set IK offsets
+            // J = rotational_offset_y (LC), K = rotational_offset_z (LB)
+            await this.app.printer.sendCommandAndWait(`M665 J${lc} K${lb}`, 5000);
+
+            // Save to EEPROM
+            await this.app.printer.sendCommandAndWait('M500', 5000);
+
+            // Re-enable IK with new values
+            await this.app.printer.sendCommandAndWait('G43.4', 5000);
+
+            btn.textContent = 'Sent!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }, 2000);
+
+        } catch (error) {
+            alert(`Failed to send values: ${error.message}`);
+            btn.textContent = originalText;
+            btn.disabled = false;
         }
     }
 }

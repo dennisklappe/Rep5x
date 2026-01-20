@@ -23,10 +23,8 @@ class UIController {
         this.setupSliderListeners();
         this.setupShapeListeners();
         this.setupMaterialPresetListeners();
-        this.setupKinematicsListeners();
         this.setupCalibrationListeners();
         this.setupNozzleListeners();
-        this.loadSavedCalibration();
         this.loadCalibrationData();
     }
 
@@ -172,61 +170,6 @@ class UIController {
         if (speedSlider) speedSlider.addEventListener('input', setCustomPreset);
     }
 
-    setupKinematicsListeners() {
-        const enableKinematics = document.getElementById('enableKinematics');
-        const paramsDiv = document.getElementById('kinematicParams');
-
-        if (enableKinematics && paramsDiv) {
-            enableKinematics.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    paramsDiv.style.opacity = '1';
-                    paramsDiv.style.pointerEvents = 'auto';
-                } else {
-                    paramsDiv.style.opacity = '0.5';
-                    paramsDiv.style.pointerEvents = 'none';
-                }
-            });
-        }
-
-        // Save button for advanced LC/LB params
-        const saveAdvancedBtn = document.getElementById('saveAdvancedParams');
-        const lcParamInput = document.getElementById('lcParam');
-        const lbParamInput = document.getElementById('lbParam');
-
-        if (saveAdvancedBtn && lcParamInput && lbParamInput) {
-            saveAdvancedBtn.addEventListener('click', () => {
-                const lc = parseFloat(lcParamInput.value) || 0;
-                const lb = parseFloat(lbParamInput.value) || 47;
-
-                if (typeof StorageManager !== 'undefined') {
-                    StorageManager.saveCalibrationResults(lc, lb, {
-                        method: 'manual',
-                        testMode: false
-                    });
-                }
-
-                // Dispatch event so footer updates
-                document.dispatchEvent(new CustomEvent('lcLbUpdated', {
-                    detail: { lc, lb, source: 'advanced' }
-                }));
-
-                // Visual feedback
-                saveAdvancedBtn.textContent = 'Saved!';
-                setTimeout(() => {
-                    saveAdvancedBtn.textContent = 'Save LC/LB to browser';
-                }, 1500);
-            });
-
-            // Listen for updates from footer
-            document.addEventListener('lcLbUpdated', (e) => {
-                if (e.detail.source !== 'advanced') {
-                    if (e.detail.lc !== undefined) lcParamInput.value = e.detail.lc.toFixed(2);
-                    if (e.detail.lb !== undefined) lbParamInput.value = e.detail.lb.toFixed(2);
-                }
-            });
-        }
-    }
-
     setupCalibrationListeners() {
         const loadBtn = document.getElementById('loadCalibrationBtn');
         const enableCheckbox = document.getElementById('enableCalibration');
@@ -313,35 +256,6 @@ class UIController {
         this.validateLayerHeight();
     }
 
-    loadSavedCalibration() {
-        if (typeof StorageManager === 'undefined') return;
-
-        const savedResults = StorageManager.loadCalibrationResults();
-        if (savedResults && (savedResults.lc !== undefined || savedResults.lb !== undefined)) {
-            // Update footer display
-            const display = document.getElementById('savedKinematicsDisplay');
-            const lcSpan = document.getElementById('savedLcValue');
-            const lbSpan = document.getElementById('savedLbValue');
-
-            if (display && lcSpan && lbSpan) {
-                lcSpan.textContent = savedResults.lc?.toFixed(2) ?? '0';
-                lbSpan.textContent = savedResults.lb?.toFixed(2) ?? '47';
-                display.classList.remove('hidden');
-            }
-
-            // Prefill LC/LB input fields if they exist
-            const lcInput = document.getElementById('lcParam');
-            const lbInput = document.getElementById('lbParam');
-
-            if (lcInput && savedResults.lc !== undefined) {
-                lcInput.value = savedResults.lc.toFixed(2);
-            }
-            if (lbInput && savedResults.lb !== undefined) {
-                lbInput.value = savedResults.lb.toFixed(2);
-            }
-        }
-    }
-
     updateValueDisplay(id, value) {
         const valueSpan = document.getElementById(id + 'Value');
         if (valueSpan) valueSpan.textContent = value;
@@ -418,9 +332,6 @@ class UIController {
 
     getAdvancedSettings() {
         return {
-            enableKinematics: document.getElementById('enableKinematics')?.checked || false,
-            lcParam: parseFloat(document.getElementById('lcParam')?.value || 0),
-            lbParam: parseFloat(document.getElementById('lbParam')?.value || 47.9),
             enableCAxisOptimization: document.getElementById('enableCAxisOptimization')?.checked || false,
             enableCalibration: document.getElementById('enableCalibration')?.checked || false,
             calibrationCorrector: this.calibrationCorrector || null,
