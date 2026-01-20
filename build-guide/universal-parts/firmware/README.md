@@ -1,55 +1,73 @@
 # Rep5x - Firmware guide
 
-Firmware configuration and installation guide for Rep5x 5-axis printer conversions using Marlin 2.1.x.
+Firmware configuration and installation guide for Rep5x 5-axis printer conversions using Marlin.
 
-## Overview
+## Quick start: use the firmware builder
 
-Rep5x uses **Marlin 2.1.x** with custom configurations to enable 5-axis printing capability. Firmware must be specifically configured for both your **control board** and **printer model**.
+The easiest way to get your Rep5x firmware is to use the **Firmware Builder** tool:
 
-## Firmware structure
+**[tools.rep5x.com/firmware-builder](https://tools.rep5x.com/firmware-builder)**
 
-### Configuration matrix
-Firmware depends on two variables, requiring specific configs:
+The tool lets you:
+- Select your control board and printer model
+- Configure dimensions, motor settings, and display options
+- Set up inverse kinematics parameters
+- Build firmware directly in the cloud (no local setup required)
+- Download ready-to-flash `firmware.bin`
 
-| Printer Model | Control Board | Status | Location |
-|---------------|---------------|--------|----------|
-| **Ender 5 Pro** | BTT Octopus V1.1 | ✅ Working | [`../../printer-specific/ender-5-pro/firmware/octopus-v1.1/`](../../printer-specific/ender-5-pro/firmware/octopus-v1.1/) |
-| **Ender 3 V3 SE** | BTT Octopus V1.1 | ✅ Working | [`../../printer-specific/ender-3-v3-se/firmware/octopus-v1.1/`](../../printer-specific/ender-3-v3-se/firmware/octopus-v1.1/) |
+Your configuration is automatically saved when you build, so you can load it later to make adjustments.
 
-### File organization
+## Supported hardware
 
-#### Shared firmware resources (this folder)
-- **[INSTALLATION.md](INSTALLATION.md)** - General firmware flashing instructions
+### Control boards
 
-#### Printer-specific configs
-Complete, ready-to-use firmware configurations in printer folders:
-- **Configuration.h** - Main Marlin configuration file
-- **Configuration_adv.h** - Advanced features and settings  
-- **README.md** - Installation and tuning instructions
+| Board | Status | Notes |
+|-------|--------|-------|
+| **BTT Octopus V1.1** | Fully supported | 8 stepper drivers, recommended choice |
 
-## Control board support
+### Printers
 
-### Currently supported
+The firmware builder includes presets for common printers. Any printer can work with Rep5x as long as you know your:
+- Bed dimensions (X, Y)
+- Z height
+- Homing directions
+- Steps per mm for each axis
 
-#### BTT Octopus V1.1 (STM32F446ZE)
-- **Status**: ✅ Proven working configuration
-- **Stepper drivers**: 8 sockets (6 needed for 5-axis + 2 spare)
-- **Performance**: 180MHz ARM Cortex-M4, adequate for 5-axis calculations
-- **Compatibility**: Ender 5 Pro (tested), Ender 3 V3 SE (tested)
-- **Wiring**: [Complete wiring diagram](../electronics/control-boards/octopus-v1.1/wiring-diagram-octopus-v1.1.png)
+**Need a different board or printer?** [Ask on Discord](https://discord.gg/GNdah82VBg) and we'll add support.
 
-### Requirements for any control board
-- **Minimum 6 stepper drivers** (X, Y, Z, E, A, B)
-- **32-bit processor** recommended for kinematics calculations
-- **UART stepper drivers** for advanced features
-- **Adequate flash/RAM** for Marlin 2.1.x + Rep5x features
+## Manual installation
 
-## Support resources
+If you prefer to build firmware manually or need to customise beyond what the tool offers, see the detailed **[installation guide](INSTALLATION.md)**.
 
-### Documentation
-- **Installation guide**: [INSTALLATION.md](INSTALLATION.md)
-- **Wiring diagram**: [../electronics/control-boards/octopus-v1.1/wiring-diagram-octopus-v1.1.png](../electronics/control-boards/octopus-v1.1/wiring-diagram-octopus-v1.1.png)
+The manual process involves:
+1. Cloning the Rep5x-Marlin repository
+2. Copying configuration files
+3. Building with PlatformIO
+4. Flashing via SD card
 
----
+Reference configuration files are provided in this folder:
+- **Configuration.h** - Main Marlin configuration with Rep5x settings
+- **Configuration_adv.h** - Advanced features and kinematics
 
-**Ready to flash firmware?** Start with your printer-specific configuration and follow the step-by-step installation guide! Join our [Discord community](https://discord.gg/GNdah82VBg) for firmware support.
+## After flashing
+
+Once your firmware is installed:
+
+1. **Verify hardware** using [Printer Control](https://tools.rep5x.com/printer-control)
+   - Check axis directions
+   - Test endstops with M119
+   - Verify heaters work
+
+2. **Calibrate axes** using [Printer Setup](https://tools.rep5x.com/printer-setup)
+   - Set C-axis (yaw) zero position
+   - Set B-axis (tilt) zero position
+   - Calibrate steps per degree
+
+3. **Calibrate IK parameters** using [IK Calibration](https://tools.rep5x.com/calibration)
+   - Measure LC and LB offsets
+   - Fine-tune for accurate 5-axis motion
+
+## Support
+
+- **Discord community**: [discord.gg/GNdah82VBg](https://discord.gg/GNdah82VBg)
+- **Detailed instructions**: [INSTALLATION.md](INSTALLATION.md)
