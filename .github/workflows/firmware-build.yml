@@ -179,6 +179,13 @@ jobs:
             echo "Set DEFAULT_TOOL_CENTERPOINT_CONTROL to $IK_ENABLED"
           fi
 
+          # === C AXIS HOME POSITION ===
+          C_HOME_POS=$(echo "$CUSTOMIZATIONS" | jq -r '.cHomePos // empty')
+          if [ -n "$C_HOME_POS" ]; then
+            sed -i "s/^#define MANUAL_I_HOME_POS.*/#define MANUAL_I_HOME_POS $C_HOME_POS/" marlin/Marlin/Configuration.h
+            echo "Set MANUAL_I_HOME_POS to $C_HOME_POS"
+          fi
+
           # === NEOPIXEL COLOR ===
           NEOPIXEL_COLOR=$(echo "$CUSTOMIZATIONS" | jq -r '.neopixelColor // empty')
           if [ -n "$NEOPIXEL_COLOR" ]; then

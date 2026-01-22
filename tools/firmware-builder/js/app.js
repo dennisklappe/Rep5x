@@ -100,6 +100,7 @@ const wizardState = {
         ikEnabled: true,
         ikLC: 0,
         ikLB: 47.9,
+        cHomePos: 0,  // C axis position after homing (default 0)
         segmentsPerSecond: 200
     }
 };
@@ -164,6 +165,7 @@ function setupInputListeners() {
         { id: 'stepsE', key: 'stepsE' },
         { id: 'ikLC', key: 'ikLC' },
         { id: 'ikLB', key: 'ikLB' },
+        { id: 'cHomePos', key: 'cHomePos' },
         { id: 'segmentsPerSecond', key: 'segmentsPerSecond' }
     ];
 
@@ -564,6 +566,7 @@ function generateConfigSummary() {
         { label: 'Z height', value: `${config.zMaxPos} mm` },
         { label: 'Display', value: formatDisplayName(config.display) },
         { label: 'IK parameters', value: `LC=${config.ikLC}, LB=${config.ikLB}` },
+        { label: 'C home position', value: `${config.cHomePos}°` },
         { label: 'IK default', value: config.ikEnabled ? 'Enabled' : 'Disabled' }
     ];
 
@@ -770,6 +773,7 @@ async function buildFirmware() {
             ikEnabled: config.ikEnabled,
             ikLC: config.ikLC,
             ikLB: config.ikLB,
+            cHomePos: config.cHomePos,
             segmentsPerSecond: config.segmentsPerSecond
         };
 

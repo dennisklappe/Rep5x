@@ -111,6 +111,9 @@ const ConfigGenerator = {
         lines.push(`#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z ${config.ikLB}  // LB`);
         lines.push(`#define DEFAULT_SEGMENTS_PER_SECOND ${config.segmentsPerSecond}`);
         lines.push(`#define DEFAULT_TOOL_CENTERPOINT_CONTROL ${config.ikEnabled ? 'true' : 'false'}`);
+        lines.push('');
+        lines.push('// === C-axis homing ===');
+        lines.push(`#define MANUAL_I_HOME_POS ${config.cHomePos}  // C position after homing`);
 
         if (config.display === 'btt_mini_12864') {
             lines.push('');
@@ -386,6 +389,9 @@ ${config.zHomeDir > 0 ? '#define Z_SAFE_HOMING' : '//#define Z_SAFE_HOMING'}
 #define I_MAX_POS 180
 #define J_MIN_POS -90
 #define J_MAX_POS 90
+
+// C-axis home position (value after homing)
+#define MANUAL_I_HOME_POS ${config.cHomePos}
 
 #define MIN_SOFTWARE_ENDSTOPS
 #if ENABLED(MIN_SOFTWARE_ENDSTOPS)

@@ -506,17 +506,17 @@ class PrinterControlApp {
         try {
             // Disable IK during homing
             this.logToConsole('Disabling IK for homing...', 'info');
-            await this.printer.sendCommand('G49');
+            await this.printer.sendCommandAndWait('G49');
 
             this.logToConsole('Homing C & B axes...', 'info');
-            await this.printer.home(['C', 'B']);
+            await this.printer.sendCommandAndWait('G28 C B', 60000);
 
             this.logToConsole('Moving to C0 B0...', 'info');
-            await this.printer.moveTo({ c: 0, b: 0 });
+            await this.printer.sendCommandAndWait('G0 C0 B0 F3000', 30000);
 
             // Re-enable IK
             this.logToConsole('Re-enabling IK...', 'info');
-            await this.printer.sendCommand('G43.4');
+            await this.printer.sendCommandAndWait('G43.4');
 
             this.logToConsole('C/B at zero position', 'info');
         } catch (error) {
@@ -569,6 +569,11 @@ class PrinterControlApp {
     }
 
     logToConsole(message, type = 'received') {
+        // Filter out M105 temperature polling noise
+        if (message === '> M105' || message.includes('ok T:')) {
+            return;
+        }
+
         const console = document.getElementById('console');
         const line = document.createElement('div');
         line.className = `console-line ${type}`;
