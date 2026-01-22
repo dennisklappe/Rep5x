@@ -112,8 +112,14 @@ const ConfigGenerator = {
         lines.push(`#define DEFAULT_SEGMENTS_PER_SECOND ${config.segmentsPerSecond}`);
         lines.push(`#define DEFAULT_TOOL_CENTERPOINT_CONTROL ${config.ikEnabled ? 'true' : 'false'}`);
         lines.push('');
-        lines.push('// === C-axis homing ===');
+        lines.push('// === Axis positions ===');
         lines.push(`#define MANUAL_I_HOME_POS ${config.cHomePos}  // C position after homing`);
+        lines.push(`#define J_MIN_POS -${config.bRange}  // B travel limit`);
+        lines.push(`#define J_MAX_POS ${config.bRange}`);
+        if (config.eventAfterHomingEnabled && config.eventAfterHomingGcode) {
+            const escapedGcode = config.eventAfterHomingGcode.replace(/\n/g, '\\n');
+            lines.push(`#define EVENT_GCODE_AFTER_HOMING "${escapedGcode}"`);
+        }
 
         if (config.display === 'btt_mini_12864') {
             lines.push('');
@@ -387,11 +393,14 @@ ${config.zHomeDir > 0 ? '#define Z_SAFE_HOMING' : '//#define Z_SAFE_HOMING'}
 
 #define I_MIN_POS -180
 #define I_MAX_POS 180
-#define J_MIN_POS -90
-#define J_MAX_POS 90
+#define J_MIN_POS -${config.bRange}
+#define J_MAX_POS ${config.bRange}
 
-// C-axis home position (value after homing)
+// C-axis home position
 #define MANUAL_I_HOME_POS ${config.cHomePos}
+
+${config.eventAfterHomingEnabled && config.eventAfterHomingGcode ? `// Custom G-code after homing
+#define EVENT_GCODE_AFTER_HOMING "${config.eventAfterHomingGcode.replace(/\n/g, '\\n')}"` : '// EVENT_GCODE_AFTER_HOMING disabled'}
 
 #define MIN_SOFTWARE_ENDSTOPS
 #if ENABLED(MIN_SOFTWARE_ENDSTOPS)

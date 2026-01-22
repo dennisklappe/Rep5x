@@ -100,7 +100,10 @@ const wizardState = {
         ikEnabled: true,
         ikLC: 0,
         ikLB: 47.9,
-        cHomePos: 0,  // C axis position after homing (default 0)
+        cHomePos: 0,  // C axis coordinate at home switch
+        bRange: 135,  // B axis travel limit (±degrees)
+        eventAfterHomingEnabled: false,  // Whether to run custom G-code after homing
+        eventAfterHomingGcode: 'G49\nG0 C0 B0 F3000\nG43.4',  // Default: disable IK, move to B0 C0, re-enable IK
         segmentsPerSecond: 200
     }
 };
@@ -166,6 +169,7 @@ function setupInputListeners() {
         { id: 'ikLC', key: 'ikLC' },
         { id: 'ikLB', key: 'ikLB' },
         { id: 'cHomePos', key: 'cHomePos' },
+        { id: 'bRange', key: 'bRange' },
         { id: 'segmentsPerSecond', key: 'segmentsPerSecond' }
     ];
 
@@ -238,6 +242,24 @@ function setupInputListeners() {
             });
         }
     });
+
+    // Event after homing toggle and textarea
+    const eventAfterHomingCheckbox = document.getElementById('eventAfterHomingEnabled');
+    const eventAfterHomingContainer = document.getElementById('eventAfterHomingContainer');
+    const eventAfterHomingGcode = document.getElementById('eventAfterHomingGcode');
+
+    if (eventAfterHomingCheckbox && eventAfterHomingContainer) {
+        eventAfterHomingCheckbox.addEventListener('change', () => {
+            wizardState.config.eventAfterHomingEnabled = eventAfterHomingCheckbox.checked;
+            eventAfterHomingContainer.classList.toggle('hidden', !eventAfterHomingCheckbox.checked);
+        });
+    }
+
+    if (eventAfterHomingGcode) {
+        eventAfterHomingGcode.addEventListener('input', () => {
+            wizardState.config.eventAfterHomingGcode = eventAfterHomingGcode.value;
+        });
+    }
 }
 
 /**
@@ -566,7 +588,8 @@ function generateConfigSummary() {
         { label: 'Z height', value: `${config.zMaxPos} mm` },
         { label: 'Display', value: formatDisplayName(config.display) },
         { label: 'IK parameters', value: `LC=${config.ikLC}, LB=${config.ikLB}` },
-        { label: 'C home position', value: `${config.cHomePos}°` },
+        { label: 'Axis limits', value: `C home=${config.cHomePos}°, B=±${config.bRange}°` },
+        { label: 'Event after homing', value: config.eventAfterHomingEnabled ? 'Enabled' : 'Disabled' },
         { label: 'IK default', value: config.ikEnabled ? 'Enabled' : 'Disabled' }
     ];
 
@@ -774,6 +797,9 @@ async function buildFirmware() {
             ikLC: config.ikLC,
             ikLB: config.ikLB,
             cHomePos: config.cHomePos,
+            bRange: config.bRange,
+            eventAfterHomingEnabled: config.eventAfterHomingEnabled,
+            eventAfterHomingGcode: config.eventAfterHomingGcode,
             segmentsPerSecond: config.segmentsPerSecond
         };
 

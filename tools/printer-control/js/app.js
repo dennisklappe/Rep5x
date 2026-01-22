@@ -249,10 +249,6 @@ class PrinterControlApp {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
-
-        // IK parameters section
-        document.getElementById('queryIkParams').addEventListener('click', () => this.queryIkParams());
-        document.getElementById('setIkParams').addEventListener('click', () => this.setIkParams());
     }
 
     handleKeyboard(e) {
@@ -600,83 +596,6 @@ class PrinterControlApp {
         // Only auto-scroll if user hasn't scrolled up
         if (this.consoleAutoScroll) {
             console.scrollTop = console.scrollHeight;
-        }
-    }
-
-    /**
-     * Query IK parameters (LC/LB) from printer via M665
-     */
-    async queryIkParams() {
-        if (!this.printer.isConnected()) {
-            this.logToConsole('Not connected to printer', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('queryIkParams');
-        const originalText = btn.textContent;
-        btn.textContent = 'Querying...';
-        btn.disabled = true;
-
-        try {
-            // Send M665 to get current kinematics settings
-            // Response will be parsed from console output
-            this.ikQueryPending = true;
-            await this.printer.sendCommand('M665');
-
-            // Give printer time to respond, then check console for values
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.disabled = false;
-                this.logToConsole('Check console output for M665 values (J=LC, K=LB)', 'info');
-            }, 1000);
-
-        } catch (error) {
-            this.logToConsole(`Query error: ${error.message}`, 'error');
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
-    }
-
-    /**
-     * Set IK parameters (LC/LB) on printer and save to EEPROM
-     */
-    async setIkParams() {
-        if (!this.printer.isConnected()) {
-            this.logToConsole('Not connected to printer', 'error');
-            return;
-        }
-
-        const lcInput = document.getElementById('ikLcValue');
-        const lbInput = document.getElementById('ikLbValue');
-        const lc = parseFloat(lcInput.value) || 0;
-        const lb = parseFloat(lbInput.value) || 0;
-
-        const btn = document.getElementById('setIkParams');
-        const originalText = btn.textContent;
-        btn.textContent = 'Setting...';
-        btn.disabled = true;
-
-        try {
-            // Send M665 J<LC> K<LB> to set IK offsets
-            this.logToConsole(`Setting LC=${lc.toFixed(2)}, LB=${lb.toFixed(2)}...`, 'info');
-            await this.printer.sendCommandAndWait(`M665 J${lc.toFixed(2)} K${lb.toFixed(2)}`, 5000);
-
-            // Save to EEPROM
-            this.logToConsole('Saving to EEPROM...', 'info');
-            await this.printer.sendCommandAndWait('M500', 5000);
-
-            this.logToConsole('IK parameters saved!', 'info');
-            btn.textContent = 'Saved!';
-
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.disabled = false;
-            }, 1500);
-
-        } catch (error) {
-            this.logToConsole(`Set error: ${error.message}`, 'error');
-            btn.textContent = originalText;
-            btn.disabled = false;
         }
     }
 
