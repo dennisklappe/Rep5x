@@ -125,7 +125,6 @@ async function handleBuildRequest(request, env, corsHeaders) {
     invertB: body.invertB,
     invertE: body.invertE,
     // IK parameters
-    ikEnabled: body.ikEnabled,
     ikLC: body.ikLC,
     ikLB: body.ikLB,
     cHomePos: body.cHomePos,
@@ -288,7 +287,6 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     invertB: buildData.invertB,
     invertE: buildData.invertE,
     // IK parameters
-    ikEnabled: buildData.ikEnabled,
     ikLC: buildData.ikLC,
     ikLB: buildData.ikLB,
     cHomePos: buildData.cHomePos,

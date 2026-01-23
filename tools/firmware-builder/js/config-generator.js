@@ -110,7 +110,7 @@ const ConfigGenerator = {
         lines.push(`#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Y ${config.ikLC}  // LC`);
         lines.push(`#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z ${config.ikLB}  // LB`);
         lines.push(`#define DEFAULT_SEGMENTS_PER_SECOND ${config.segmentsPerSecond}`);
-        lines.push(`#define DEFAULT_TOOL_CENTERPOINT_CONTROL ${config.ikEnabled ? 'true' : 'false'}`);
+        lines.push('#define DEFAULT_TOOL_CENTERPOINT_CONTROL false  // Enable via G43.4 in start g-code');
         lines.push('');
         lines.push('// === Axis positions ===');
         lines.push(`#define MANUAL_I_HOME_POS ${config.cHomePos}  // C position after homing`);
