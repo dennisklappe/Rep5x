@@ -359,6 +359,16 @@
 
                         <!-- Camera View for Reference -->
                         <div class="mb-4" id="prepCameraPanel">
+                            <div class="flex items-center justify-end mb-2">
+                                <button id="prepCameraReconnect"
+                                    class="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Reconnect camera
+                                </button>
+                            </div>
                             <div class="camera-container bg-gray-900 rounded-lg h-camera">
                                 <video id="prepCamera" class="w-full h-full object-contain" autoplay
                                     playsinline></video>
@@ -475,7 +485,17 @@
                 <div class="bg-white rounded-xl shadow-sm p-6 mb-6" id="lcCameraPanel">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-semibold text-gray-900">Camera view</h3>
-                        <span class="text-sm text-gray-500">Align nozzle tip with the centre crosshair</span>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm text-gray-500">Align nozzle tip with the centre crosshair</span>
+                            <button id="lcCameraReconnect"
+                                class="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Reconnect
+                            </button>
+                        </div>
                     </div>
                     <div class="camera-container bg-gray-900 rounded-lg h-camera-lg">
                         <video id="lcCamera" class="w-full h-full object-contain" autoplay playsinline></video>
@@ -718,7 +738,17 @@
                 <div class="bg-white rounded-xl shadow-sm p-6 mb-6" id="lbCameraPanel">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-semibold text-gray-900">Camera view</h3>
-                        <span class="text-sm text-gray-500">Align nozzle tip with the centre crosshair</span>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm text-gray-500">Align nozzle tip with the centre crosshair</span>
+                            <button id="lbCameraReconnect"
+                                class="text-sm text-primary hover:text-primary/80 flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Reconnect
+                            </button>
+                        </div>
                     </div>
                     <div class="camera-container bg-gray-900 rounded-lg h-camera-lg">
                         <video id="lbCamera" class="w-full h-full object-contain" autoplay playsinline></video>

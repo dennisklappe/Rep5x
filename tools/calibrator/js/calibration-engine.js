@@ -154,17 +154,18 @@ class CalibrationEngine {
     }
 
     /**
-     * Get expected machine position for current C/B
-     * Uses reference position and IK to calculate where machine should be
+     * Get expected tool tip position for current C/B
+     * With firmware IK enabled, the expected position is always the reference position
+     * because firmware compensates to keep the tool tip at the reference location
      */
     getExpectedPosition(c, b) {
-        return this.applyInverseKinematics(
-            this.referencePosition.x,
-            this.referencePosition.y,
-            this.referencePosition.z,
-            c,
-            b
-        );
+        // With firmware IK, expected position is always the reference position
+        // The firmware handles all compensation to keep tool tip at this location
+        return {
+            x: this.referencePosition.x,
+            y: this.referencePosition.y,
+            z: this.referencePosition.z
+        };
     }
 
     /**

@@ -116,10 +116,6 @@ const ConfigGenerator = {
         lines.push(`#define MANUAL_I_HOME_POS ${config.cHomePos}  // C position after homing`);
         lines.push(`#define J_MIN_POS -${config.bRange}  // B travel limit`);
         lines.push(`#define J_MAX_POS ${config.bRange}`);
-        if (config.eventAfterHomingEnabled && config.eventAfterHomingGcode) {
-            const escapedGcode = config.eventAfterHomingGcode.replace(/\n/g, '\\n');
-            lines.push(`#define EVENT_GCODE_AFTER_HOMING "${escapedGcode}"`);
-        }
 
         if (config.display === 'btt_mini_12864') {
             lines.push('');
@@ -319,6 +315,12 @@ const ConfigGenerator = {
   #define PRINTABLE_RADIUS ${Math.min(config.xBedSize, config.yBedSize) / 2}
 #endif
 
+// Calibration correction - compensates for mechanical errors
+// Use M667 to set Fourier coefficients from Rep5x Calibrator tool
+#ifdef PENTA_AXIS_HH
+  #define CALIBRATION_CORRECTION
+#endif
+
 // @section endstops
 
 #define ENDSTOPPULLUPS
@@ -398,9 +400,6 @@ ${config.zHomeDir > 0 ? '#define Z_SAFE_HOMING' : '//#define Z_SAFE_HOMING'}
 
 // C-axis home position
 #define MANUAL_I_HOME_POS ${config.cHomePos}
-
-${config.eventAfterHomingEnabled && config.eventAfterHomingGcode ? `// Custom G-code after homing
-#define EVENT_GCODE_AFTER_HOMING "${config.eventAfterHomingGcode.replace(/\n/g, '\\n')}"` : '// EVENT_GCODE_AFTER_HOMING disabled'}
 
 #define MIN_SOFTWARE_ENDSTOPS
 #if ENABLED(MIN_SOFTWARE_ENDSTOPS)

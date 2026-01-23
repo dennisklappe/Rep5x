@@ -130,8 +130,6 @@ async function handleBuildRequest(request, env, corsHeaders) {
     ikLB: body.ikLB,
     cHomePos: body.cHomePos,
     bRange: body.bRange,
-    eventAfterHomingEnabled: body.eventAfterHomingEnabled,
-    eventAfterHomingGcode: body.eventAfterHomingGcode,
     segmentsPerSecond: body.segmentsPerSecond,
     // Timestamps
     createdAt: new Date().toISOString(),
@@ -295,8 +293,6 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     ikLB: buildData.ikLB,
     cHomePos: buildData.cHomePos,
     bRange: buildData.bRange,
-    eventAfterHomingEnabled: buildData.eventAfterHomingEnabled,
-    eventAfterHomingGcode: buildData.eventAfterHomingGcode,
     segmentsPerSecond: buildData.segmentsPerSecond
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }

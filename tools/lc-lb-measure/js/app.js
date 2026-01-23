@@ -114,6 +114,38 @@ class LcLbMeasureApp {
         document.querySelectorAll('.step-size-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.handleStepSizeButton(e));
         });
+
+        // Camera reconnect buttons
+        ['prepCameraReconnect', 'lcCameraReconnect', 'lbCameraReconnect'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => this.reconnectCamera());
+            }
+        });
+    }
+
+    /**
+     * Reconnect camera after disconnection
+     */
+    async reconnectCamera() {
+        try {
+            // Stop existing stream if any
+            this.camera.stop();
+
+            // Request new camera access
+            await this.camera.requestAccess();
+
+            // Re-attach to all video elements
+            this.camera.attachToElement('cameraPreview', 'crosshairPreview');
+            this.camera.attachToElement('prepCamera', 'prepCrosshair');
+            this.camera.attachToElement('lcCamera', 'lcCrosshair');
+            this.camera.attachToElement('lbCamera', 'lbCrosshair');
+
+            console.log('[Camera] Reconnected successfully');
+        } catch (error) {
+            console.error('[Camera] Reconnect failed:', error);
+            alert(`Camera reconnect failed: ${error.message}`);
+        }
     }
 
     /**

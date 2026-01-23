@@ -148,8 +148,9 @@ class StepPrepare {
 
     /**
      * Confirm the reference position (camera focus point / cone tip position)
+     * After confirmation, IK is enabled so firmware handles all position compensation
      */
-    confirmReference() {
+    async confirmReference() {
         const position = this.app.printer.getPosition();
 
         // Safety check: don't allow reference Z below MIN_SAFE_Z
@@ -164,13 +165,21 @@ class StepPrepare {
             x: position.x,
             y: position.y,
             z: position.z,
-            a: position.c,
+            c: position.c,
             b: position.b
         };
 
-        // Set reference position in calibration engine for IK calculations
+        // Set reference position in calibration engine
         this.app.engine.setReferencePosition(position.x, position.y, position.z);
 
+        // Enable IK - firmware will now handle position compensation for all C/B rotations
+        // This means we can just send G0 Xref Yref Zref Cangle Bangle and firmware does the rest
+        try {
+            await this.app.printer.sendCommandAndWait('G43.4', 5000);
+            console.log('[Prepare] IK enabled (G43.4) - firmware will handle position compensation');
+        } catch (error) {
+            console.warn('[Prepare] Failed to enable IK:', error);
+        }
 
         // Update UI
         document.getElementById('refPosDisplay').textContent =

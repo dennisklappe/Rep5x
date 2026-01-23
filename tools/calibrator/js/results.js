@@ -10,6 +10,8 @@ class StepResults {
         this.graphRendererB = null;  // Graph for B sweep (shows B angles at C=0)
         this.visualizer = null;      // 3D Nozzle position visualizer
         this.corrector = null;       // CalibrationCorrector for visualizer
+        this.existingCoeffs = null;  // Existing M667 coefficients from printer
+        this.refineMode = false;     // If true, add new offsets to existing
     }
 
     /**
@@ -26,11 +28,18 @@ class StepResults {
             this.downloadFile('calibration-data.json', json, 'application/json');
         });
 
-        document.getElementById('save-results-btn').addEventListener('click', () => {
-            const data = this.app.engine.exportJSON();
-            StorageManager.saveCalibrationData(data);
-            alert('Calibration data saved!');
+        document.getElementById('export-firmware-btn').addEventListener('click', () => {
+            this.exportToFirmware();
         });
+
+        // Refine mode toggle
+        const refineModeToggle = document.getElementById('refine-mode-toggle');
+        if (refineModeToggle) {
+            refineModeToggle.addEventListener('change', (e) => {
+                this.refineMode = e.target.checked;
+                console.log('[Results] Refine mode:', this.refineMode ? 'ON' : 'OFF');
+            });
+        }
 
         // Initialise both graphs
         const graphACanvas = document.getElementById('results-graph-c');
@@ -157,6 +166,13 @@ class StepResults {
             }
         }
 
+        // Read refine mode from checkbox (may have been set during calibration start)
+        const refineModeToggle = document.getElementById('refine-mode-toggle');
+        if (refineModeToggle) {
+            this.refineMode = refineModeToggle.checked;
+            console.log('[Results] Refine mode initialized:', this.refineMode ? 'ON' : 'OFF');
+        }
+
         // Hide next button on results page
         document.getElementById('nextBtn').style.display = 'none';
 
@@ -221,5 +237,157 @@ class StepResults {
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Export calibration data to firmware M667 commands
+     * Uses Fourier fitting to convert measurement points to coefficients
+     * If refine mode is enabled, adds new offsets to existing calibration
+     */
+    async exportToFirmware() {
+        try {
+            // Get measurement data from engine
+            const cSweepData = this.app.engine.getMeasurementsByB(0);  // C sweep at B=0
+            const bSweepData = this.app.engine.getMeasurementsByC(0);  // B sweep at C=0
+
+            if (cSweepData.length === 0 && bSweepData.length === 0) {
+                alert('No calibration data to export. Please complete calibration first.');
+                return;
+            }
+
+            // If refine mode, first read existing coefficients from printer
+            if (this.refineMode && this.app.printer && this.app.printer.isConnected()) {
+                console.log('[Results] Refine mode: reading existing coefficients...');
+                this.existingCoeffs = await this.readExistingCoefficients();
+                console.log('[Results] Existing coefficients:', this.existingCoeffs);
+            }
+
+            // Convert to format for Fourier fitting
+            const cSweepPoints = cSweepData.map(m => ({
+                c: m.c,
+                errorX: m.error?.x || 0,
+                errorY: m.error?.y || 0,
+                errorZ: m.error?.z || 0
+            }));
+
+            const bSweepPoints = bSweepData.map(m => ({
+                b: m.b,
+                errorX: m.error?.x || 0,
+                errorY: m.error?.y || 0,
+                errorZ: m.error?.z || 0
+            }));
+
+            console.log('C sweep points for fitting:', cSweepPoints);
+            console.log('B sweep points for fitting:', bSweepPoints);
+
+            // Fit Fourier series
+            // C sweep: 3 harmonics (7 coefficients per axis) - periodic 0-360
+            // B sweep: 2 harmonics (5 coefficients per axis) - not periodic
+            const cSweepCoeffs = FourierFitter.fitSweep(cSweepPoints, 'c', 3);
+            const bSweepCoeffs = FourierFitter.fitSweep(bSweepPoints, 'b', 2);
+
+            console.log('New C sweep coefficients:', cSweepCoeffs);
+            console.log('New B sweep coefficients:', bSweepCoeffs);
+
+            // Structure for combining
+            let finalCoeffs = {
+                cSweep: { x: cSweepCoeffs.x, y: cSweepCoeffs.y, z: cSweepCoeffs.z },
+                bSweep: { x: bSweepCoeffs.x, y: bSweepCoeffs.y, z: bSweepCoeffs.z }
+            };
+
+            // If refine mode, combine with existing
+            if (this.refineMode && this.existingCoeffs) {
+                console.log('[Results] Combining new offsets with existing calibration...');
+                finalCoeffs = FourierFitter.combineCoefficients(this.existingCoeffs, finalCoeffs);
+                console.log('[Results] Combined coefficients:', finalCoeffs);
+            }
+
+            // Generate M667 commands
+            const commands = FourierFitter.generateM667FromCoeffs(finalCoeffs);
+
+            // Send directly to printer if connected
+            await this.sendCalibrationToFirmware(commands);
+
+        } catch (error) {
+            console.error('Error exporting to firmware:', error);
+            alert('Error exporting to firmware: ' + error.message);
+        }
+    }
+
+    /**
+     * Read existing calibration coefficients from printer
+     */
+    async readExistingCoefficients() {
+        if (!this.app.printer || !this.app.printer.isConnected()) {
+            return null;
+        }
+
+        try {
+            // Send M667 with no parameters to get current state
+            const response = await this.app.printer.sendCommandAndCapture('M667', 5000);
+            console.log('[Results] M667 response:', response);
+
+            // Parse the response
+            return FourierFitter.parseM667Response(response);
+        } catch (error) {
+            console.warn('[Results] Could not read existing coefficients:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Send calibration commands directly to the printer
+     */
+    async sendCalibrationToFirmware(commands) {
+        // Check if printer is connected
+        if (!this.app.printer || !this.app.printer.isConnected()) {
+            alert('Printer not connected. Please reconnect to send calibration data.');
+            return;
+        }
+
+        const btn = document.getElementById('export-firmware-btn');
+        const originalText = btn?.textContent || 'Export to Firmware';
+
+        try {
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Sending...';
+            }
+
+            // Parse commands and send only the M667 lines (skip comments)
+            const lines = commands.split('\n').filter(line => {
+                const trimmed = line.trim();
+                return trimmed.startsWith('M667') || trimmed.startsWith('M500');
+            });
+
+            console.log('[Results] Sending calibration commands:', lines);
+
+            for (const line of lines) {
+                console.log('[Results] Sending:', line);
+                await this.app.printer.sendCommandAndWait(line, 5000);
+            }
+
+            // Save to EEPROM
+            await this.app.printer.sendCommandAndWait('M500', 5000);
+            console.log('[Results] Calibration saved to EEPROM');
+
+            if (btn) {
+                btn.textContent = 'Sent to Printer ✓';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }
+
+            alert('Calibration data sent to printer and saved to EEPROM!');
+
+        } catch (error) {
+            console.error('[Results] Error sending calibration:', error);
+            alert('Error sending calibration: ' + error.message);
+            if (btn) {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
     }
 }

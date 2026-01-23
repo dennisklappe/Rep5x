@@ -73,6 +73,10 @@ class StepConnect {
 
                     await this.app.printer.connectToPort(ports[0]);
                     btn.textContent = 'Connected';
+
+                    // Initialize printer for LC/LB measurement
+                    await this.initializePrinterForMeasurement();
+
                     this.updateNextButton();
                 }
             } catch (error) {
@@ -119,6 +123,9 @@ class StepConnect {
         try {
             await this.app.printer.connect();
             btn.textContent = 'Connected';
+
+            // Initialize printer for LC/LB measurement
+            await this.initializePrinterForMeasurement();
         } catch (error) {
             btn.textContent = 'Connect';
             alert(`Connection failed: ${error.message}`);
@@ -126,6 +133,49 @@ class StepConnect {
 
         btn.disabled = false;
         this.updateNextButton();
+    }
+
+    /**
+     * Initialize printer settings for LC/LB measurement
+     * Disables IK and calibration correction, queries current LC/LB values
+     */
+    async initializePrinterForMeasurement() {
+        try {
+            // Disable IK corrections - we want raw machine positions
+            await this.app.printer.sendCommandAndWait('G49', 3000);
+            console.log('[Connect] Disabled IK corrections (G49)');
+
+            // Disable calibration correction
+            await this.app.printer.sendCommandAndWait('M667 S0', 3000);
+            console.log('[Connect] Disabled calibration correction (M667 S0)');
+
+            // Query current LC/LB values from firmware
+            const { lc, lb } = await this.queryIkParamsFromPrinter();
+
+            // Update footer displays
+            const footerLcInput = document.getElementById('savedLcValue');
+            const footerLbInput = document.getElementById('savedLbValue');
+            if (footerLcInput) footerLcInput.value = lc.toFixed(2);
+            if (footerLbInput) footerLbInput.value = lb.toFixed(2);
+
+        } catch (error) {
+            console.warn('[Connect] Error initializing printer:', error);
+        }
+    }
+
+    /**
+     * Query LC and LB values from printer firmware via M665
+     * @returns {Promise<{lc: number, lb: number}>}
+     */
+    async queryIkParamsFromPrinter() {
+        try {
+            const params = await this.app.printer.queryM665();
+            console.log(`[Connect] Read from printer: LC=${params.lc}, LB=${params.lb}`);
+            return { lc: params.lc, lb: params.lb };
+        } catch (e) {
+            console.warn('[Connect] Failed to query M665:', e);
+            return { lc: 0, lb: 54.67 };
+        }
     }
 
     /**

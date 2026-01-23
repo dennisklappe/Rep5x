@@ -35,16 +35,16 @@ class StepResults {
         document.getElementById('finalLcValue').textContent =
             MeasurementEngine.formatValue(results.lc);
         document.getElementById('finalLcConsistency').innerHTML =
-            results.lcConsistency !== null
-                ? `Asymmetry: &plusmn;${MeasurementEngine.formatValue(results.lcConsistency, 3)}mm`
+            results.lcUncertainty !== null
+                ? `Uncertainty: &plusmn;${MeasurementEngine.formatValue(results.lcUncertainty, 3)}mm`
                 : '';
 
         // Display LB
         document.getElementById('finalLbValue').textContent =
             MeasurementEngine.formatValue(results.lb);
         document.getElementById('finalLbConsistency').innerHTML =
-            results.lbAsymmetry !== null
-                ? `Asymmetry: ${MeasurementEngine.formatValue(results.lbAsymmetry, 3)}mm`
+            results.lbUncertainty !== null
+                ? `Uncertainty: &plusmn;${MeasurementEngine.formatValue(results.lbUncertainty, 3)}mm`
                 : '';
 
         // Hide next button on final step
@@ -73,6 +73,7 @@ class StepResults {
 
     /**
      * Send LC/LB values to printer firmware EEPROM
+     * Only sends values that were actually measured
      */
     async sendToPrinter() {
         const results = this.app.calibration.getResults();
@@ -85,20 +86,33 @@ class StepResults {
             return;
         }
 
+        // Check if we have any values to send
+        if (results.lc === null && results.lb === null) {
+            alert('No measurements to send. Please complete at least one measurement.');
+            return;
+        }
+
         try {
             btn.disabled = true;
             btn.textContent = 'Sending...';
 
-            // Format values with 2 decimal places
-            const lc = results.lc !== null ? results.lc.toFixed(2) : '0.00';
-            const lb = results.lb !== null ? results.lb.toFixed(2) : '0.00';
-
-            // Send M665 J<LC> K<LB> to set IK offsets
+            // Build M665 command with only measured values
             // J = rotational_offset_y (LC), K = rotational_offset_z (LB)
-            await this.app.printer.sendCommandAndWait(`M665 J${lc} K${lb}`, 5000);
+            let m665Params = [];
+            if (results.lc !== null) {
+                m665Params.push(`J${results.lc.toFixed(2)}`);
+                console.log(`[Results] Sending LC=${results.lc.toFixed(2)}`);
+            }
+            if (results.lb !== null) {
+                m665Params.push(`K${results.lb.toFixed(2)}`);
+                console.log(`[Results] Sending LB=${results.lb.toFixed(2)}`);
+            }
+
+            await this.app.printer.sendCommandAndWait(`M665 ${m665Params.join(' ')}`, 5000);
 
             // Save to EEPROM
             await this.app.printer.sendCommandAndWait('M500', 5000);
+            console.log('[Results] Saved to EEPROM');
 
             // Re-enable IK with new values
             await this.app.printer.sendCommandAndWait('G43.4', 5000);

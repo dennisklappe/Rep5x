@@ -239,6 +239,26 @@
                     </div>
                 </div>
 
+                <!-- G-code File -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <h3 class="text-md font-semibold mb-3">G-code file</h3>
+                    <div class="flex flex-col gap-2">
+                        <label class="btn-outline py-2 px-3 rounded-lg text-sm font-medium text-center cursor-pointer hover:bg-gray-100">
+                            <input type="file" id="gcodeFile" accept=".gcode,.gc,.nc,.txt" class="hidden">
+                            Choose file
+                        </label>
+                        <div class="flex gap-2">
+                            <button id="gcodePlayBtn" class="flex-1 btn-primary py-2 px-3 rounded-lg text-sm font-medium" disabled>
+                                Play
+                            </button>
+                            <button id="gcodeStopBtn" class="flex-1 btn-outline py-2 px-3 rounded-lg text-sm font-medium">
+                                Stop
+                            </button>
+                        </div>
+                        <div id="gcodeProgress" class="text-xs text-gray-500 text-center">No file</div>
+                    </div>
+                </div>
+
                 <!-- Extrusion Control -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                     <h3 class="text-md font-semibold mb-3">Extrusion</h3>

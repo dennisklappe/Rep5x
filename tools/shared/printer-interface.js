@@ -54,6 +54,7 @@ class PrinterInterface {
         this.pendingOkResolve = null;
         this.pendingM92Resolve = null;
         this.pendingM206Resolve = null;
+        this.pendingM665Resolve = null;
     }
 
     /**
@@ -250,6 +251,11 @@ class PrinterInterface {
      * @param {string} line - Response line
      */
     handleResponseLine(line) {
+        // If capturing, send line to capture callback
+        if (this.pendingCaptureResolve) {
+            this.pendingCaptureResolve(line);
+        }
+
         // Check for position response (M114)
         // Format: "X:100.00 Y:50.00 Z:25.00 A:0.00 B:0.00" or similar
         const posMatch = line.match(/X:([-\d.]+)\s*Y:([-\d.]+)\s*Z:([-\d.]+)/i);
@@ -327,6 +333,20 @@ class PrinterInterface {
             }
         }
 
+        // Check for M665 response (IK parameters LC/LB)
+        // Marlin PENTA_AXIS_HH format: M665 S200 J1.6 K54.67
+        if (line.includes('M665') && this.pendingM665Resolve) {
+            const jMatch = line.match(/J([-\d.]+)/i);
+            const kMatch = line.match(/K([-\d.]+)/i);
+            const sMatch = line.match(/S([-\d.]+)/i);
+            this.pendingM665Resolve({
+                lc: jMatch ? parseFloat(jMatch[1]) : 0,
+                lb: kMatch ? parseFloat(kMatch[1]) : 54.67,
+                segmentsPerSecond: sMatch ? parseFloat(sMatch[1]) : 200
+            });
+            this.pendingM665Resolve = null;
+        }
+
         // Log responses if enabled (configurable per tool)
         if (this.logResponses) {
             this.log(`< ${line}`);
@@ -402,6 +422,53 @@ class PrinterInterface {
             } catch (error) {
                 clearTimeout(timeoutId);
                 this.pendingOkResolve = null;
+                this.log(`Send error: ${error.message}`);
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Send a command and capture all response lines until "ok"
+     * @param {string} command - G-code command to send
+     * @param {number} timeout - Timeout in ms
+     * @returns {Promise<string>} All response lines joined by newlines
+     */
+    async sendCommandAndCapture(command, timeout = 10000) {
+        if (this.testMode.enabled) {
+            return 'Test mode - no response';
+        }
+
+        if (!this.isConnected()) {
+            throw new Error('Not connected to printer');
+        }
+
+        return new Promise(async (resolve, reject) => {
+            const capturedLines = [];
+            const timeoutId = setTimeout(() => {
+                this.pendingCaptureResolve = null;
+                reject(new Error(`Command timeout: ${command}`));
+            }, timeout);
+
+            this.pendingCaptureResolve = (line) => {
+                capturedLines.push(line);
+                // Check if this is the final "ok" line
+                if (line.toLowerCase().trim() === 'ok') {
+                    clearTimeout(timeoutId);
+                    this.pendingCaptureResolve = null;
+                    resolve(capturedLines.join('\n'));
+                }
+            };
+
+            try {
+                const encoder = new TextEncoder();
+                const writer = this.port.writable.getWriter();
+                await writer.write(encoder.encode(command + '\n'));
+                writer.releaseLock();
+                this.log(`> ${command}`);
+            } catch (error) {
+                clearTimeout(timeoutId);
+                this.pendingCaptureResolve = null;
                 this.log(`Send error: ${error.message}`);
                 reject(error);
             }
@@ -534,6 +601,30 @@ class PrinterInterface {
             };
 
             this.sendCommand('M503'); // Report settings, includes M206
+        });
+    }
+
+    /**
+     * Query M665 (IK parameters LC/LB)
+     * @returns {Promise<{lc: number, lb: number, segmentsPerSecond: number}>}
+     */
+    async queryM665() {
+        if (this.testMode.enabled) {
+            return { lc: 1.6, lb: 54.67, segmentsPerSecond: 200 }; // Default test values
+        }
+
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                this.pendingM665Resolve = null;
+                reject(new Error('M665 query timeout'));
+            }, 5000);
+
+            this.pendingM665Resolve = (params) => {
+                clearTimeout(timeout);
+                resolve(params);
+            };
+
+            this.sendCommand('M665'); // Query IK settings
         });
     }
 

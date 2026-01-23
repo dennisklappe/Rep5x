@@ -50,6 +50,10 @@ class StepConnect {
 
                     await this.app.printer.connectToPort(ports[0]);
                     btn.textContent = 'Connected';
+
+                    // Initialize printer for setup
+                    await this.initializePrinterForSetup();
+
                     document.getElementById('nextBtn').disabled = false;
                 }
             } catch (error) {
@@ -68,12 +72,33 @@ class StepConnect {
         try {
             await this.app.printer.connect();
             btn.textContent = 'Connected';
+
+            // Initialize printer for setup
+            await this.initializePrinterForSetup();
         } catch (error) {
             btn.textContent = 'Connect';
             alert(`Connection failed: ${error.message}`);
         }
 
         btn.disabled = false;
+    }
+
+    /**
+     * Initialize printer settings for setup
+     * Disables IK and calibration correction for raw machine positions
+     */
+    async initializePrinterForSetup() {
+        try {
+            // Disable IK corrections - we want raw machine positions
+            await this.app.printer.sendCommandAndWait('G49', 3000);
+            console.log('[Connect] Disabled IK corrections (G49)');
+
+            // Disable calibration correction
+            await this.app.printer.sendCommandAndWait('M667 S0', 3000);
+            console.log('[Connect] Disabled calibration correction (M667 S0)');
+        } catch (error) {
+            console.warn('[Connect] Error initializing printer:', error);
+        }
     }
 
     /**

@@ -638,13 +638,6 @@
                                 <button class="flex-1 px-3 py-2 text-sm border rounded active" data-view="c">C sweep</button>
                                 <button class="flex-1 px-3 py-2 text-sm border rounded" data-view="b">B sweep</button>
                             </div>
-                            <!-- Z Safety Offset -->
-                            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                <p class="text-sm text-gray-600">Z safety lift:</p>
-                                <input type="number" id="zSafetyOffset" value="20" min="10" max="100"
-                                    class="w-20 px-2 py-1 text-sm border rounded">
-                                <span class="text-sm text-gray-500">mm</span>
-                            </div>
                         </div>
 
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -943,13 +936,19 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-center gap-3">
-                        <button id="export-csv-btn" class="btn-outline px-4 py-2 rounded-lg font-medium">Export
-                            CSV</button>
-                        <button id="export-json-btn" class="btn-outline px-4 py-2 rounded-lg font-medium">Export
-                            JSON</button>
-                        <button id="save-results-btn" class="btn-success px-6 py-2 rounded-lg font-medium">Save
-                            results</button>
+                    <div class="flex justify-center gap-3 mb-3">
+                        <button id="export-csv-btn" class="btn-outline px-4 py-2 rounded-lg font-medium">Export CSV</button>
+                        <button id="export-json-btn" class="btn-outline px-4 py-2 rounded-lg font-medium">Export JSON</button>
+                    </div>
+                    <div class="flex flex-col items-center gap-3">
+                        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                            <input type="checkbox" id="refine-mode-toggle" class="form-checkbox h-4 w-4 text-primary rounded">
+                            <span>Refine mode</span>
+                            <span class="text-xs text-gray-400">(add to existing calibration)</span>
+                        </label>
+                        <button id="export-firmware-btn" class="btn-primary px-6 py-3 rounded-lg font-medium">
+                            Export to Firmware (M667)
+                        </button>
                     </div>
                 </div>
             </div>
@@ -984,6 +983,7 @@
     <script src="../shared/calibration-corrector.js"></script>
     <script src="../shared/c-axis-optimizer.js"></script>
     <script src="../shared/calibration-visualizer-3d.js"></script>
+    <script src="../shared/fourier-fitter.js"></script>
 
     <!-- Tool-specific scripts -->
     <script src="js/calibration-engine.js"></script>

@@ -47,6 +47,8 @@ class StepBAxis {
             if (this.needsHoming) {
                 document.getElementById('confirmBPosition').textContent = 'Homing B...';
                 await this.app.printer.sendCommandAndWait('G28 B', 60000);
+                // Ensure IK is disabled after homing
+                await this.app.printer.sendCommandAndWait('G49', 3000);
                 this.needsHoming = false;
             }
 

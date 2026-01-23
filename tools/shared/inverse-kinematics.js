@@ -10,7 +10,7 @@ class InverseKinematics {
      * @param {number} lc - LC parameter (C-axis offset, default 0)
      * @param {number} lb - LB parameter (B-axis offset, default 47.9)
      */
-    constructor(lc = 0, lb = 47.9) {
+    constructor(lc = 0, lb = 54.67) {
         this.lc = lc;
         this.lb = lb;
     }
@@ -84,7 +84,7 @@ class InverseKinematics {
  * @param {number} lb - LB parameter (default 47.9)
  * @returns {Object} Corrected coordinates {x, y, z, c, b}
  */
-function applyInverseKinematics(x, y, z, c, b, lc = 0, lb = 47.9) {
+function applyInverseKinematics(x, y, z, c, b, lc = 0, lb = 54.67) {
     const cRad = c * Math.PI / 180;
     const bRad = b * Math.PI / 180;
 
@@ -109,7 +109,7 @@ function applyInverseKinematics(x, y, z, c, b, lc = 0, lb = 47.9) {
  * @param {number} lb - LB parameter
  * @returns {string} Processed G-code
  */
-function processGcodeWithIK(rawGcode, enableKinematics = true, lc = 0, lb = 47.9) {
+function processGcodeWithIK(rawGcode, enableKinematics = true, lc = 0, lb = 54.67) {
     if (!enableKinematics) {
         return rawGcode;
     }

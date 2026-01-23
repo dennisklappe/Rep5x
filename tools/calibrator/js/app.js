@@ -72,8 +72,9 @@ class CalibratorApp {
      * Load saved LC/LB values
      */
     loadSavedLcLb() {
-        const lc =StorageManager.loadLc() || 0;
-        const lb = StorageManager.loadLb() || 47;
+        const results = StorageManager.loadCalibrationResults();
+        const lc = results?.lc ?? 0;
+        const lb = results?.lb ?? 54.67;
         this.engine.setLcLb(lc, lb);
     }
 

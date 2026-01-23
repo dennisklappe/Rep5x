@@ -47,6 +47,8 @@ class StepCAxis {
             if (this.needsHoming) {
                 document.getElementById('confirmCPosition').textContent = 'Homing C...';
                 await this.app.printer.sendCommandAndWait('G28 C', 60000);
+                // Ensure IK is disabled after homing
+                await this.app.printer.sendCommandAndWait('G49', 3000);
                 this.needsHoming = false;
             }
 

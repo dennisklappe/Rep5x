@@ -36,9 +36,9 @@ class MeasurementEngine {
         // Calculated results
         this.results = {
             lc: null,
-            lcConsistency: null,
+            lcUncertainty: null,
             lb: null,
-            lbAsymmetry: null
+            lbUncertainty: null
         };
     }
 
@@ -53,7 +53,8 @@ class MeasurementEngine {
             c270: null
         };
         this.results.lc = null;
-        this.results.lcConsistency = null;
+        this.results.lcUncertainty = null;
+        this.lcResult = null;
     }
 
     /**
@@ -66,7 +67,7 @@ class MeasurementEngine {
             b90: null
         };
         this.results.lb = null;
-        this.results.lbAsymmetry = null;
+        this.results.lbUncertainty = null;
         this.lbResult = null;
     }
 
@@ -153,16 +154,16 @@ class MeasurementEngine {
         // Average for final value
         const lcAverage = (lcFromX + lcFromY) / 2;
 
-        // Consistency check (difference between estimates)
-        const consistency = Math.abs(lcFromX - lcFromY);
+        // Uncertainty is half the difference between estimates
+        const uncertainty = Math.abs(lcFromX - lcFromY) / 2;
 
         this.results.lc = lcAverage;
-        this.results.lcConsistency = consistency;
-
+        this.results.lcUncertainty = uncertainty;
+        this.lcResult = { value: lcAverage, uncertainty: uncertainty };
 
         return {
             value: lcAverage,
-            consistency: consistency,
+            uncertainty: uncertainty,
             estimates: {
                 fromX: lcFromX,
                 fromY: lcFromY
@@ -178,13 +179,15 @@ class MeasurementEngine {
      * Measurement sequence:
      * - B0° at C=0° (reference)
      * - B-90° at C=0° → LB = X_ref - X_Bneg90
-     * - B+90° at C=180° → LB = X_ref + 2·LC - X_B90
+     * - B+90° at C=180° → LB = X_ref - X_B90
      *
-     * Using C=180 for B+90 helps validate LC and provides cross-check.
-     * IK formula: X = X' + LC·(1 - cos(C)) + cos(C)·sin(B)·LB
-     * At C=180, B=90: X = X' + 2·LC - LB
+     * IK formula for X: X = X' - sin(C)·LC + cos(C)·sin(B)·LB
+     * At C=0, B=-90:  X = X' - LB  → LB = X_ref - X
+     * At C=180, B=+90: X = X' - LB  → LB = X_ref - X (sin(180)=0, so no LC term)
      *
-     * @returns {object} { value, asymmetry, estimates } or null if incomplete
+     * Both measurements should give the same LB. Difference indicates mechanical error.
+     *
+     * @returns {object} { value, uncertainty, estimates } or null if incomplete
      */
     calculateLb() {
         if (!this.isLbComplete()) {
@@ -196,43 +199,40 @@ class MeasurementEngine {
         const bNeg90 = this.lbData.bNeg90;
         const b90 = this.lbData.b90;
 
-        // Get LC value (from previous measurement or default to 0)
-        const lc = this.results.lc ?? 0;
-
-        // From B-90 at C=0: LB = X_ref - X_Bneg90
+        // From B-90 at C=0: X = X' - LB, so LB = X_ref - X_Bneg90
         const lbFromNeg90 = b0.x - bNeg90.x;
 
-        // From B+90 at C=180: X = X_ref + 2·LC - LB, so LB = X_ref + 2·LC - X_B90
-        // Check if B+90 was measured at C=180
+        // From B+90: formula depends on C angle
+        // At C=0:   X = X' + LB, so LB = X_B90 - X_ref
+        // At C=180: X = X' - LB, so LB = X_ref - X_B90 (cos flips sign, sin(180)=0 so no LC)
         const b90_cAngle = b90.c ?? 0;
         let lbFromPos90;
 
         if (b90_cAngle === 180) {
-            // B+90 measured at C=180: account for LC
-            lbFromPos90 = b0.x + 2 * lc - b90.x;
+            // B+90 measured at C=180: same formula as B-90 (cos(180)=-1 flips the sign)
+            lbFromPos90 = b0.x - b90.x;
         } else {
-            // B+90 measured at C=0 (legacy/fallback): simple X difference
+            // B+90 measured at C=0: opposite sign
             lbFromPos90 = b90.x - b0.x;
         }
 
         // Average both measurements
         const lbAverage = (lbFromPos90 + lbFromNeg90) / 2;
 
-        // Consistency check - if LC is correct, both estimates should be similar
-        const consistency = Math.abs(lbFromPos90 - lbFromNeg90);
+        // Uncertainty is half the difference between estimates
+        const uncertainty = Math.abs(lbFromPos90 - lbFromNeg90) / 2;
 
-
-        if (consistency > 1.0 && b90_cAngle === 180) {
-            console.warn(`[LB Calc] High asymmetry (${consistency.toFixed(2)}mm) may indicate LC value (${lc.toFixed(2)}) is incorrect`);
+        if (uncertainty > 0.5) {
+            console.warn(`[LB Calc] High uncertainty (±${uncertainty.toFixed(2)}mm) indicates mechanical error or measurement issue`);
         }
 
         this.results.lb = lbAverage;
-        this.results.lbAsymmetry = consistency;
-        this.lbResult = { value: lbAverage, consistency: consistency };
+        this.results.lbUncertainty = uncertainty;
+        this.lbResult = { value: lbAverage, uncertainty: uncertainty };
 
         return {
             value: lbAverage,
-            consistency: consistency,
+            uncertainty: uncertainty,
             estimates: {
                 fromBNeg90: lbFromNeg90,
                 fromB90: lbFromPos90
@@ -267,7 +267,7 @@ class MeasurementEngine {
 
     /**
      * Get final results
-     * @returns {object} { lc, lcConsistency, lb, lbAsymmetry }
+     * @returns {object} { lc, lcUncertainty, lb, lbUncertainty }
      */
     getResults() {
         return { ...this.results };
@@ -299,15 +299,16 @@ class MeasurementEngine {
      * @param {number} lb - LB parameter (B-axis offset)
      * @returns {object} Machine position { x, y, z }
      */
-    static applyInverseKinematics(tipX, tipY, tipZ, c, b, lc = 0, lb = 47) {
+    static applyInverseKinematics(tipX, tipY, tipZ, c, b, lc = 0, lb = 54.67) {
         const cRad = c * Math.PI / 180;
         const bRad = b * Math.PI / 180;
 
-        // X = X' + sin(C)·LC + cos(C)·sin(B)·LB
-        const machineX = tipX + Math.sin(cRad) * lc + Math.cos(cRad) * Math.sin(bRad) * lb;
+        // Formulas match firmware penta_axis_head_head.cpp native_to_joint()
+        // X = X' - sin(C)·LC + cos(C)·sin(B)·LB
+        const machineX = tipX - Math.sin(cRad) * lc + Math.cos(cRad) * Math.sin(bRad) * lb;
 
-        // Y = Y' + (cos(C) - 1)·LC - sin(C)·sin(B)·LB
-        const machineY = tipY + (Math.cos(cRad) - 1) * lc - Math.sin(cRad) * Math.sin(bRad) * lb;
+        // Y = Y' + (cos(C) - 1)·LC + sin(C)·sin(B)·LB
+        const machineY = tipY + (Math.cos(cRad) - 1) * lc + Math.sin(cRad) * Math.sin(bRad) * lb;
 
         // Z = Z' + (cos(B) - 1)·LB
         const machineZ = tipZ + (Math.cos(bRad) - 1) * lb;
@@ -325,7 +326,7 @@ class MeasurementEngine {
      * @param {number} zSafety - Z safety offset for travel moves (default 20)
      * @returns {object} Positions for each angle
      */
-    static calculateLbPositions(refPosition, lc = 0, lb = 47, zSafety = 20) {
+    static calculateLbPositions(refPosition, lc = 0, lb = 54.67, zSafety = 20) {
         // At B=0, machine position = tip position (no correction)
         const tipX = refPosition.x;
         const tipY = refPosition.y;
@@ -359,7 +360,7 @@ class MeasurementEngine {
      * @param {number} lb - LB parameter (default 47)
      * @returns {object} Positions for each angle
      */
-    static calculateLcPositions(refPosition, lc = 0, lb = 47) {
+    static calculateLcPositions(refPosition, lc = 0, lb = 54.67) {
         // At C=0, B=0, machine position = tip position
         const tipX = refPosition.x;
         const tipY = refPosition.y;

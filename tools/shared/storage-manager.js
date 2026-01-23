@@ -95,6 +95,37 @@ class StorageManager {
     }
 
     /**
+     * Save calibration results (LC, LB, and optional fit data)
+     * @param {number} lc - LC value
+     * @param {number} lb - LB value
+     * @param {Object} fitData - Optional fit data
+     */
+    static saveCalibrationResults(lc, lb, fitData = null) {
+        const data = { lc, lb, fitData, timestamp: Date.now() };
+        StorageManager.save('calibration_results', data);
+    }
+
+    /**
+     * Load calibration results
+     * @returns {Object|null} - { lc, lb, fitData, timestamp } or null
+     */
+    static loadCalibrationResults() {
+        return StorageManager.load('calibration_results');
+    }
+
+    /**
+     * Clear calibration results
+     */
+    static clearCalibrationResults() {
+        const fullKey = StorageManager.PREFIX + 'calibration_results';
+        try {
+            localStorage.removeItem(fullKey);
+        } catch (e) {
+            StorageManager.setCookie(fullKey, '', -1);
+        }
+    }
+
+    /**
      * Set a cookie
      * @param {string} name - Cookie name
      * @param {string} value - Cookie value

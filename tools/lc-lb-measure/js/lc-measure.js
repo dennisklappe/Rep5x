@@ -13,7 +13,7 @@ class StepLcMeasure {
         // IK-assisted positioning parameters
         this.useIkPositioning = false;
         this.estimatedLc = 0;
-        this.estimatedLb = 47;
+        this.estimatedLb = 54.67;
         this.referencePosition = null;  // Tip position at C=0 (camera focus point)
         this.zSafetyOffset = 0;  // No Z lift needed for LC measurement (rotating around vertical axis)
         this.coneSafetyMargin = 10; // Extra mm to stay above cone when using cone method
@@ -63,10 +63,79 @@ class StepLcMeasure {
      * @param {number} lc - Estimated LC value
      * @param {number} lb - Estimated LB value
      */
-    enableIkPositioning(lc = 0, lb = 47) {
+    enableIkPositioning(lc = 0, lb = 54.67) {
         this.useIkPositioning = true;
         this.estimatedLc = lc;
         this.estimatedLb = lb;
+    }
+
+    /**
+     * Query LC and LB values from printer firmware via M665
+     * @returns {Promise<{lc: number, lb: number}>}
+     */
+    async queryIkParamsFromPrinter() {
+        if (!this.app.printer || !this.app.printer.isConnected()) {
+            console.warn('[LC Cal] Printer not connected, using defaults');
+            return { lc: 0, lb: 54.67 };
+        }
+
+        try {
+            const params = await this.app.printer.queryM665();
+            console.log(`[LC Cal] Read from printer: LC=${params.lc}, LB=${params.lb}`);
+            return { lc: params.lc, lb: params.lb };
+        } catch (e) {
+            console.warn('[LC Cal] Failed to query M665:', e);
+            return { lc: 0, lb: 54.67 };
+        }
+    }
+
+    /**
+     * Set up listeners for LC/LB parameter inputs to send changes to printer
+     */
+    setupIkParamListeners() {
+        const lcInput = document.getElementById('lcIkLcEstimate');
+        const lbInput = document.getElementById('lcIkLbEstimate');
+
+        // Remove any existing listeners by cloning and replacing
+        if (lcInput) {
+            const newLcInput = lcInput.cloneNode(true);
+            lcInput.parentNode.replaceChild(newLcInput, lcInput);
+
+            newLcInput.addEventListener('change', async (e) => {
+                const lc = parseFloat(e.target.value) || 0;
+                this.estimatedLc = lc;
+
+                // Send to printer
+                if (this.app.printer && this.app.printer.isConnected()) {
+                    try {
+                        await this.app.printer.sendCommandAndWait(`M665 J${lc.toFixed(2)}`, 3000);
+                        console.log(`[LC Cal] Sent LC=${lc} to printer`);
+                    } catch (err) {
+                        console.warn('[LC Cal] Failed to send LC to printer:', err);
+                    }
+                }
+            });
+        }
+
+        if (lbInput) {
+            const newLbInput = lbInput.cloneNode(true);
+            lbInput.parentNode.replaceChild(newLbInput, lbInput);
+
+            newLbInput.addEventListener('change', async (e) => {
+                const lb = parseFloat(e.target.value) || 47;
+                this.estimatedLb = lb;
+
+                // Send to printer
+                if (this.app.printer && this.app.printer.isConnected()) {
+                    try {
+                        await this.app.printer.sendCommandAndWait(`M665 K${lb.toFixed(2)}`, 3000);
+                        console.log(`[LC Cal] Sent LB=${lb} to printer`);
+                    } catch (err) {
+                        console.warn('[LC Cal] Failed to send LB to printer:', err);
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -77,8 +146,10 @@ class StepLcMeasure {
     calculateIkPosition(cAngle) {
         if (!this.referencePosition) return null;
 
+        console.log(`[LC Cal] calculateIkPosition: C=${cAngle}, ref=(${this.referencePosition.x.toFixed(2)}, ${this.referencePosition.y.toFixed(2)}), LC=${this.estimatedLc}, LB=${this.estimatedLb}`);
+
         // Use MeasurementEngine's IK function
-        return MeasurementEngine.applyInverseKinematics(
+        const result = MeasurementEngine.applyInverseKinematics(
             this.referencePosition.x,
             this.referencePosition.y,
             this.referencePosition.z,
@@ -87,6 +158,10 @@ class StepLcMeasure {
             this.estimatedLc,
             this.estimatedLb
         );
+
+        console.log(`[LC Cal] calculateIkPosition: target=(${result.x.toFixed(2)}, ${result.y.toFixed(2)}), delta=(${(result.x - this.referencePosition.x).toFixed(3)}, ${(result.y - this.referencePosition.y).toFixed(3)})`);
+
+        return result;
     }
 
     /**
@@ -101,7 +176,6 @@ class StepLcMeasure {
             return;
         }
 
-
         // If Z safety offset is set, do full safety sequence
         if (this.zSafetyOffset > 0) {
             const safeZ = this.referencePosition.z + this.zSafetyOffset;
@@ -111,8 +185,12 @@ class StepLcMeasure {
         // Rotate C
         await this.app.printer.moveTo({ c: cAngle }, 1800);
 
-        // Move XY to target
-        await this.app.printer.moveTo({ x: targetPos.x, y: targetPos.y }, 3000);
+        // Move XY to target (only if there's a meaningful delta)
+        const deltaX = Math.abs(targetPos.x - this.referencePosition.x);
+        const deltaY = Math.abs(targetPos.y - this.referencePosition.y);
+        if (deltaX > 0.01 || deltaY > 0.01) {
+            await this.app.printer.moveTo({ x: targetPos.x, y: targetPos.y }, 3000);
+        }
 
         // Lower Z if we raised it, or for cone method stay higher
         if (this.zSafetyOffset > 0 || this.app.selectedMethod === 'cone') {
@@ -154,20 +232,21 @@ class StepLcMeasure {
         // Move to C0 B0 at the start of LC measurement
         await this.app.printer.moveTo({ c: 0, b: 0 }, 1800);
 
-        // Load saved LC/LB values from storage, or use defaults
-        const savedResults = StorageManager.loadCalibrationResults();
-        const savedLc = savedResults?.lc ?? 0;
-        const savedLb = savedResults?.lb ?? 47;
+        // Query LC/LB from printer firmware via M665
+        const { lc, lb } = await this.queryIkParamsFromPrinter();
 
-        // Update input fields with saved values if they exist
+        // Update input fields with printer values
         const lcInput = document.getElementById('lcIkLcEstimate');
         const lbInput = document.getElementById('lcIkLbEstimate');
-        if (lcInput) lcInput.value = savedLc;
-        if (lbInput) lbInput.value = savedLb;
+        if (lcInput) lcInput.value = lc;
+        if (lbInput) lbInput.value = lb;
 
         // Update estimated values
-        this.estimatedLc = savedLc;
-        this.estimatedLb = savedLb;
+        this.estimatedLc = lc;
+        this.estimatedLb = lb;
+
+        // Add change listeners to send values to printer when changed
+        this.setupIkParamListeners();
 
         // Enable IK positioning by default (checkbox is checked by default in HTML)
         const ikToggle = document.getElementById('lcIkPositioningToggle');
@@ -229,7 +308,6 @@ class StepLcMeasure {
         // Request fresh position from printer via M114 before recording
         // This ensures we get the actual position, not a cached/estimated one
         const position = await this.app.printer.requestPosition();
-
 
         // If this is C=0 and IK positioning is enabled, use this as the reference position
         // This ensures IK calculations for subsequent angles use the correct reference
@@ -306,7 +384,7 @@ class StepLcMeasure {
                 MeasurementEngine.formatValue(result.value);
 
             document.getElementById('lcConsistency').innerHTML =
-                `Asymmetry: &plusmn;${MeasurementEngine.formatValue(result.consistency, 3)}mm`;
+                `Uncertainty: &plusmn;${MeasurementEngine.formatValue(result.uncertainty, 3)}mm`;
 
             // Disable confirm button since we're done
             document.getElementById('lcConfirmBtn').disabled = true;
@@ -324,11 +402,23 @@ class StepLcMeasure {
     }
 
     /**
-     * Save LC value to storage and update footer
+     * Save LC value to printer firmware and update footer
      */
-    saveToStorage() {
+    async saveToStorage() {
         const results = this.app.calibration.getResults();
         if (results.lc !== null) {
+            // Send LC to printer firmware and save to EEPROM
+            if (this.app.printer && this.app.printer.isConnected()) {
+                try {
+                    await this.app.printer.sendCommandAndWait(`M665 J${results.lc.toFixed(2)}`, 3000);
+                    await this.app.printer.sendCommandAndWait('M500', 5000);  // Save to EEPROM
+                    console.log(`[LC Cal] Saved LC=${results.lc.toFixed(2)} to printer and EEPROM`);
+                } catch (err) {
+                    console.warn('[LC Cal] Failed to save LC to printer:', err);
+                }
+            }
+
+            // Also save to local storage for backup
             const savedResults = StorageManager.loadCalibrationResults() || {};
             const currentLb = savedResults.lb ?? 47;
             StorageManager.saveCalibrationResults(results.lc, currentLb, {
@@ -355,7 +445,17 @@ class StepLcMeasure {
             const lcInput = document.getElementById('lcIkLcEstimate');
             if (lcInput) lcInput.value = results.lc.toFixed(2);
 
-            // Save to storage and update footer
+            // Send LC to printer firmware for next iteration
+            if (this.app.printer && this.app.printer.isConnected()) {
+                try {
+                    await this.app.printer.sendCommandAndWait(`M665 J${results.lc.toFixed(2)}`, 3000);
+                    console.log(`[LC Cal] Sent LC=${results.lc.toFixed(2)} to printer for redo`);
+                } catch (err) {
+                    console.warn('[LC Cal] Failed to send LC to printer:', err);
+                }
+            }
+
+            // Also save to local storage for backup
             const savedResults = StorageManager.loadCalibrationResults() || {};
             const currentLb = savedResults.lb ?? 47;
             StorageManager.saveCalibrationResults(results.lc, currentLb, {

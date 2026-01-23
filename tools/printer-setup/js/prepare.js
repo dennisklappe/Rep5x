@@ -60,6 +60,8 @@ class StepPrepare {
             this.setItemActive('homing');
             btn.textContent = 'Homing all axes...';
             await this.app.printer.sendCommandAndWait('G28', 120000); // 2 min timeout for homing
+            // Ensure IK is disabled after homing (before B movement)
+            await this.app.printer.sendCommandAndWait('G49', 3000);
             this.setItemComplete('homing');
 
             // Step 4: Move to starting position
