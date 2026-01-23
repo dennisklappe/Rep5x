@@ -61,13 +61,13 @@ class StepCalibrateXY {
                     Choose calibration mode based on whether you have existing calibration data.
                 </p>
                 <div class="space-y-3 mb-4">
-                    <button id="start-fresh-btn" class="w-full btn-primary px-4 py-3 rounded-lg text-left">
-                        <div class="font-medium">Fresh calibration</div>
-                        <div class="text-sm opacity-75">No existing calibration - measure raw mechanical errors</div>
-                    </button>
-                    <button id="refine-calibration-btn" class="w-full btn-secondary px-4 py-3 rounded-lg text-left">
+                    <button id="refine-calibration-btn" class="w-full btn-primary px-4 py-3 rounded-lg text-left">
                         <div class="font-medium">Refine existing calibration</div>
-                        <div class="text-sm text-gray-500">Measure residual errors and add to current M667 coefficients</div>
+                        <div class="text-sm opacity-75">Measure residual errors and add to current M667 coefficients</div>
+                    </button>
+                    <button id="start-fresh-btn" class="w-full btn-secondary px-4 py-3 rounded-lg text-left">
+                        <div class="font-medium">Fresh calibration</div>
+                        <div class="text-sm text-gray-500">No existing calibration - measure raw mechanical errors</div>
                     </button>
                     <button id="skip-xy-btn" class="w-full btn-outline px-4 py-3 rounded-lg text-left text-gray-600">
                         <div class="font-medium">Skip to Z calibration</div>
