@@ -32,15 +32,6 @@ class StepResults {
             this.exportToFirmware();
         });
 
-        // Refine mode toggle
-        const refineModeToggle = document.getElementById('refine-mode-toggle');
-        if (refineModeToggle) {
-            refineModeToggle.addEventListener('change', (e) => {
-                this.refineMode = e.target.checked;
-                console.log('[Results] Refine mode:', this.refineMode ? 'ON' : 'OFF');
-            });
-        }
-
         // Initialise both graphs
         const graphACanvas = document.getElementById('results-graph-c');
         const graphBCanvas = document.getElementById('results-graph-b');
@@ -166,12 +157,9 @@ class StepResults {
             }
         }
 
-        // Read refine mode from checkbox (may have been set during calibration start)
-        const refineModeToggle = document.getElementById('refine-mode-toggle');
-        if (refineModeToggle) {
-            this.refineMode = refineModeToggle.checked;
-            console.log('[Results] Refine mode initialized:', this.refineMode ? 'ON' : 'OFF');
-        }
+        // Get refine mode from app (set during calibration start modal)
+        this.refineMode = this.app.refineMode || false;
+        console.log('[Results] Refine mode:', this.refineMode ? 'ON' : 'OFF');
 
         // Hide next button on results page
         document.getElementById('nextBtn').style.display = 'none';
@@ -226,6 +214,11 @@ class StepResults {
             document.getElementById('result-y-avg').textContent = `Avg: ${stats.y.absAvg.toFixed(3)} mm`;
             document.getElementById('result-z-max').textContent = `Max: ${stats.z.absMax.toFixed(3)} mm`;
             document.getElementById('result-z-avg').textContent = `Avg: ${stats.z.absAvg.toFixed(3)} mm`;
+        }
+
+        // Auto-save calibration to firmware
+        if (this.app.printer && this.app.printer.isConnected()) {
+            await this.exportToFirmware();
         }
     }
 
@@ -372,14 +365,9 @@ class StepResults {
             console.log('[Results] Calibration saved to EEPROM');
 
             if (btn) {
-                btn.textContent = 'Sent to Printer ✓';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }, 2000);
+                btn.textContent = 'Saved to EEPROM ✓';
+                btn.disabled = false;
             }
-
-            alert('Calibration data sent to printer and saved to EEPROM!');
 
         } catch (error) {
             console.error('[Results] Error sending calibration:', error);

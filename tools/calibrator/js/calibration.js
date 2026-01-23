@@ -81,18 +81,12 @@ class StepCalibrateXY {
         document.getElementById('refine-calibration-btn').addEventListener('click', () => {
             modal.remove();
             this.app.refineMode = true;
-            // Set refine mode toggle on results page
-            const toggle = document.getElementById('refine-mode-toggle');
-            if (toggle) toggle.checked = true;
             this.startCalibration(false);  // Don't disable calibration correction
         });
 
         document.getElementById('start-fresh-btn').addEventListener('click', () => {
             modal.remove();
             this.app.refineMode = false;
-            // Ensure refine mode toggle is unchecked
-            const toggle = document.getElementById('refine-mode-toggle');
-            if (toggle) toggle.checked = false;
             this.startCalibration(true);  // Disable calibration correction for fresh start
         });
 
