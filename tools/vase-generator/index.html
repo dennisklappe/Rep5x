@@ -314,39 +314,6 @@
                         <p class="text-xs text-gray-500 mt-2">Optimizes C-axis rotation to take the shortest path (continuous rotation capable)</p>
                     </div>
 
-                    <!-- Calibration Correction -->
-                    <details class="border border-gray-200 rounded-lg">
-                        <summary class="cursor-pointer p-4 font-medium text-gray-700 hover:bg-gray-50">
-                            Calibration Correction
-                        </summary>
-                        <div class="px-4 pb-4 space-y-4 border-t border-gray-200">
-                            <!-- Enable calibration -->
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="enableCalibration" class="w-4 h-4 text-primary rounded">
-                                <span class="text-sm font-medium text-gray-700">Apply calibration correction</span>
-                            </label>
-
-                            <!-- Calibration status -->
-                            <div id="calibrationStatus" class="p-3 bg-gray-50 rounded-lg">
-                                <div id="calibrationNotLoaded" class="text-sm text-gray-500">
-                                    No calibration data loaded. Run the <a href="../calibrator/" class="text-primary hover:underline">Calibrator</a> and save results first.
-                                </div>
-                                <div id="calibrationLoaded" class="hidden">
-                                    <div class="text-sm text-green-600 font-medium">✓ Calibration data loaded</div>
-                                    <div id="calibrationDetails" class="text-xs text-gray-500 mt-1"></div>
-                                </div>
-                            </div>
-
-                            <button id="loadCalibrationBtn" class="w-full px-3 py-2 btn-secondary rounded-lg text-sm font-medium">
-                                Reload from browser storage
-                            </button>
-
-                            <p class="text-xs text-gray-500">
-                                Calibration corrections use Fourier curve fitting for smooth, accurate results.
-                            </p>
-                        </div>
-                    </details>
-
                     <!-- G-code Settings -->
                     <details class="border border-gray-200 rounded-lg">
                         <summary class="cursor-pointer p-4 font-medium text-gray-700 hover:bg-gray-50">
@@ -356,7 +323,9 @@
                             <!-- Start G-code -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Start G-code</label>
-                                <textarea id="startGcode" rows="12" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono" placeholder="Rep5x start G-code">M220 S100 ;Reset Feedrate
+                                <textarea id="startGcode" rows="14" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono" placeholder="Rep5x start G-code">G49 ;Disable IK during homing
+M667 S0 ;Disable calibration during homing
+M220 S100 ;Reset Feedrate
 M221 S100 ;Reset Flowrate
 
 M104 S[nozzle_temperature_initial_layer] ;Set final nozzle temp
@@ -386,6 +355,9 @@ G1 E0.0000 F1800
 G0 X[bed_center_x] Y[bed_center_y] F1800 ;Move to center
 G92 X0 Y0 C0 B0 ;Set bed center as origin (0,0) and reset rotation axes
 M211 S0 ;Disable software endstops (required for C-axis optimization with negative values)
+
+G43.4 ;Enable IK
+M667 S1 ;Enable calibration
 </textarea>
                                 <p class="mt-1 text-xs text-gray-500">Commands executed at the start of printing</p>
                             </div>
@@ -393,11 +365,14 @@ M211 S0 ;Disable software endstops (required for C-axis optimization with negati
                             <!-- End G-code -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">End G-code</label>
-                                <textarea id="endGcode" rows="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono" placeholder="Rep5x end G-code">G91 ;Relative positioning
+                                <textarea id="endGcode" rows="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono" placeholder="Rep5x end G-code">G91 ;Relative positioning
 G1 E-2 F2700 ;Retract a bit
 G1 E-2 Z0.2 F2400 ;Retract and raise Z
 G1 X5 Y5 F3000 ;Wipe out
 G90 ;Absolute positioning
+
+G49 ;Disable IK before homing
+M667 S0 ;Disable calibration
 G28 Z ;Home Z to max height
 G4 P1000 ;Wait for Z axis to settle
 
@@ -466,7 +441,6 @@ M84 X Y E A B ;Disable all steppers except Z
 
     <!-- Shared components -->
     <script src="../shared/theme.js"></script>
-    <script src="../shared/storage-manager.js"></script>
     <script src="../shared/header.js"></script>
     <script src="../shared/footer.js"></script>
 
@@ -480,7 +454,6 @@ M84 X Y E A B ;Disable all steppers except Z
 
     <!-- Core modules -->
     <script src="../shared/inverse-kinematics.js"></script>
-    <script src="../shared/calibration-corrector.js"></script>
     <script src="../shared/c-axis-optimizer.js"></script>
     <script src="js/scene-manager.js"></script>
     <script src="js/ui-controller.js"></script>
