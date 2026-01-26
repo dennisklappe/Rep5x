@@ -17,22 +17,81 @@
             --color-axis-z: #1E88E5;
         }
 
+        /* Step indicators - matching firmware-builder */
+        .step-indicator {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: white;
+            border: 2px solid var(--color-border);
+            color: var(--color-text-muted);
+        }
+
+        .step-indicator.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+            box-shadow: 0 0 0 4px rgba(50, 215, 75, 0.2);
+        }
+
+        .step-indicator.completed {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        .step-connector {
+            width: 40px;
+            height: 2px;
+            background: var(--color-border);
+            transition: background 0.3s;
+        }
+
+        .step-connector.completed {
+            background: var(--color-primary);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            background: var(--color-border);
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: var(--color-primary);
+            height: 100%;
+            transition: width 0.4s ease;
+        }
+
         /* Tool-specific: step size button styling */
         .step-size-btn {
             background-color: white;
             color: var(--color-text);
             border-color: var(--color-border);
+            transition: all 0.15s;
+        }
+
+        .step-size-btn:hover {
+            border-color: var(--color-primary);
         }
 
         .step-size-btn.active {
-            background-color: var(--color-primary);
-            color: white;
-            border-color: var(--color-primary);
+            background-color: var(--color-primary) !important;
+            color: white !important;
+            border-color: var(--color-primary) !important;
         }
 
         /* Tool-specific: graph and grid */
         .graph-container {
-            background: var(--color-dark);
+            background: #1a1a2e;
             border-radius: 8px;
             padding: 16px;
         }
@@ -40,7 +99,7 @@
         .graph-canvas {
             width: 100%;
             height: 250px;
-            background: var(--color-secondary);
+            background: #16162a;
             border-radius: 4px;
         }
 
@@ -50,7 +109,7 @@
             gap: 24px;
             margin-top: 12px;
             font-size: 14px;
-            color: var(--color-text-muted);
+            color: #94a3b8;
         }
 
         .legend-item {
@@ -77,48 +136,31 @@
             background: var(--color-axis-z);
         }
 
-        .calibration-grid {
-            display: grid;
-            gap: 3px;
-        }
-
-        .grid-cell {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            border-radius: 3px;
-            background: var(--color-body);
-            border: 1px solid var(--color-border);
+        /* Method card styling */
+        .method-card {
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.5rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            background: white;
         }
 
-        .grid-cell.pending {
-            background: var(--color-body);
-        }
-
-        .grid-cell.current {
-            background: var(--color-light);
+        .method-card:hover {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 2px rgba(50, 215, 75, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
         }
 
-        .grid-cell.completed {
-            background: var(--color-success-light);
-            border-color: var(--color-success-border);
-        }
-
-        .grid-cell.skipped {
-            background: var(--color-warning-light);
-            opacity: 0.5;
+        .method-card.selected {
+            border-color: var(--color-primary);
+            background: var(--color-light);
         }
 
         /* Camera container */
         .camera-container {
             position: relative;
-            background: var(--color-secondary);
+            background: #1f2937;
             border-radius: 8px;
             overflow: hidden;
         }
@@ -147,6 +189,29 @@
         .offset-value.z {
             color: var(--color-axis-z);
         }
+
+        /* Fade in animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.4s ease forwards;
+        }
+
+        /* Graph axis selector buttons */
+        #graph-axis-selector button.active {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
     </style>
 </head>
 
@@ -155,121 +220,136 @@
     <div id="shared-header"></div>
 
     <!-- Main Content -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Progress Bar -->
-        <div id="progressBar" class="flex items-center justify-center mb-2 px-4">
-            <div class="flex flex-col items-center">
-                <div class="progress-step active" data-step="0">1</div>
-                <span class="text-xs text-gray-500 mt-2">Method</span>
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Progress Section - Matching Firmware Builder -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">5-axis error calibration</h2>
+                <span id="stepCounter" class="text-sm text-gray-500">Step 1 of 6</span>
             </div>
-            <div class="progress-connector" data-connector="0"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="1">2</div>
-                <span class="text-xs text-gray-500 mt-2">Connect</span>
+
+            <!-- Step Indicators -->
+            <div id="progressBar" class="flex items-center justify-center mb-4">
+                <div class="step-indicator active" data-step="0">1</div>
+                <div class="step-connector" data-connector="0"></div>
+                <div class="step-indicator" data-step="1">2</div>
+                <div class="step-connector" data-connector="1"></div>
+                <div class="step-indicator" data-step="2">3</div>
+                <div class="step-connector" data-connector="2"></div>
+                <div class="step-indicator" data-step="3">4</div>
+                <div class="step-connector" data-connector="3"></div>
+                <div class="step-indicator" data-step="4">5</div>
+                <div class="step-connector" data-connector="4"></div>
+                <div class="step-indicator" data-step="5">6</div>
             </div>
-            <div class="progress-connector" data-connector="1"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="2">3</div>
-                <span class="text-xs text-gray-500 mt-2">Prepare</span>
+
+            <!-- Progress Bar -->
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 16.67%"></div>
             </div>
-            <div class="progress-connector" data-connector="2"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="3">4</div>
-                <span class="text-xs text-gray-500 mt-2">XY</span>
-            </div>
-            <div class="progress-connector" data-connector="3"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="4">5</div>
-                <span class="text-xs text-gray-500 mt-2">Z</span>
-            </div>
-            <div class="progress-connector" data-connector="4"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="5">6</div>
-                <span class="text-xs text-gray-500 mt-2">Results</span>
+
+            <!-- Step Labels -->
+            <div class="flex justify-between mt-3 text-xs text-gray-500">
+                <span class="w-14 text-center">Method</span>
+                <span class="w-14 text-center">Connect</span>
+                <span class="w-14 text-center">Prepare</span>
+                <span class="w-14 text-center">XY</span>
+                <span class="w-14 text-center">Z</span>
+                <span class="w-14 text-center">Results</span>
             </div>
         </div>
-        <div class="mb-8"></div>
 
         <!-- Wizard Container -->
         <div id="wizardContainer">
             <!-- ========================================== -->
             <!-- Step 0: Method Selection -->
             <!-- ========================================== -->
-            <div id="step-0" class="wizard-step active">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">5-axis error calibration</h2>
-                    <p class="text-gray-600 max-w-2xl mx-auto">
-                        Measure position errors across all C and B angles to create an error map.
-                        This data can be used to improve print accuracy.
-                    </p>
-                </div>
+            <div id="step-0" class="wizard-step active animate-in">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Select measurement method</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            Measure position errors across all C and B angles to create an error map.
+                            This data can be used to improve print accuracy.
+                        </p>
+                    </div>
 
-                <!-- Info Banner -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <!-- Info Banner -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
+                        <div class="flex gap-3">
+                            <svg class="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
                                     d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                                     clip-rule="evenodd"></path>
                             </svg>
+                            <div class="text-sm text-blue-700">
+                                <p>Measures <strong>21 points</strong> using sweep calibration:
+                                    C-axis sweep (0° to 315° at B=0°), then B-axis sweep (0° to ±90° at C=0°).
+                                    At each point, align the nozzle to the reference and confirm.
+                                </p>
+                            </div>
                         </div>
-                        <div class="ml-3 text-sm text-blue-700">
-                            <p>Measures <strong>21 points</strong> using sweep calibration:
-                                C-axis sweep (0° to 315° at B=0°), then B-axis sweep (0° to ±90° at C=0°).
-                                At each point, align the nozzle to the reference and confirm.
+                    </div>
+
+                    <!-- Method Cards -->
+                    <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-8">
+                        <!-- Camera Method -->
+                        <div class="method-card" data-method="camera">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-3" style="background-color: rgba(50, 215, 75, 0.1);">
+                                    <svg class="w-6 h-6" style="color: #32D74B;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                                        </path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900">Camera method</h4>
+                                    <span class="badge badge-primary text-xs">Recommended</span>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 text-sm">
+                                Use a USB camera mounted on the bed facing upward. Align the nozzle with a crosshair for
+                                X/Y, then reposition camera sideways for Z.
+                            </p>
+                        </div>
+
+                        <!-- Cone Method -->
+                        <div class="method-card" data-method="cone">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 rounded-lg flex items-center justify-center mr-3 bg-gray-100">
+                                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900">Cone method</h4>
+                                    <span class="text-xs text-gray-500">Alternative</span>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 text-sm">
+                                Use a 3D printed calibration cone placed on the bed. Touch the nozzle tip to the cone tip
+                                for X, Y, and Z.
                             </p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Method Cards -->
-                <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-8">
-                    <!-- Camera Method -->
-                    <div class="method-card bg-white rounded-xl shadow-sm p-6 border-2 border-transparent"
-                        data-method="camera">
-                        <div class="flex items-center mb-4">
-                            <svg class="w-10 h-10 text-primary mr-3" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
-                                </path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            <h3 class="text-xl font-bold text-gray-900">Camera method</h3>
-                        </div>
-                        <p class="text-gray-600 text-sm mb-4">
-                            Use a USB camera mounted on the bed facing upward. Align the nozzle with a crosshair for
-                            X/Y, then reposition camera sideways for Z.
-                        </p>
+                    <!-- Test Mode Toggle -->
+                    <div class="flex items-center justify-center mb-6">
+                        <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                            <input type="checkbox" id="testModeToggle"
+                                class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary">
+                            <span class="text-sm text-gray-600">Test mode (simulate without hardware)</span>
+                        </label>
                     </div>
 
-                    <!-- Cone Method -->
-                    <div class="method-card bg-white rounded-xl shadow-sm p-6 border-2 border-transparent"
-                        data-method="cone">
-                        <div class="flex items-center mb-4">
-                            <svg class="w-10 h-10 text-primary mr-3" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                            </svg>
-                            <h3 class="text-xl font-bold text-gray-900">Cone method</h3>
-                        </div>
-                        <p class="text-gray-600 text-sm mb-4">
-                            Use a 3D printed calibration cone placed on the bed. Touch the nozzle tip to the cone tip
-                            for X, Y, and Z.
-                        </p>
+                    <!-- Hardware Link -->
+                    <div class="text-center text-sm text-gray-500" id="hardwareLink" style="display: none;">
+                        <a href="https://github.com/dennisklappe/Rep5x/tree/main/tools/hardware/rep5x-camera" target="_blank" class="text-primary hover:underline">View camera hardware documentation &rarr;</a>
                     </div>
-                </div>
-
-                <!-- Test Mode Toggle -->
-                <div class="flex items-center justify-center mb-6">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="testModeToggle"
-                            class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary">
-                        <span class="ml-2 text-sm text-gray-600">Test mode (simulate without hardware)</span>
-                    </label>
                 </div>
             </div>
 
@@ -277,59 +357,61 @@
             <!-- Step 1: Connection -->
             <!-- ========================================== -->
             <div id="step-1" class="wizard-step">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Connect to printer</h2>
-                    <p class="text-gray-600">Establish connection to your Rep5x printer via USB serial.</p>
-                </div>
-
-                <div class="max-w-2xl mx-auto">
-                    <!-- Serial Connection -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">Serial connection</h3>
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center">
-                                <span class="status-dot disconnected" id="serialStatus"></span>
-                                <span class="ml-2 text-sm" id="serialStatusText">Not connected</span>
-                            </div>
-                            <button id="connectBtn"
-                                class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">Connect</button>
-                        </div>
-                        <p class="text-xs text-gray-500">
-                            Click Connect and select your printer's serial port (usually contains "USB" or "CH340").
-                        </p>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Connect to printer</h3>
+                        <p class="text-gray-600">Establish connection to your Rep5x printer via USB serial.</p>
                     </div>
 
-                    <!-- Camera Connection -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6" id="cameraConnectionPanel"
-                        style="display: none;">
-                        <h3 class="font-semibold text-gray-900 mb-4">Camera connection</h3>
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center">
-                                <span class="status-dot disconnected" id="cameraStatus"></span>
-                                <span class="ml-2 text-sm" id="cameraStatusText">Not connected</span>
+                    <div class="max-w-2xl mx-auto">
+                        <!-- Serial Connection -->
+                        <div class="border border-gray-200 rounded-lg p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Serial connection</h4>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="status-dot disconnected" id="serialStatus"></span>
+                                    <span class="ml-2 text-sm" id="serialStatusText">Not connected</span>
+                                </div>
+                                <button id="connectBtn"
+                                    class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">Connect</button>
                             </div>
-                            <button id="cameraConnectBtn"
-                                class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium">Enable Camera</button>
+                            <p class="text-xs text-gray-500">
+                                Click Connect and select your printer's serial port (usually contains "USB" or "CH340").
+                            </p>
                         </div>
-                        <div class="camera-container aspect-video bg-gray-900 rounded-lg" id="cameraPreviewContainer"
+
+                        <!-- Camera Connection -->
+                        <div class="border border-gray-200 rounded-lg p-6 mb-6" id="cameraConnectionPanel"
                             style="display: none;">
-                            <video id="cameraPreview" class="w-full h-full object-contain" autoplay playsinline></video>
+                            <h4 class="font-semibold text-gray-900 mb-4">Camera connection</h4>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="status-dot disconnected" id="cameraStatus"></span>
+                                    <span class="ml-2 text-sm" id="cameraStatusText">Not connected</span>
+                                </div>
+                                <button id="cameraConnectBtn"
+                                    class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium">Enable Camera</button>
+                            </div>
+                            <div class="camera-container aspect-video rounded-lg" id="cameraPreviewContainer"
+                                style="display: none;">
+                                <video id="cameraPreview" class="w-full h-full object-contain" autoplay playsinline></video>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Test Mode Notice -->
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4" id="testModeNotice"
-                        style="display: none;">
-                        <div class="flex">
-                            <svg class="h-5 w-5 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
-                            <div class="ml-3 text-sm text-yellow-700">
-                                <p class="font-medium">Test mode enabled</p>
-                                <p>Printer movements will be simulated. Results will not reflect actual machine
-                                    parameters.</p>
+                        <!-- Test Mode Notice -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4" id="testModeNotice"
+                            style="display: none;">
+                            <div class="flex gap-3">
+                                <svg class="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                        clip-rule="evenodd"></path>
+                                </svg>
+                                <div class="text-sm text-yellow-700">
+                                    <p class="font-medium">Test mode enabled</p>
+                                    <p>Printer movements will be simulated. Results will not reflect actual machine
+                                        parameters.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -340,165 +422,140 @@
             <!-- Step 2: Prepare -->
             <!-- ========================================== -->
             <div id="step-2" class="wizard-step">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Prepare printer</h2>
-                    <p class="text-gray-600">Home the printer and set the reference point for measurements.</p>
-                </div>
-
-                <div class="max-w-2xl mx-auto">
-                    <!-- Automatic Prep -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">Automatic preparation</h3>
-                        <div class="space-y-3 mb-6">
-                            <div class="flex items-center text-gray-400" id="prep-stepper">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                <span>Disable stepper timeout</span>
-                            </div>
-                            <div class="flex items-center text-gray-400" id="prep-endstops">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                <span>Disable software endstops</span>
-                            </div>
-                            <div class="flex items-center text-gray-400" id="prep-ik">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                <span>Disable inverse kinematics</span>
-                            </div>
-                            <div class="flex items-center text-gray-400" id="prep-homing">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                <span>Home all axes</span>
-                            </div>
-                            <div class="flex items-center text-gray-400" id="prep-position">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd"
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                <span>Move to starting position (X100 Y100 Z50 C0 B0)</span>
-                            </div>
-                        </div>
-                        <div class="flex gap-3">
-                            <button id="prepareBtn" class="btn-primary px-6 py-3 rounded-lg font-medium flex-1">Start
-                                preparation</button>
-                            <button id="skipPrepareBtn"
-                                class="btn-secondary px-6 py-3 rounded-lg font-medium">Skip</button>
-                        </div>
-                        <div id="prepareStatus" class="hidden mt-4 p-3 status-success border rounded-lg text-sm">
-                            Printer ready. Now position the nozzle at the reference point below.
-                        </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Prepare printer</h3>
+                        <p class="text-gray-600">Home the printer and set the reference point for measurements.</p>
                     </div>
 
-                    <!-- Reference Point Setting -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6 hidden" id="referencePanel">
-                        <h3 class="font-semibold text-gray-900 mb-4">Set reference point</h3>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Use the jog controls to position the nozzle tip precisely at the camera crosshair or cone
-                            tip.
-                            This will be the reference point for all measurements.
-                        </p>
-
-                        <!-- Camera View for Reference -->
-                        <div class="mb-4" id="prepCameraPanel">
-                            <div class="camera-container bg-gray-900 rounded-lg h-64 relative">
-                                <video id="prepCamera" class="w-full h-full object-contain" autoplay
-                                    playsinline></video>
-                                <canvas id="prepCrosshair"
-                                    class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
-                                <button id="reconnect-camera-btn-prep" class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded" title="Reconnect camera">
-                                    ↻ Camera
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Cone Placeholder -->
-                        <div class="mb-4" id="prepConePanel" style="display: none;">
-                            <div class="bg-gray-100 rounded-lg p-8 text-center">
-                                <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                </svg>
-                                <p class="text-gray-600">Position the nozzle tip to touch the cone tip</p>
-                            </div>
-                        </div>
-
-                        <!-- Jog Controls -->
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <p class="text-xs text-gray-500 mb-2 text-center">XY Movement</p>
-                                <div class="grid grid-cols-3 gap-1 justify-items-center">
-                                    <div></div>
-                                    <button class="jog-btn" data-axis="Y" data-dir="1">Y+</button>
-                                    <div></div>
-                                    <button class="jog-btn" data-axis="X" data-dir="-1">X-</button>
-                                    <div class="w-12 h-12"></div>
-                                    <button class="jog-btn" data-axis="X" data-dir="1">X+</button>
-                                    <div></div>
-                                    <button class="jog-btn" data-axis="Y" data-dir="-1">Y-</button>
-                                    <div></div>
+                    <div class="max-w-2xl mx-auto">
+                        <!-- Automatic Prep -->
+                        <div class="border border-gray-200 rounded-lg p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Automatic preparation</h4>
+                            <div class="space-y-3 mb-6">
+                                <div class="flex items-center text-gray-400" id="prep-stepper">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>Disable stepper timeout</span>
+                                </div>
+                                <div class="flex items-center text-gray-400" id="prep-endstops">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>Disable software endstops</span>
+                                </div>
+                                <div class="flex items-center text-gray-400" id="prep-ik">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>Disable inverse kinematics</span>
+                                </div>
+                                <div class="flex items-center text-gray-400" id="prep-homing">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>Home all axes</span>
+                                </div>
+                                <div class="flex items-center text-gray-400" id="prep-position">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span>Move to starting position (X100 Y100 Z50 C0 B0)</span>
                                 </div>
                             </div>
-                            <div>
-                                <p class="text-xs text-gray-500 mb-2 text-center">Z Movement</p>
-                                <div class="flex flex-col items-center gap-1">
-                                    <button class="jog-btn" data-axis="Z" data-dir="1">Z+</button>
-                                    <div class="h-12"></div>
-                                    <button class="jog-btn" data-axis="Z" data-dir="-1">Z-</button>
+                            <div class="flex gap-3">
+                                <button id="prepareBtn" class="btn-primary px-6 py-3 rounded-lg font-medium flex-1">Start preparation</button>
+                                <button id="skipPrepareBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium">Skip</button>
+                            </div>
+                            <div id="prepareStatus" class="hidden mt-4 p-3 status-success border rounded-lg text-sm">
+                                Printer ready. Now position the nozzle at the reference point below.
+                            </div>
+                        </div>
+
+                        <!-- Reference Point Setting -->
+                        <div class="border border-gray-200 rounded-lg p-6 hidden" id="referencePanel">
+                            <h4 class="font-semibold text-gray-900 mb-4">Set reference point</h4>
+                            <p class="text-sm text-gray-600 mb-4">
+                                Use the jog controls to position the nozzle tip precisely at the camera crosshair or cone tip.
+                                This will be the reference point for all measurements.
+                            </p>
+
+                            <!-- Camera View for Reference -->
+                            <div class="mb-4" id="prepCameraPanel">
+                                <div class="camera-container rounded-lg h-64 relative">
+                                    <video id="prepCamera" class="w-full h-full object-contain" autoplay playsinline></video>
+                                    <canvas id="prepCrosshair" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+                                    <button id="reconnect-camera-btn-prep" class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded" title="Reconnect camera">
+                                        ↻ Camera
+                                    </button>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Step Size -->
-                        <div class="mb-4">
-                            <p class="text-xs text-gray-500 mb-2">Step size</p>
-                            <div class="flex flex-wrap gap-2 step-size-controls">
-                                <button class="step-btn step-size-btn px-3 py-1 text-xs rounded border"
-                                    data-step="0.1">0.1mm</button>
-                                <button class="step-btn step-size-btn px-3 py-1 text-xs rounded border active"
-                                    data-step="1">1mm</button>
-                                <button class="step-btn step-size-btn px-3 py-1 text-xs rounded border"
-                                    data-step="10">10mm</button>
+                            <!-- Cone Placeholder -->
+                            <div class="mb-4" id="prepConePanel" style="display: none;">
+                                <div class="bg-gray-100 rounded-lg p-8 text-center">
+                                    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                    </svg>
+                                    <p class="text-gray-600">Position the nozzle tip to touch the cone tip</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Current Position -->
-                        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-                            <p class="text-xs text-gray-500 mb-1">Current position</p>
-                            <div class="font-mono text-sm" id="prepare-position-display">
-                                X: --- Y: --- Z: --- C: --- B: ---
+                            <!-- Jog Controls -->
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <p class="text-xs text-gray-500 mb-2 text-center">XY Movement</p>
+                                    <div class="grid grid-cols-3 gap-1 justify-items-center">
+                                        <div></div>
+                                        <button class="jog-btn" data-axis="Y" data-dir="1">Y+</button>
+                                        <div></div>
+                                        <button class="jog-btn" data-axis="X" data-dir="-1">X-</button>
+                                        <div class="w-12 h-12"></div>
+                                        <button class="jog-btn" data-axis="X" data-dir="1">X+</button>
+                                        <div></div>
+                                        <button class="jog-btn" data-axis="Y" data-dir="-1">Y-</button>
+                                        <div></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 mb-2 text-center">Z Movement</p>
+                                    <div class="flex flex-col items-center gap-1">
+                                        <button class="jog-btn" data-axis="Z" data-dir="1">Z+</button>
+                                        <div class="h-12"></div>
+                                        <button class="jog-btn" data-axis="Z" data-dir="-1">Z-</button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Confirm Reference -->
-                        <div class="flex items-center justify-between pt-4 border-t border-gray-200">
-                            <div>
-                                <p class="text-sm font-medium text-gray-700">Reference position:</p>
-                                <p class="text-sm text-gray-500" id="refPosDisplay">Not set</p>
+                            <!-- Step Size -->
+                            <div class="mb-4">
+                                <p class="text-xs text-gray-500 mb-2">Step size</p>
+                                <div class="flex flex-wrap gap-2 step-size-controls">
+                                    <button class="step-btn step-size-btn px-3 py-1 text-xs rounded border" data-step="0.1">0.1mm</button>
+                                    <button class="step-btn step-size-btn px-3 py-1 text-xs rounded border active" data-step="1">1mm</button>
+                                    <button class="step-btn step-size-btn px-3 py-1 text-xs rounded border" data-step="10">10mm</button>
+                                </div>
                             </div>
-                            <div class="flex gap-2">
-                                <button id="skipToZFromPrepBtn"
-                                    class="btn-secondary px-4 py-2 rounded-lg text-sm">Skip to Z</button>
-                                <button id="confirmReferenceBtn"
-                                    class="btn-primary px-6 py-2 rounded-lg text-sm font-medium">Confirm reference</button>
+
+                            <!-- Current Position -->
+                            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                                <p class="text-xs text-gray-500 mb-1">Current position</p>
+                                <div class="font-mono text-sm" id="prepare-position-display">
+                                    X: --- Y: --- Z: --- C: --- B: ---
+                                </div>
+                            </div>
+
+                            <!-- Confirm Reference -->
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-700">Reference position:</p>
+                                    <p class="text-sm text-gray-500" id="refPosDisplay">Not set</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button id="skipToZFromPrepBtn" class="btn-secondary px-4 py-2 rounded-lg text-sm">Skip to Z</button>
+                                    <button id="confirmReferenceBtn" class="btn-primary px-6 py-2 rounded-lg text-sm font-medium">Confirm reference</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -509,47 +566,43 @@
             <!-- Step 3: Calibrate -->
             <!-- ========================================== -->
             <div id="step-3" class="wizard-step">
-                <h2 id="calibration-title" class="text-2xl font-bold text-gray-900 mb-2 text-center">X/Y Calibration
-                </h2>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 id="calibration-title" class="text-2xl font-bold text-gray-900 mb-2 text-center">X/Y calibration</h3>
 
-                <!-- Progress -->
-                <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex items-center max-w-4xl mx-auto">
-                    <span id="progress-text" class="text-sm text-gray-600 w-20">0 / 20</span>
-                    <div class="flex-1 h-2 bg-gray-200 rounded-full mx-4">
-                        <div id="progress-fill" class="h-full bg-primary rounded-full transition-all"
-                            style="width: 0%; background-color: var(--color-primary);"></div>
+                    <!-- Progress -->
+                    <div class="border border-gray-200 rounded-lg p-4 mb-6 flex items-center max-w-4xl mx-auto">
+                        <span id="progress-text" class="text-sm text-gray-600 w-20">0 / 20</span>
+                        <div class="flex-1 h-2 bg-gray-200 rounded-full mx-4">
+                            <div id="progress-fill" class="h-full bg-primary rounded-full transition-all" style="width: 0%; background-color: var(--color-primary);"></div>
+                        </div>
+                        <span id="progress-percent" class="text-sm text-gray-600 w-12 text-right">0%</span>
                     </div>
-                    <span id="progress-percent" class="text-sm text-gray-600 w-12 text-right">0%</span>
-                </div>
 
-                <div class="grid lg:grid-cols-2 gap-6">
-                    <!-- Left: Camera and Controls -->
-                    <div>
-                        <!-- Camera Panel (for camera method) -->
-                        <div class="camera-container h-64 mb-4 relative" id="calibrationCameraPanel">
-                            <video id="calibration-video" class="w-full h-full object-contain" autoplay playsinline></video>
-                            <canvas id="calibration-overlay"
-                                class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
-                            <button id="reconnect-camera-btn" class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded" title="Reconnect camera">
-                                ↻ Camera
-                            </button>
-                        </div>
-
-                        <!-- Cone Panel (for cone method) -->
-                        <div class="mb-4" id="calibrationConePanel" style="display: none;">
-                            <div class="bg-gray-100 rounded-lg p-8 text-center h-64 flex flex-col items-center justify-center">
-                                <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                </svg>
-                                <p class="text-gray-600 font-medium">Position nozzle tip at cone apex</p>
-                                <p class="text-sm text-gray-500 mt-2">Adjust X, Y, and Z until the nozzle touches the cone tip</p>
+                    <div class="grid lg:grid-cols-2 gap-6">
+                        <!-- Left: Camera and Controls -->
+                        <div>
+                            <!-- Camera Panel (for camera method) -->
+                            <div class="camera-container h-64 mb-4 relative" id="calibrationCameraPanel">
+                                <video id="calibration-video" class="w-full h-full object-contain" autoplay playsinline></video>
+                                <canvas id="calibration-overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+                                <button id="reconnect-camera-btn" class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded" title="Reconnect camera">
+                                    ↻ Camera
+                                </button>
                             </div>
-                        </div>
 
-                        <!-- Current Position -->
-                        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+                            <!-- Cone Panel (for cone method) -->
+                            <div class="mb-4" id="calibrationConePanel" style="display: none;">
+                                <div class="bg-gray-100 rounded-lg p-8 text-center h-64 flex flex-col items-center justify-center">
+                                    <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                    </svg>
+                                    <p class="text-gray-600 font-medium">Position nozzle tip at cone apex</p>
+                                    <p class="text-sm text-gray-500 mt-2">Adjust X, Y, and Z until the nozzle touches the cone tip</p>
+                                </div>
+                            </div>
+
+                            <!-- Current Position -->
+                            <div class="border border-gray-200 rounded-lg p-4 mb-4">
                             <div class="text-center mb-3">
                                 <span class="text-gray-600">Current position: </span>
                                 <span class="font-bold">C=<span id="current-c">0</span>° B=<span
@@ -571,9 +624,118 @@
                             </div>
                         </div>
 
-                        <!-- Jog Controls -->
-                        <div class="bg-white rounded-xl shadow-sm p-4">
-                            <div class="flex justify-center gap-8 mb-4">
+                            <!-- Jog Controls -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex justify-center gap-8 mb-4">
+                                    <div>
+                                        <p class="text-xs text-gray-500 mb-2 text-center">XY Movement</p>
+                                        <div class="grid grid-cols-3 gap-1 justify-items-center">
+                                            <div></div>
+                                            <button class="jog-btn" data-axis="Y" data-dir="1">Y+</button>
+                                            <div></div>
+                                            <button class="jog-btn" data-axis="X" data-dir="-1">X-</button>
+                                            <div class="w-12 h-12"></div>
+                                            <button class="jog-btn" data-axis="X" data-dir="1">X+</button>
+                                            <div></div>
+                                            <button class="jog-btn" data-axis="Y" data-dir="-1">Y-</button>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                    <div id="jog-z-controls" class="hidden">
+                                        <p class="text-xs text-gray-500 mb-2 text-center">Z Movement</p>
+                                        <div class="flex flex-col items-center gap-1">
+                                            <button class="jog-btn" data-axis="Z" data-dir="1">Z+</button>
+                                            <div class="h-12"></div>
+                                            <button class="jog-btn" data-axis="Z" data-dir="-1">Z-</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-center gap-2 mb-2 step-size-controls">
+                                    <span class="text-sm text-gray-500">Step:</span>
+                                    <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded" data-step="0.1">0.1</button>
+                                    <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded active" data-step="1">1</button>
+                                    <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded" data-step="10">10</button>
+                                    <span class="text-sm text-gray-500">mm</span>
+                                </div>
+                                <div id="calibration-position" class="pos-value text-center text-gray-600 text-sm">
+                                    X: --- Y: --- Z: --- C: --- B: ---
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Graph and Grid -->
+                        <div>
+                            <div class="graph-container mb-4">
+                                <canvas id="error-graph" class="graph-canvas"></canvas>
+                                <div class="graph-legend">
+                                    <div class="legend-item">
+                                        <div class="legend-color x"></div>
+                                        <span>X error</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color y"></div>
+                                        <span>Y error</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color z"></div>
+                                        <span>Z error</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                                <div class="flex gap-2" id="graph-axis-selector">
+                                    <button class="flex-1 px-3 py-2 text-sm border rounded active" data-view="c">C sweep</button>
+                                    <button class="flex-1 px-3 py-2 text-sm border rounded" data-view="b">B sweep</button>
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 class="font-medium text-blue-800 mb-2">Instructions</h4>
+                                <ol id="calibration-instructions" class="text-sm text-blue-700 list-decimal list-inside space-y-1">
+                                    <li>Nozzle moves to expected position</li>
+                                    <li>Use jog to align with crosshair/line</li>
+                                    <li>Press Enter or click Confirm</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center gap-3 mt-6">
+                        <button id="skip-c-sweep-btn" class="btn-secondary px-4 py-2 rounded-lg text-sm">Skip C sweep</button>
+                        <button id="redo-prev-btn" class="btn-outline px-4 py-2 rounded-lg text-sm" disabled>↶ Redo previous</button>
+                        <button id="confirm-point-btn" class="btn-success px-6 py-2 rounded-lg font-medium">Confirm (Enter)</button>
+                        <button id="skip-to-z-btn" class="btn-secondary px-4 py-2 rounded-lg text-sm">Skip to Z</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- Step 4: Calibrate Z -->
+            <!-- ========================================== -->
+            <div id="step-4" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 id="calibration-title-z" class="text-2xl font-bold text-gray-900 mb-2 text-center">Z calibration</h3>
+
+                    <!-- Reference Point Panel (shown first) -->
+                    <div id="z-reference-panel" class="max-w-2xl mx-auto mb-6">
+                        <div class="border border-gray-200 rounded-lg p-6">
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4">Set Z reference point</h4>
+                            <p class="text-gray-600 mb-4">
+                                Position the camera for side view. Align the nozzle tip with the horizontal line, then confirm the reference.
+                            </p>
+
+                            <!-- Camera for reference -->
+                            <div class="camera-container h-48 mb-4 relative">
+                                <video id="z-ref-video" class="w-full h-full object-contain" autoplay playsinline></video>
+                                <canvas id="z-ref-overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+                                <button id="reconnect-camera-btn-z-ref" class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded" title="Reconnect camera">
+                                    ↻ Camera
+                                </button>
+                            </div>
+
+                            <!-- XY and Z jog for reference -->
+                            <div id="z-ref-jog-controls" class="flex justify-center gap-8 mb-4">
                                 <div>
                                     <p class="text-xs text-gray-500 mb-2 text-center">XY Movement</p>
                                     <div class="grid grid-cols-3 gap-1 justify-items-center">
@@ -588,7 +750,7 @@
                                         <div></div>
                                     </div>
                                 </div>
-                                <div id="jog-z-controls" class="hidden">
+                                <div>
                                     <p class="text-xs text-gray-500 mb-2 text-center">Z Movement</p>
                                     <div class="flex flex-col items-center gap-1">
                                         <button class="jog-btn" data-axis="Z" data-dir="1">Z+</button>
@@ -597,245 +759,126 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-center gap-2 mb-2 step-size-controls">
-                                <span class="text-sm text-gray-500">Step:</span>
-                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded"
-                                    data-step="0.1">0.1</button>
-                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded active"
-                                    data-step="1">1</button>
-                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded"
-                                    data-step="10">10</button>
-                                <span class="text-sm text-gray-500">mm</span>
+
+                            <!-- Step size -->
+                            <div class="step-size-controls flex justify-center gap-2 mb-4">
+                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded" data-step="0.1">0.1</button>
+                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded active" data-step="1">1</button>
+                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded" data-step="10">10</button>
                             </div>
-                            <div id="calibration-position" class="pos-value text-center text-gray-600 text-sm">
-                                X: --- Y: --- Z: --- C: --- B: ---
+
+                            <div class="text-center mb-4">
+                                <span class="text-gray-600">Reference Z: </span>
+                                <span id="z-ref-display" class="font-mono text-lg">---</span>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Right: Graph and Grid -->
-                    <div>
-                        <div class="graph-container mb-4">
-                            <canvas id="error-graph" class="graph-canvas"></canvas>
-                            <div class="graph-legend">
-                                <div class="legend-item">
-                                    <div class="legend-color x"></div>
-                                    <span>X error</span>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-color y"></div>
-                                    <span>Y error</span>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-color z"></div>
-                                    <span>Z error</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-                            <div class="flex gap-2 mb-3" id="graph-axis-selector">
-                                <button class="flex-1 px-3 py-2 text-sm border rounded active" data-view="c">C sweep</button>
-                                <button class="flex-1 px-3 py-2 text-sm border rounded" data-view="b">B sweep</button>
-                            </div>
-                        </div>
-
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h4 class="font-medium text-blue-800 mb-2">Instructions</h4>
-                            <ol id="calibration-instructions"
-                                class="text-sm text-blue-700 list-decimal list-inside space-y-1">
-                                <li>Nozzle moves to expected position</li>
-                                <li>Use jog to align with crosshair/line</li>
-                                <li>Press Enter or click Confirm</li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-center gap-3 mt-6">
-                    <button id="skip-c-sweep-btn" class="btn-secondary px-4 py-2 rounded-lg text-sm">Skip C sweep</button>
-                    <button id="redo-prev-btn" class="btn-outline px-4 py-2 rounded-lg text-sm" disabled>↶ Redo previous</button>
-                    <button id="confirm-point-btn" class="btn-success px-6 py-2 rounded-lg font-medium">Confirm
-                        (Enter)</button>
-                    <button id="skip-to-z-btn" class="btn-secondary px-4 py-2 rounded-lg text-sm">Skip to Z</button>
-                </div>
-            </div>
-
-            <!-- ========================================== -->
-            <!-- Step 4: Calibrate Z -->
-            <!-- ========================================== -->
-            <div id="step-4" class="wizard-step">
-                <h2 id="calibration-title-z" class="text-2xl font-bold text-gray-900 mb-2 text-center">Z calibration</h2>
-
-                <!-- Reference Point Panel (shown first) -->
-                <div id="z-reference-panel" class="max-w-2xl mx-auto mb-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Set Z reference point</h3>
-                        <p class="text-gray-600 mb-4">
-                            Position the camera for side view. Align the nozzle tip with the horizontal line, then confirm the reference.
-                        </p>
-
-                        <!-- Camera for reference -->
-                        <div class="camera-container h-48 mb-4 relative">
-                            <video id="z-ref-video" class="w-full h-full object-contain" autoplay playsinline></video>
-                            <canvas id="z-ref-overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
-                            <button id="reconnect-camera-btn-z-ref" class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded" title="Reconnect camera">
-                                ↻ Camera
+                            <button id="confirm-z-ref-btn" class="btn-primary w-full py-3">
+                                Confirm Z reference (Enter)
                             </button>
                         </div>
-
-                        <!-- XY and Z jog for reference -->
-                        <div id="z-ref-jog-controls" class="flex justify-center gap-8 mb-4">
-                            <div>
-                                <p class="text-xs text-gray-500 mb-2 text-center">XY Movement</p>
-                                <div class="grid grid-cols-3 gap-1 justify-items-center">
-                                    <div></div>
-                                    <button class="jog-btn" data-axis="Y" data-dir="1">Y+</button>
-                                    <div></div>
-                                    <button class="jog-btn" data-axis="X" data-dir="-1">X-</button>
-                                    <div class="w-12 h-12"></div>
-                                    <button class="jog-btn" data-axis="X" data-dir="1">X+</button>
-                                    <div></div>
-                                    <button class="jog-btn" data-axis="Y" data-dir="-1">Y-</button>
-                                    <div></div>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-xs text-gray-500 mb-2 text-center">Z Movement</p>
-                                <div class="flex flex-col items-center gap-1">
-                                    <button class="jog-btn" data-axis="Z" data-dir="1">Z+</button>
-                                    <div class="h-12"></div>
-                                    <button class="jog-btn" data-axis="Z" data-dir="-1">Z-</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Step size -->
-                        <div class="step-size-controls flex justify-center gap-2 mb-4">
-                            <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded" data-step="0.1">0.1</button>
-                            <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded active" data-step="1">1</button>
-                            <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded" data-step="10">10</button>
-                        </div>
-
-                        <div class="text-center mb-4">
-                            <span class="text-gray-600">Reference Z: </span>
-                            <span id="z-ref-display" class="font-mono text-lg">---</span>
-                        </div>
-
-                        <button id="confirm-z-ref-btn" class="btn-primary w-full py-3">
-                            Confirm Z reference (Enter)
-                        </button>
                     </div>
-                </div>
 
-                <!-- Calibration Panel (hidden until reference confirmed) -->
-                <div id="z-calibration-panel" class="hidden">
-                    <!-- Progress -->
-                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex items-center max-w-4xl mx-auto">
-                    <span id="progress-text-z" class="text-sm text-gray-600 w-20">0 / 20</span>
-                    <div class="flex-1 h-2 bg-gray-200 rounded-full mx-4">
-                        <div id="progress-fill-z" class="h-full bg-primary rounded-full transition-all"
-                            style="width: 0%; background-color: var(--color-primary);"></div>
-                    </div>
-                    <span id="progress-percent-z" class="text-sm text-gray-600 w-12 text-right">0%</span>
-                </div>
-
-                <div class="grid lg:grid-cols-2 gap-6">
-                    <!-- Left: Camera and Controls -->
-                    <div>
-                        <!-- Camera Panel -->
-                        <div class="camera-container h-64 mb-4 relative">
-                            <video id="calibration-video-z" class="w-full h-full object-contain" autoplay playsinline></video>
-                            <canvas id="calibration-overlay-z"
-                                class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
-                            <button id="reconnect-camera-btn-z" class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded" title="Reconnect camera">
-                                ↻ Camera
-                            </button>
+                    <!-- Calibration Panel (hidden until reference confirmed) -->
+                    <div id="z-calibration-panel" class="hidden">
+                        <!-- Progress -->
+                        <div class="border border-gray-200 rounded-lg p-4 mb-6 flex items-center max-w-4xl mx-auto">
+                            <span id="progress-text-z" class="text-sm text-gray-600 w-20">0 / 20</span>
+                            <div class="flex-1 h-2 bg-gray-200 rounded-full mx-4">
+                                <div id="progress-fill-z" class="h-full bg-primary rounded-full transition-all" style="width: 0%; background-color: var(--color-primary);"></div>
+                            </div>
+                            <span id="progress-percent-z" class="text-sm text-gray-600 w-12 text-right">0%</span>
                         </div>
 
-                        <!-- Current Position -->
-                        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-                            <div class="text-center mb-3">
-                                <span class="text-gray-600">Current position: </span>
-                                <span class="font-bold">C=<span id="current-c-z">0</span>° B=<span
-                                        id="current-b-z">0</span>°</span>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-xs text-gray-500 mb-1">Z offset from reference</div>
-                                <div class="offset-value z text-2xl" id="offset-z-z">0.000</div>
-                            </div>
-                        </div>
+                        <div class="grid lg:grid-cols-2 gap-6">
+                            <!-- Left: Camera and Controls -->
+                            <div>
+                                <!-- Camera Panel -->
+                                <div class="camera-container h-64 mb-4 relative">
+                                    <video id="calibration-video-z" class="w-full h-full object-contain" autoplay playsinline></video>
+                                    <canvas id="calibration-overlay-z" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+                                    <button id="reconnect-camera-btn-z" class="absolute top-2 right-2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white text-xs px-2 py-1 rounded" title="Reconnect camera">
+                                        ↻ Camera
+                                    </button>
+                                </div>
 
-                        <!-- Jog Controls -->
-                        <div class="bg-white rounded-xl shadow-sm p-4">
-                            <div class="flex justify-center gap-8 mb-4">
-                                <div id="jog-z-controls-z">
-                                    <p class="text-xs text-gray-500 mb-2 text-center">Z Movement</p>
-                                    <div class="flex flex-col items-center gap-1">
-                                        <button class="jog-btn" data-axis="Z" data-dir="1">Z+</button>
-                                        <div class="h-12"></div>
-                                        <button class="jog-btn" data-axis="Z" data-dir="-1">Z-</button>
+                                <!-- Current Position -->
+                                <div class="border border-gray-200 rounded-lg p-4 mb-4">
+                                    <div class="text-center mb-3">
+                                        <span class="text-gray-600">Current position: </span>
+                                        <span class="font-bold">C=<span id="current-c-z">0</span>° B=<span id="current-b-z">0</span>°</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-xs text-gray-500 mb-1">Z offset from reference</div>
+                                        <div class="offset-value z text-2xl" id="offset-z-z">0.000</div>
+                                    </div>
+                                </div>
+
+                                <!-- Jog Controls -->
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <div class="flex justify-center gap-8 mb-4">
+                                        <div id="jog-z-controls-z">
+                                            <p class="text-xs text-gray-500 mb-2 text-center">Z Movement</p>
+                                            <div class="flex flex-col items-center gap-1">
+                                                <button class="jog-btn" data-axis="Z" data-dir="1">Z+</button>
+                                                <div class="h-12"></div>
+                                                <button class="jog-btn" data-axis="Z" data-dir="-1">Z-</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-center gap-2 mb-2 step-size-controls">
+                                        <span class="text-sm text-gray-500">Step:</span>
+                                        <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded" data-step="0.1">0.1</button>
+                                        <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded active" data-step="1">1</button>
+                                        <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded" data-step="10">10</button>
+                                        <span class="text-sm text-gray-500">mm</span>
+                                    </div>
+                                    <div id="calibration-position-z" class="pos-value text-center text-gray-600 text-sm">
+                                        X: --- Y: --- Z: --- C: --- B: ---
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-center gap-2 mb-2 step-size-controls">
-                                <span class="text-sm text-gray-500">Step:</span>
-                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded"
-                                    data-step="0.1">0.1</button>
-                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded active"
-                                    data-step="1">1</button>
-                                <button class="step-btn step-size-btn px-3 py-1 text-sm border rounded"
-                                    data-step="10">10</button>
-                                <span class="text-sm text-gray-500">mm</span>
-                            </div>
-                            <div id="calibration-position-z" class="pos-value text-center text-gray-600 text-sm">
-                                X: --- Y: --- Z: --- C: --- B: ---
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Right: Graph and Instructions -->
-                    <div>
-                        <div class="graph-container mb-4">
-                            <canvas id="error-graph-z" class="graph-canvas"></canvas>
-                            <div class="graph-legend">
-                                <div class="legend-item">
-                                    <div class="legend-color z"></div>
-                                    <span>Z error</span>
+                            <!-- Right: Graph and Instructions -->
+                            <div>
+                                <div class="graph-container mb-4">
+                                    <canvas id="error-graph-z" class="graph-canvas"></canvas>
+                                    <div class="graph-legend">
+                                        <div class="legend-item">
+                                            <div class="legend-color z"></div>
+                                            <span>Z error</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h4 class="font-medium text-blue-800 mb-2">Instructions</h4>
+                                    <ol id="calibration-instructions-z" class="text-sm text-blue-700 list-decimal list-inside space-y-1">
+                                        <li>Reposition camera to side view (upright)</li>
+                                        <li>Camera image is flipped (mounted upside down)</li>
+                                        <li>Use Z jog to align nozzle with horizontal line</li>
+                                        <li>Press Enter or click Confirm</li>
+                                    </ol>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h4 class="font-medium text-blue-800 mb-2">Instructions</h4>
-                            <ol id="calibration-instructions-z"
-                                class="text-sm text-blue-700 list-decimal list-inside space-y-1">
-                                <li>Reposition camera to side view (upright)</li>
-                                <li>Camera image is flipped (mounted upside down)</li>
-                                <li>Use Z jog to align nozzle with horizontal line</li>
-                                <li>Press Enter or click Confirm</li>
-                            </ol>
+                        <div class="flex justify-center gap-3 mt-6">
+                            <button id="skip-z-btn" class="btn-secondary px-6 py-2 rounded-lg font-medium">Skip Z calibration</button>
+                            <button id="confirm-point-btn-z" class="btn-success px-6 py-2 rounded-lg font-medium">Confirm (Enter)</button>
                         </div>
-                    </div>
+                    </div><!-- end z-calibration-panel -->
                 </div>
-
-                    <div class="flex justify-center gap-3 mt-6">
-                        <button id="skip-z-btn" class="btn-secondary px-6 py-2 rounded-lg font-medium">Skip Z calibration</button>
-                        <button id="confirm-point-btn-z" class="btn-success px-6 py-2 rounded-lg font-medium">Confirm
-                            (Enter)</button>
-                    </div>
-                </div><!-- end z-calibration-panel -->
             </div>
 
             <!-- ========================================== -->
             <!-- Step 5: Results -->
             <!-- ========================================== -->
             <div id="step-5" class="wizard-step">
-                <div class="max-w-4xl mx-auto">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Calibration results</h2>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 text-center">Calibration results</h3>
 
                     <!-- C sweep graph (B=0) -->
-                    <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
                         <h4 class="font-semibold text-gray-700 mb-2">C sweep (B=0°)</h4>
                         <div class="graph-container">
                             <canvas id="results-graph-c" class="graph-canvas"></canvas>
@@ -843,7 +886,7 @@
                     </div>
 
                     <!-- B sweep graph (C=0) -->
-                    <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
                         <h4 class="font-semibold text-gray-700 mb-2">B sweep (C=0°)</h4>
                         <div class="graph-container">
                             <canvas id="results-graph-b" class="graph-canvas"></canvas>
@@ -867,7 +910,7 @@
                     </div>
 
                     <!-- Nozzle Position Demo -->
-                    <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+                    <div class="border border-gray-200 rounded-lg p-4 mb-4">
                         <div class="flex justify-between items-center mb-3">
                             <h4 class="font-semibold text-gray-700">Nozzle position demo</h4>
                             <div class="flex gap-2">
@@ -919,17 +962,17 @@
 
                     <!-- Statistics -->
                     <div class="grid md:grid-cols-3 gap-4 mb-6">
-                        <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                        <div class="border border-gray-200 rounded-lg p-4 text-center">
                             <h4 class="font-semibold text-red-600 mb-2">X error</h4>
                             <div id="result-x-max" class="text-sm text-gray-600">Max: ---</div>
                             <div id="result-x-avg" class="text-sm text-gray-600">Avg: ---</div>
                         </div>
-                        <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                        <div class="border border-gray-200 rounded-lg p-4 text-center">
                             <h4 class="font-semibold text-green-600 mb-2">Y error</h4>
                             <div id="result-y-max" class="text-sm text-gray-600">Max: ---</div>
                             <div id="result-y-avg" class="text-sm text-gray-600">Avg: ---</div>
                         </div>
-                        <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                        <div class="border border-gray-200 rounded-lg p-4 text-center">
                             <h4 class="font-semibold text-blue-600 mb-2">Z error</h4>
                             <div id="result-z-max" class="text-sm text-gray-600">Max: ---</div>
                             <div id="result-z-avg" class="text-sm text-gray-600">Avg: ---</div>
@@ -950,7 +993,7 @@
         </div>
 
         <!-- Navigation Buttons -->
-        <div class="flex justify-between mt-8 max-w-2xl mx-auto">
+        <div class="flex justify-between mt-8 max-w-5xl mx-auto">
             <button id="prevBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium" style="visibility: hidden;">
                 ← Previous
             </button>

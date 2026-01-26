@@ -420,14 +420,29 @@ class CalibratorApp {
      * Update progress bar
      */
     updateProgressBar(stepIndex) {
-        document.querySelectorAll('.progress-step').forEach((step, i) => {
+        // Update step indicators
+        document.querySelectorAll('.step-indicator').forEach((step, i) => {
             step.classList.toggle('active', i === stepIndex);
             step.classList.toggle('completed', i < stepIndex);
         });
 
-        document.querySelectorAll('.progress-connector').forEach((connector, i) => {
+        // Update step connectors
+        document.querySelectorAll('.step-connector').forEach((connector, i) => {
             connector.classList.toggle('completed', i < stepIndex);
         });
+
+        // Update progress fill bar
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) {
+            const progress = ((stepIndex + 1) / this.totalSteps) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+
+        // Update step counter
+        const stepCounter = document.getElementById('stepCounter');
+        if (stepCounter) {
+            stepCounter.textContent = `Step ${stepIndex + 1} of ${this.totalSteps}`;
+        }
     }
 
     /**
