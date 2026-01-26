@@ -436,14 +436,29 @@ class LcLbMeasureApp {
      * Update progress bar
      */
     updateProgressBar(stepIndex) {
-        document.querySelectorAll('.progress-step').forEach((step, i) => {
+        // Update step indicators
+        document.querySelectorAll('.step-indicator').forEach((step, i) => {
             step.classList.toggle('active', i === stepIndex);
             step.classList.toggle('completed', i < stepIndex);
         });
 
-        document.querySelectorAll('.progress-connector').forEach((connector, i) => {
+        // Update step connectors
+        document.querySelectorAll('.step-connector').forEach((connector, i) => {
             connector.classList.toggle('completed', i < stepIndex);
         });
+
+        // Update progress fill bar
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) {
+            const progress = ((stepIndex + 1) / this.totalSteps) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+
+        // Update step counter
+        const stepCounter = document.getElementById('stepCounter');
+        if (stepCounter) {
+            stepCounter.textContent = `Step ${stepIndex + 1} of ${this.totalSteps}`;
+        }
     }
 
     /**
@@ -458,8 +473,12 @@ class LcLbMeasureApp {
         if (stepIndex === this.totalSteps - 1) {
             nextBtn.style.display = 'none';
         } else {
-            nextBtn.style.display = 'block';
-            nextBtn.textContent = stepIndex === this.totalSteps - 2 ? 'Finish →' : 'Next →';
+            nextBtn.style.display = 'flex';
+            // Update button text while preserving the arrow icon
+            const isFinish = stepIndex === this.totalSteps - 2;
+            nextBtn.innerHTML = isFinish
+                ? 'Finish <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>'
+                : 'Next <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>';
         }
     }
 
