@@ -19,7 +19,7 @@ If you discover easier methods, better techniques, or have suggestions for impro
 
 ### Tools required
 - **3D printer** - For printing Rep5x components
-- **Hex keys** - M2.5, M3 sizes (long hex key needed for A-axis stepper installation)
+- **Hex keys** - M2.5, M3 sizes (long hex key needed for C-axis stepper installation)
 - **Wire strippers and connecting tools** - For wire connections (crimping tools if using JST, soldering iron if soldering)
 - **Multimeter** - For electrical testing
 - **Computer** - For firmware flashing and calibration
@@ -85,7 +85,7 @@ G1 X100    ; Test X motor
 G1 Y100    ; Test Y motor  
 G1 Z50     ; Test Z motor
 G1 E10     ; Test extruder motor
-G1 A10     ; Test A-axis motor (yaw rotation)
+G1 C10     ; Test C-axis motor (yaw rotation)
 G1 B10     ; Test B-axis motor (tilt rotation)
 ```
 
@@ -179,7 +179,7 @@ The slip ring needs the following connections:
 1. **Install 2x 61804 bearings** in carriage mount
 2. **Verify smooth rotation** and proper seating
 
-**Note**: Do not install the A-driven-pulley yet - this must be done after attaching to the printer since the pulley blocks access to mounting screws on some printers like the Ender 3 V3 SE.
+**Note**: Do not install the C-driven-pulley yet - this must be done after attaching to the printer since the pulley blocks access to mounting screws on some printers like the Ender 3 V3 SE.
 
 <img src="images/carriage-mount-underside.jpg" alt="Figure 5: Carriage mount with bearings" width="400">
 
@@ -198,26 +198,26 @@ The slip ring needs the following connections:
 
 *Figure 8: Carriage mount attached to printer's X-carriage*
 
-### Step 11: Install A-axis drive system
+### Step 11: Install C-axis drive system
 
-#### A-axis pulley, stepper and drive installation
-1. **Install A-driven-pulley** in carriage mount
-2. **Add optical sensor** to carriage mount for A-axis position sensing
-3. **Mount A-axis (yaw) stepper motor** to carriage mount using 4x M3x6mm bolts
+#### C-axis pulley, stepper and drive installation
+1. **Install C-driven-pulley** in carriage mount
+2. **Add optical sensor** to carriage mount for C-axis position sensing
+3. **Mount C-axis (yaw) stepper motor** to carriage mount using 4x M3x6mm bolts
 4. **Use long hex key** to access stepper motor mounting bolts
-5. **Install GT2 timing belt** connecting stepper motor to A-driven-pulley
+5. **Install GT2 timing belt** connecting stepper motor to C-driven-pulley
 6. **Tension belt properly** - should be snug but not over-tensioned
-7. **Route slip ring wires** through the A-driven-pulley center hole
-8. **Connect A-axis stepper** directly to control board (not through slip ring)
+7. **Route slip ring wires** through the C-driven-pulley center hole
+8. **Connect C-axis stepper** directly to control board (not through slip ring)
 
 <div style="display: flex; gap: 20px; align-items: flex-start;">
   <div>
-    <img src="images/carriage-mount-front-view.jpg" alt="Figure 8: A-axis pulley installation" width="300">
-    <p><em>Figure 8: A-driven-pulley installed in carriage mount</em></p>
+    <img src="images/carriage-mount-front-view.jpg" alt="Figure 8: C-axis pulley installation" width="300">
+    <p><em>Figure 8: C-driven-pulley installed in carriage mount</em></p>
   </div>
   <div>
-    <img src="images/a-axis-stepper-installed.jpg" alt="Figure 9: Complete A-axis installation" width="300">
-    <p><em>Figure 9: Complete A-axis installation with stepper motor and belt</em></p>
+    <img src="images/c-axis-stepper-installed.jpg" alt="Figure 9: Complete C-axis installation" width="300">
+    <p><em>Figure 9: Complete C-axis installation with stepper motor and belt</em></p>
   </div>
 </div>
 
@@ -226,7 +226,7 @@ The slip ring needs the following connections:
 #### B_arm installation and wire routing
 1. **Route all wires and Bowden tube** through B_arm center
 2. **Attach B_arm to carriage mount** using 2x M3x10mm bolts
-3. **Verify clearances** - Both A and B axes should move freely
+3. **Verify clearances** - Both C and B axes should move freely
 4. **Test mechanical limits** - Check rotation range without collisions
 5. **Secure wire routing** - No pinching or interference during motion
 
@@ -283,7 +283,7 @@ The slip ring needs the following connections:
 1. **Power up system** and verify no error messages
 2. **Test all 6 axes** with careful manual G-code commands:
    - X, Y, Z axes: `G1 X10 F1000` (move slowly, verify direction)
-   - A-axis: `G1 A45 F1000` (rotate in 45° increments)
+   - C-axis: `G1 C45 F1000` (rotate in 45° increments)
    - B-axis: `G1 B10 F1000` (tilt slowly, watch for collisions)
    - Extruder: `G1 E10 F100` (extrude 10mm slowly)
 3. **Verify endstops** trigger properly with `M119` command
@@ -320,7 +320,7 @@ The slip ring needs the following connections:
    - Cone method: Print calibration cone and measure deviations
    - Camera method: Use computer vision to detect tool center point offset
 3. **Update firmware** with calibrated kinematic parameters:
-   - A-axis offset
+   - C-axis offset
    - B-axis offset
    - Tool center point (TCP) coordinates
 4. **Test print** simple geometry to verify functionality

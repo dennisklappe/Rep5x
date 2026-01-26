@@ -20,6 +20,15 @@ class PrinterControlApp {
         // Console auto-scroll control
         this.consoleAutoScroll = true;
 
+        // Command history
+        this.commandHistory = [];
+        this.historyIndex = -1;
+
+        // G-code file playback
+        this.gcodeLines = [];
+        this.gcodeIndex = 0;
+        this.isPlaying = false;
+
         // Bind printer callbacks
         this.printer.onPositionUpdate = (pos) => this.updatePositionDisplay(pos);
         this.printer.onConnectionChange = (connected) => this.updateConnectionStatus(connected);
@@ -142,10 +151,10 @@ class PrinterControlApp {
         // Home buttons
         document.getElementById('homeXY').addEventListener('click', () => this.home(['X', 'Y']));
         document.getElementById('homeZ').addEventListener('click', () => this.home(['Z']));
-        document.getElementById('homeA').addEventListener('click', () => this.home(['A']));
+        document.getElementById('homeC').addEventListener('click', () => this.home(['C']));
         document.getElementById('homeB').addEventListener('click', () => this.home(['B']));
         document.getElementById('homeAll').addEventListener('click', () => this.home([]));
-        document.getElementById('homeABZero').addEventListener('click', () => this.homeABAndZero());
+        document.getElementById('homeCBZero').addEventListener('click', () => this.homeCBAndZero());
 
         // Emergency stop
         document.getElementById('emergencyStop').addEventListener('click', () => this.emergencyStop());
@@ -196,14 +205,77 @@ class PrinterControlApp {
             });
         });
 
+        // Toggle buttons (IK, Motors)
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const currentState = btn.dataset.state;
+                const newState = currentState === 'on' ? 'off' : 'on';
+                const cmd = newState === 'on' ? btn.dataset.cmdOn : btn.dataset.cmdOff;
+
+                // Update button state and appearance
+                btn.dataset.state = newState;
+                const label = btn.textContent.split(':')[0];
+                btn.textContent = `${label}: ${newState.toUpperCase()}`;
+
+                // Update styling based on state
+                if (newState === 'on') {
+                    btn.classList.add('bg-green-50', 'border-green-300');
+                    btn.classList.remove('bg-red-50', 'border-red-300');
+                } else {
+                    btn.classList.add('bg-red-50', 'border-red-300');
+                    btn.classList.remove('bg-green-50', 'border-green-300');
+                }
+
+                this.sendCommand(cmd);
+            });
+        });
+
         // Command form
+        const commandInput = document.getElementById('commandInput');
         document.getElementById('commandForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            const input = document.getElementById('commandInput');
-            const cmd = input.value.trim();
+            const cmd = commandInput.value.trim();
             if (cmd) {
-                this.sendCommand(cmd);
-                input.value = '';
+                // Handle "clear" command
+                if (cmd.toLowerCase() === 'clear') {
+                    document.getElementById('console').innerHTML = '';
+                    this.consoleAutoScroll = true;
+                    this.logToConsole('[Console cleared]', 'info');
+                } else {
+                    // Add to history (avoid duplicates)
+                    if (this.commandHistory[0] !== cmd) {
+                        this.commandHistory.unshift(cmd);
+                        // Limit history size
+                        if (this.commandHistory.length > 50) {
+                            this.commandHistory.pop();
+                        }
+                    }
+                    this.sendCommand(cmd);
+                }
+                commandInput.value = '';
+                this.historyIndex = -1;
+            }
+        });
+
+        // Command history navigation (arrow up/down)
+        commandInput.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (this.commandHistory.length > 0 && this.historyIndex < this.commandHistory.length - 1) {
+                    this.historyIndex++;
+                    commandInput.value = this.commandHistory[this.historyIndex];
+                    // Move cursor to end
+                    setTimeout(() => commandInput.setSelectionRange(commandInput.value.length, commandInput.value.length), 0);
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (this.historyIndex > 0) {
+                    this.historyIndex--;
+                    commandInput.value = this.commandHistory[this.historyIndex];
+                } else if (this.historyIndex === 0) {
+                    this.historyIndex = -1;
+                    commandInput.value = '';
+                }
             }
         });
 
@@ -224,6 +296,22 @@ class PrinterControlApp {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
+        // G-code file upload
+        const gcodeFileInput = document.getElementById('gcodeFile');
+        if (gcodeFileInput) {
+            gcodeFileInput.addEventListener('change', (e) => this.loadGcodeFile(e.target.files[0]));
+        }
+
+        const gcodePlayBtn = document.getElementById('gcodePlayBtn');
+        if (gcodePlayBtn) {
+            gcodePlayBtn.addEventListener('click', () => this.toggleGcodePlay());
+        }
+
+        const gcodeStopBtn = document.getElementById('gcodeStopBtn');
+        if (gcodeStopBtn) {
+            gcodeStopBtn.addEventListener('click', () => this.stopGcode());
+        }
     }
 
     handleKeyboard(e) {
@@ -366,7 +454,7 @@ class PrinterControlApp {
         });
 
         // Home, emergency and extrusion buttons
-        ['homeXY', 'homeZ', 'homeA', 'homeB', 'homeAll', 'homeABZero', 'emergencyStop', 'extrudeBtn', 'retractBtn'].forEach(id => {
+        ['homeXY', 'homeZ', 'homeC', 'homeB', 'homeAll', 'homeCBZero', 'emergencyStop', 'extrudeBtn', 'retractBtn'].forEach(id => {
             const btn = document.getElementById(id);
             if (btn) {
                 btn.disabled = !enabled;
@@ -383,7 +471,7 @@ class PrinterControlApp {
         document.getElementById('pos-x').textContent = pos.x.toFixed(2);
         document.getElementById('pos-y').textContent = pos.y.toFixed(2);
         document.getElementById('pos-z').textContent = pos.z.toFixed(2);
-        document.getElementById('pos-a').textContent = pos.a.toFixed(2);
+        document.getElementById('pos-c').textContent = pos.c.toFixed(2);
         document.getElementById('pos-b').textContent = pos.b.toFixed(2);
     }
 
@@ -439,7 +527,7 @@ class PrinterControlApp {
             return;
         }
 
-        const isRotational = axis === 'A' || axis === 'B';
+        const isRotational = axis === 'C' || axis === 'B';
         const step = isRotational ? this.angleStep : this.linearStep;
         const distance = step * direction;
 
@@ -459,6 +547,10 @@ class PrinterControlApp {
         }
 
         try {
+            // Disable IK before homing (don't re-enable - user controls via start g-code)
+            this.logToConsole('Disabling IK for homing...', 'info');
+            await this.printer.sendCommandAndWait('G49');
+
             const axisStr = axes.length > 0 ? axes.join(', ') : 'all axes';
             this.logToConsole(`Homing ${axisStr}...`, 'info');
             await this.printer.home(axes);
@@ -468,20 +560,26 @@ class PrinterControlApp {
         }
     }
 
-    async homeABAndZero() {
+    async homeCBAndZero() {
         if (!this.printer.isConnected()) {
             this.logToConsole('Not connected to printer', 'error');
             return;
         }
 
         try {
-            this.logToConsole('Homing A & B axes...', 'info');
-            await this.printer.home(['A', 'B']);
-            this.logToConsole('Moving to A0 B0...', 'info');
-            await this.printer.moveTo({ a: 0, b: 0 });
-            this.logToConsole('A/B at zero position', 'info');
+            // Disable IK before homing (don't re-enable - user controls via start g-code)
+            this.logToConsole('Disabling IK for homing...', 'info');
+            await this.printer.sendCommandAndWait('G49');
+
+            this.logToConsole('Homing C & B axes...', 'info');
+            await this.printer.sendCommandAndWait('G28 C B', 60000);
+
+            this.logToConsole('Moving to C0 B0...', 'info');
+            await this.printer.sendCommandAndWait('G0 C0 B0 F3000', 30000);
+
+            this.logToConsole('C/B at zero position', 'info');
         } catch (error) {
-            this.logToConsole(`Home A/B error: ${error.message}`, 'error');
+            this.logToConsole(`Home C/B error: ${error.message}`, 'error');
         }
     }
 
@@ -530,6 +628,11 @@ class PrinterControlApp {
     }
 
     logToConsole(message, type = 'received') {
+        // Filter out M105 temperature polling noise
+        if (message === '> M105' || message.includes('ok T:')) {
+            return;
+        }
+
         const console = document.getElementById('console');
         const line = document.createElement('div');
         line.className = `console-line ${type}`;
@@ -558,6 +661,119 @@ class PrinterControlApp {
             console.scrollTop = console.scrollHeight;
         }
     }
+
+    /**
+     * Load G-code file for playback
+     */
+    async loadGcodeFile(file) {
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            // Parse G-code lines, filtering out comments and empty lines
+            this.gcodeLines = text.split('\n')
+                .map(line => line.split(';')[0].trim())  // Remove comments
+                .filter(line => line.length > 0);        // Remove empty lines
+
+            this.gcodeIndex = 0;
+            this.isPlaying = false;
+
+            this.logToConsole(`[Loaded ${file.name}: ${this.gcodeLines.length} commands]`, 'info');
+            this.updateGcodeUI();
+        } catch (error) {
+            this.logToConsole(`Error loading file: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Toggle G-code playback
+     */
+    toggleGcodePlay() {
+        if (this.isPlaying) {
+            this.pauseGcode();
+        } else {
+            this.playGcode();
+        }
+    }
+
+    /**
+     * Start/resume G-code playback
+     */
+    async playGcode() {
+        if (!this.printer.isConnected()) {
+            this.logToConsole('Not connected to printer', 'error');
+            return;
+        }
+
+        if (this.gcodeLines.length === 0) {
+            this.logToConsole('No G-code loaded', 'error');
+            return;
+        }
+
+        this.isPlaying = true;
+        this.updateGcodeUI();
+        this.logToConsole(`[Playing G-code from line ${this.gcodeIndex + 1}]`, 'info');
+
+        while (this.isPlaying && this.gcodeIndex < this.gcodeLines.length) {
+            const line = this.gcodeLines[this.gcodeIndex];
+            try {
+                await this.printer.sendCommandAndWait(line, 60000);
+                this.gcodeIndex++;
+                this.updateGcodeUI();
+            } catch (error) {
+                this.logToConsole(`Error at line ${this.gcodeIndex + 1}: ${error.message}`, 'error');
+                this.pauseGcode();
+                break;
+            }
+        }
+
+        if (this.gcodeIndex >= this.gcodeLines.length) {
+            this.logToConsole('[G-code complete]', 'info');
+            this.isPlaying = false;
+            this.updateGcodeUI();
+        }
+    }
+
+    /**
+     * Pause G-code playback
+     */
+    pauseGcode() {
+        this.isPlaying = false;
+        this.logToConsole(`[Paused at line ${this.gcodeIndex + 1}]`, 'info');
+        this.updateGcodeUI();
+    }
+
+    /**
+     * Stop G-code playback and reset
+     */
+    stopGcode() {
+        this.isPlaying = false;
+        this.gcodeIndex = 0;
+        this.logToConsole('[G-code stopped]', 'info');
+        this.updateGcodeUI();
+    }
+
+    /**
+     * Update G-code playback UI
+     */
+    updateGcodeUI() {
+        const playBtn = document.getElementById('gcodePlayBtn');
+        const progressEl = document.getElementById('gcodeProgress');
+
+        if (playBtn) {
+            playBtn.textContent = this.isPlaying ? 'Pause' : 'Play';
+            playBtn.disabled = this.gcodeLines.length === 0;
+        }
+
+        if (progressEl) {
+            if (this.gcodeLines.length > 0) {
+                progressEl.textContent = `${this.gcodeIndex}/${this.gcodeLines.length}`;
+            } else {
+                progressEl.textContent = 'No file';
+            }
+        }
+    }
+
 }
 
 // Initialize app when DOM is ready

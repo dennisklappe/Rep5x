@@ -2,7 +2,7 @@
  * Printer Interface for Rep5x Tools
  * Handles serial communication with the printer via Web Serial API
  *
- * Used by: Printer Control, LA/LB Measure, Printer Setup, Calibrator
+ * Used by: Printer Control, LC/LB Measure, Printer Setup, Calibrator
  */
 
 class PrinterInterface {
@@ -22,16 +22,19 @@ class PrinterInterface {
         this.readableStreamClosed = null;
         this.writableStreamClosed = null;
 
-        this.currentPosition = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+        this.currentPosition = { x: 0, y: 0, z: 0, c: 0, b: 0 };
         this.isRelativeMode = false;
 
         // Configuration
         this.logResponses = options.logResponses !== false; // Default to true
 
+        // Command queue to prevent concurrent writes (WritableStream can only have one writer)
+        this.sendQueue = Promise.resolve();
+
         // Test mode for development without hardware
         this.testMode = {
             enabled: false,
-            position: { x: 100, y: 100, z: 50, a: 0, b: 0 }
+            position: { x: 100, y: 100, z: 50, c: 0, b: 0 }
         };
 
         // Callbacks
@@ -54,6 +57,7 @@ class PrinterInterface {
         this.pendingOkResolve = null;
         this.pendingM92Resolve = null;
         this.pendingM206Resolve = null;
+        this.pendingM665Resolve = null;
     }
 
     /**
@@ -79,7 +83,7 @@ class PrinterInterface {
     setTestMode(enabled) {
         this.testMode.enabled = enabled;
         if (enabled) {
-            this.testMode.position = { x: 100, y: 100, z: 50, a: 0, b: 0 };
+            this.testMode.position = { x: 100, y: 100, z: 50, c: 0, b: 0 };
             this.currentPosition = { ...this.testMode.position };
             this.log('Test mode enabled - movements will be simulated');
             if (this.onConnectionChange) {
@@ -250,6 +254,12 @@ class PrinterInterface {
      * @param {string} line - Response line
      */
     handleResponseLine(line) {
+        // If capturing, send line to capture callback
+        if (this.pendingCaptureResolve) {
+            console.log('[PrinterInterface] Capture receiving line:', line);
+            this.pendingCaptureResolve(line);
+        }
+
         // Check for position response (M114)
         // Format: "X:100.00 Y:50.00 Z:25.00 A:0.00 B:0.00" or similar
         const posMatch = line.match(/X:([-\d.]+)\s*Y:([-\d.]+)\s*Z:([-\d.]+)/i);
@@ -258,10 +268,10 @@ class PrinterInterface {
             this.currentPosition.y = parseFloat(posMatch[2]);
             this.currentPosition.z = parseFloat(posMatch[3]);
 
-            // Check for A and B axes
-            const aMatch = line.match(/A:([-\d.]+)/i);
+            // Check for C and B axes
+            const cMatch = line.match(/C:([-\d.]+)/i);
             const bMatch = line.match(/B:([-\d.]+)/i);
-            if (aMatch) this.currentPosition.a = parseFloat(aMatch[1]);
+            if (cMatch) this.currentPosition.c = parseFloat(cMatch[1]);
             if (bMatch) this.currentPosition.b = parseFloat(bMatch[1]);
 
             if (this.onPositionUpdate) {
@@ -302,29 +312,43 @@ class PrinterInterface {
         }
 
         // Check for M92 response (steps per unit)
-        const m92Match = line.match(/M92.*A([\d.]+).*B([\d.]+)/i);
+        const m92Match = line.match(/M92.*C([\d.]+).*B([\d.]+)/i);
         if (m92Match && this.pendingM92Resolve) {
             this.pendingM92Resolve({
-                a: parseFloat(m92Match[1]),
+                c: parseFloat(m92Match[1]),
                 b: parseFloat(m92Match[2])
             });
             this.pendingM92Resolve = null;
         }
 
         // Check for M206 response (home offsets)
-        // Marlin format: M206 X0.00 Y0.00 Z0.00 A0.00 B0.00 (or I/J for rotational axes)
+        // Marlin format: M206 X0.00 Y0.00 Z0.00 C0.00 B0.00 (or I/J for rotational axes)
         if (line.includes('M206') && this.pendingM206Resolve) {
             const zMatch = line.match(/Z([-\d.]+)/i);
-            const aMatch = line.match(/[AI]([-\d.]+)/i);
+            const cMatch = line.match(/[CI]([-\d.]+)/i);
             const bMatch = line.match(/[BJ]([-\d.]+)/i);
-            if (zMatch || aMatch || bMatch) {
+            if (zMatch || cMatch || bMatch) {
                 this.pendingM206Resolve({
                     z: zMatch ? parseFloat(zMatch[1]) : 0,
-                    a: aMatch ? parseFloat(aMatch[1]) : 0,
+                    c: cMatch ? parseFloat(cMatch[1]) : 0,
                     b: bMatch ? parseFloat(bMatch[1]) : 0
                 });
                 this.pendingM206Resolve = null;
             }
+        }
+
+        // Check for M665 response (IK parameters LC/LB)
+        // Marlin PENTA_AXIS_HH format: M665 S200 J1.6 K54.67
+        if (line.includes('M665') && this.pendingM665Resolve) {
+            const jMatch = line.match(/J([-\d.]+)/i);
+            const kMatch = line.match(/K([-\d.]+)/i);
+            const sMatch = line.match(/S([-\d.]+)/i);
+            this.pendingM665Resolve({
+                lc: jMatch ? parseFloat(jMatch[1]) : 0,
+                lb: kMatch ? parseFloat(kMatch[1]) : 54.67,
+                segmentsPerSecond: sMatch ? parseFloat(sMatch[1]) : 200
+            });
+            this.pendingM665Resolve = null;
         }
 
         // Log responses if enabled (configurable per tool)
@@ -347,16 +371,25 @@ class PrinterInterface {
             throw new Error('Not connected to printer');
         }
 
-        try {
-            const encoder = new TextEncoder();
-            const writer = this.port.writable.getWriter();
-            await writer.write(encoder.encode(command + '\n'));
-            writer.releaseLock();
-            this.log(`> ${command}`);
-        } catch (error) {
-            this.log(`Send error: ${error.message}`);
-            throw error;
-        }
+        // Queue this command to prevent concurrent writes
+        // (WritableStream can only have one active writer at a time)
+        const sendPromise = this.sendQueue.then(async () => {
+            try {
+                const encoder = new TextEncoder();
+                const writer = this.port.writable.getWriter();
+                await writer.write(encoder.encode(command + '\n'));
+                writer.releaseLock();
+                this.log(`> ${command}`);
+            } catch (error) {
+                this.log(`Send error: ${error.message}`);
+                throw error;
+            }
+        });
+
+        // Update queue to wait for this command (don't propagate errors to queue)
+        this.sendQueue = sendPromise.catch(() => {});
+
+        return sendPromise;
     }
 
     /**
@@ -382,17 +415,28 @@ class PrinterInterface {
             throw new Error('Not connected to printer');
         }
 
-        return new Promise(async (resolve, reject) => {
+        // Chain onto queue - the entire operation (send + wait for ok) happens in sequence
+        // This prevents the next command from starting until this one receives its "ok"
+        const queuedCommand = this.sendQueue.then(async () => {
+            // Set up ok handler and send command
+            let resolveOk, rejectOk;
+            const okPromise = new Promise((resolve, reject) => {
+                resolveOk = resolve;
+                rejectOk = reject;
+            });
+
             const timeoutId = setTimeout(() => {
                 this.pendingOkResolve = null;
-                reject(new Error(`Command timeout: ${command}`));
+                rejectOk(new Error(`Command timeout: ${command}`));
             }, timeout);
 
             this.pendingOkResolve = () => {
                 clearTimeout(timeoutId);
-                resolve();
+                console.log('[PrinterInterface] sendCommandAndWait ok received for:', command);
+                resolveOk();
             };
 
+            // Send the command (with proper await)
             try {
                 const encoder = new TextEncoder();
                 const writer = this.port.writable.getWriter();
@@ -402,10 +446,84 @@ class PrinterInterface {
             } catch (error) {
                 clearTimeout(timeoutId);
                 this.pendingOkResolve = null;
-                this.log(`Send error: ${error.message}`);
-                reject(error);
+                throw error;
             }
+
+            // Wait for ok
+            return okPromise;
         });
+
+        // Hold the queue until ok is received
+        this.sendQueue = queuedCommand.catch(() => {});
+
+        return queuedCommand;
+    }
+
+    /**
+     * Send a command and capture all response lines until "ok"
+     * @param {string} command - G-code command to send
+     * @param {number} timeout - Timeout in ms
+     * @returns {Promise<string>} All response lines joined by newlines
+     */
+    async sendCommandAndCapture(command, timeout = 10000) {
+        if (this.testMode.enabled) {
+            return 'Test mode - no response';
+        }
+
+        if (!this.isConnected()) {
+            throw new Error('Not connected to printer');
+        }
+
+        // Chain onto queue - the entire capture (send + wait for response) happens in sequence
+        const queuedCapture = this.sendQueue.then(async () => {
+            const capturedLines = [];
+            let resolveCapture, rejectCapture;
+
+            const capturePromise = new Promise((resolve, reject) => {
+                resolveCapture = resolve;
+                rejectCapture = reject;
+            });
+
+            const timeoutId = setTimeout(() => {
+                this.pendingCaptureResolve = null;
+                rejectCapture(new Error(`Command timeout: ${command}`));
+            }, timeout);
+
+            // Set up capture callback BEFORE sending command
+            console.log('[PrinterInterface] Setting up capture for:', command);
+            this.pendingCaptureResolve = (line) => {
+                capturedLines.push(line);
+                console.log('[PrinterInterface] Captured line #' + capturedLines.length + ':', line);
+                // Check if this is the final "ok" line
+                if (line.toLowerCase().trim() === 'ok') {
+                    clearTimeout(timeoutId);
+                    this.pendingCaptureResolve = null;
+                    console.log('[PrinterInterface] Capture complete, total lines:', capturedLines.length);
+                    resolveCapture(capturedLines.join('\n'));
+                }
+            };
+
+            // Now send the command
+            try {
+                const encoder = new TextEncoder();
+                const writer = this.port.writable.getWriter();
+                await writer.write(encoder.encode(command + '\n'));
+                writer.releaseLock();
+                this.log(`> ${command}`);
+            } catch (error) {
+                clearTimeout(timeoutId);
+                this.pendingCaptureResolve = null;
+                this.log(`Send error: ${error.message}`);
+                rejectCapture(error);
+            }
+
+            return capturePromise;
+        });
+
+        // Hold the queue until capture completes
+        this.sendQueue = queuedCapture.catch(() => {});
+
+        return queuedCapture;
     }
 
     /**
@@ -430,7 +548,7 @@ class PrinterInterface {
 
         // Handle G0/G1 movements
         if (upperCmd.includes('G0') || upperCmd.includes('G1')) {
-            const axes = ['X', 'Y', 'Z', 'A', 'B'];
+            const axes = ['X', 'Y', 'Z', 'C', 'B'];
             for (const axis of axes) {
                 const match = upperCmd.match(new RegExp(`${axis}([-\\d.]+)`));
                 if (match) {
@@ -452,7 +570,7 @@ class PrinterInterface {
             if (upperCmd.includes('Z')) this.testMode.position.z = 0;
             if (upperCmd === 'G28') {
                 // Home all
-                this.testMode.position = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+                this.testMode.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
             }
         }
 
@@ -490,12 +608,12 @@ class PrinterInterface {
     }
 
     /**
-     * Query current M92 steps/degree values for A and B axes
-     * @returns {Promise<object>} Steps per degree { a, b }
+     * Query current M92 steps/degree values for C and B axes
+     * @returns {Promise<object>} Steps per degree { c, b }
      */
     async queryM92() {
         if (this.testMode.enabled) {
-            return { a: 17.778, b: 17.778 }; // Default test values
+            return { c: 17.778, b: 17.778 }; // Default test values
         }
 
         return new Promise((resolve, reject) => {
@@ -514,12 +632,12 @@ class PrinterInterface {
     }
 
     /**
-     * Query current M206 home offset values for A and B axes
-     * @returns {Promise<{a: number, b: number}>}
+     * Query current M206 home offset values for C and B axes
+     * @returns {Promise<{c: number, b: number}>}
      */
     async queryM206() {
         if (this.testMode.enabled) {
-            return { z: 0, a: 0, b: 0 }; // Default test values (no offset)
+            return { z: 0, c: 0, b: 0 }; // Default test values (no offset)
         }
 
         return new Promise((resolve, reject) => {
@@ -538,8 +656,32 @@ class PrinterInterface {
     }
 
     /**
+     * Query M665 (IK parameters LC/LB)
+     * @returns {Promise<{lc: number, lb: number, segmentsPerSecond: number}>}
+     */
+    async queryM665() {
+        if (this.testMode.enabled) {
+            return { lc: 1.6, lb: 54.67, segmentsPerSecond: 200 }; // Default test values
+        }
+
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                this.pendingM665Resolve = null;
+                reject(new Error('M665 query timeout'));
+            }, 5000);
+
+            this.pendingM665Resolve = (params) => {
+                clearTimeout(timeout);
+                resolve(params);
+            };
+
+            this.sendCommand('M665'); // Query IK settings
+        });
+    }
+
+    /**
      * Move to absolute position
-     * @param {object} target - Target position { x, y, z, a, b } (optional axes)
+     * @param {object} target - Target position { x, y, z, c, b } (optional axes)
      * @param {number} feedrate - Feed rate in mm/min
      */
     async moveTo(target, feedrate = 3000) {
@@ -550,7 +692,7 @@ class PrinterInterface {
         if (target.x !== undefined) cmd += ` X${target.x.toFixed(2)}`;
         if (target.y !== undefined) cmd += ` Y${target.y.toFixed(2)}`;
         if (target.z !== undefined) cmd += ` Z${target.z.toFixed(2)}`;
-        if (target.a !== undefined) cmd += ` A${target.a.toFixed(1)}`;
+        if (target.c !== undefined) cmd += ` C${target.c.toFixed(1)}`;
         if (target.b !== undefined) cmd += ` B${target.b.toFixed(1)}`;
         cmd += ` F${feedrate}`;
 
@@ -563,7 +705,7 @@ class PrinterInterface {
 
     /**
      * Move relative to current position
-     * @param {object} delta - Relative movement { x, y, z, a, b } (optional axes)
+     * @param {object} delta - Relative movement { x, y, z, c, b } (optional axes)
      * @param {number} feedrate - Feed rate in mm/min
      */
     async moveRelative(delta, feedrate = 3000) {
@@ -574,7 +716,7 @@ class PrinterInterface {
         if (delta.x !== undefined) cmd += ` X${delta.x.toFixed(2)}`;
         if (delta.y !== undefined) cmd += ` Y${delta.y.toFixed(2)}`;
         if (delta.z !== undefined) cmd += ` Z${delta.z.toFixed(2)}`;
-        if (delta.a !== undefined) cmd += ` A${delta.a.toFixed(1)}`;
+        if (delta.c !== undefined) cmd += ` C${delta.c.toFixed(1)}`;
         if (delta.b !== undefined) cmd += ` B${delta.b.toFixed(1)}`;
         cmd += ` F${feedrate}`;
 

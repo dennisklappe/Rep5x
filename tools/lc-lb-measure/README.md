@@ -1,12 +1,12 @@
-# Rep5x - LA/LB Measure
+# Rep5x - LC/LB Measure
 
-A web-based tool for measuring the LA and LB kinematic parameters of your Rep5x 5-axis 3D printer.
+A web-based tool for measuring the LC and LB kinematic parameters of your Rep5x 5-axis 3D printer.
 
-**Live tool:** https://tools.rep5x.com/la-lb-measure/
+**Live tool:** https://tools.rep5x.com/lc-lb-measure/
 
-## What are LA and LB?
+## What are LC and LB?
 
-- **LA (A-axis offset)**: The distance from the A-axis (yaw) rotation centre to the nozzle tip. For the current Rep5x design, this should be **0**.
+- **LC (C-axis offset)**: The distance from the C-axis (yaw) rotation centre to the nozzle tip. For the current Rep5x design, this should be **0**.
 - **LB (B-axis offset)**: The distance from the B-axis (pitch) rotation centre to the nozzle tip. This varies based on your build (typically ~40-60mm).
 
 These parameters are essential for accurate inverse kinematics calculations, which ensure the nozzle stays at the correct position when rotating.
@@ -48,16 +48,16 @@ Firefox and Safari are not supported due to Web Serial API limitations.
 ## File structure
 
 ```
-la-lb-measure/
+lc-lb-measure/
 ├── index.html              # Main application
 ├── README.md               # This file
 ├── js/
 │   ├── app.js              # Main wizard controller
 │   ├── camera-manager.js   # Camera access and crosshair
-│   ├── measurement-engine.js # LA/LB calculations
+│   ├── measurement-engine.js # LC/LB calculations
 │   ├── connect.js          # Connection step
 │   ├── prepare.js          # Preparation step
-│   ├── la-measure.js       # LA measurement step
+│   ├── lc-measure.js       # LC measurement step
 │   ├── lb-measure.js       # LB measurement step
 │   ├── method.js           # Method selection step
 │   └── results.js          # Results step

@@ -179,6 +179,32 @@ jobs:
             echo "Set DEFAULT_TOOL_CENTERPOINT_CONTROL to $IK_ENABLED"
           fi
 
+          # === C AXIS HOME POSITION ===
+          C_HOME_POS=$(echo "$CUSTOMIZATIONS" | jq -r '.cHomePos // empty')
+          if [ -n "$C_HOME_POS" ]; then
+            sed -i "s/^#define MANUAL_I_HOME_POS.*/#define MANUAL_I_HOME_POS $C_HOME_POS/" marlin/Marlin/Configuration.h
+            echo "Set MANUAL_I_HOME_POS to $C_HOME_POS"
+          fi
+
+          # === B AXIS RANGE ===
+          B_RANGE=$(echo "$CUSTOMIZATIONS" | jq -r '.bRange // empty')
+          if [ -n "$B_RANGE" ]; then
+            sed -i "s/^#define J_MIN_POS.*/#define J_MIN_POS -$B_RANGE/" marlin/Marlin/Configuration.h
+            sed -i "s/^#define J_MAX_POS.*/#define J_MAX_POS $B_RANGE/" marlin/Marlin/Configuration.h
+            echo "Set J_MIN_POS to -$B_RANGE, J_MAX_POS to $B_RANGE"
+          fi
+
+          # === EVENT AFTER HOMING ===
+          EVENT_AFTER_HOMING_ENABLED=$(echo "$CUSTOMIZATIONS" | jq -r '.eventAfterHomingEnabled // empty')
+          EVENT_AFTER_HOMING_GCODE=$(echo "$CUSTOMIZATIONS" | jq -r '.eventAfterHomingGcode // empty')
+          if [ "$EVENT_AFTER_HOMING_ENABLED" = "true" ] && [ -n "$EVENT_AFTER_HOMING_GCODE" ]; then
+            # Escape backslashes and convert newlines to \n for C string
+            ESCAPED_GCODE=$(echo "$EVENT_AFTER_HOMING_GCODE" | sed 's/\\/\\\\/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+            # Add the define (it may not exist in base config, so append after XY_AFTER_HOMING)
+            sed -i "/^\/\/#define XY_AFTER_HOMING/a #define EVENT_GCODE_AFTER_HOMING \"$ESCAPED_GCODE\"" marlin/Marlin/Configuration.h
+            echo "Set EVENT_GCODE_AFTER_HOMING to: $ESCAPED_GCODE"
+          fi
+
           # === NEOPIXEL COLOR ===
           NEOPIXEL_COLOR=$(echo "$CUSTOMIZATIONS" | jq -r '.neopixelColor // empty')
           if [ -n "$NEOPIXEL_COLOR" ]; then

@@ -110,7 +110,12 @@ const ConfigGenerator = {
         lines.push(`#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Y ${config.ikLC}  // LC`);
         lines.push(`#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z ${config.ikLB}  // LB`);
         lines.push(`#define DEFAULT_SEGMENTS_PER_SECOND ${config.segmentsPerSecond}`);
-        lines.push(`#define DEFAULT_TOOL_CENTERPOINT_CONTROL ${config.ikEnabled ? 'true' : 'false'}`);
+        lines.push('#define DEFAULT_TOOL_CENTERPOINT_CONTROL false  // Enable via G43.4 in start g-code');
+        lines.push('');
+        lines.push('// === Axis positions ===');
+        lines.push(`#define MANUAL_I_HOME_POS ${config.cHomePos}  // C position after homing`);
+        lines.push(`#define J_MIN_POS -${config.bRange}  // B travel limit`);
+        lines.push(`#define J_MAX_POS ${config.bRange}`);
 
         if (config.display === 'btt_mini_12864') {
             lines.push('');
@@ -310,6 +315,12 @@ const ConfigGenerator = {
   #define PRINTABLE_RADIUS ${Math.min(config.xBedSize, config.yBedSize) / 2}
 #endif
 
+// Calibration correction - compensates for mechanical errors
+// Use M667 to set Fourier coefficients from Rep5x Calibrator tool
+#ifdef PENTA_AXIS_HH
+  #define CALIBRATION_CORRECTION
+#endif
+
 // @section endstops
 
 #define ENDSTOPPULLUPS
@@ -384,8 +395,11 @@ ${config.zHomeDir > 0 ? '#define Z_SAFE_HOMING' : '//#define Z_SAFE_HOMING'}
 
 #define I_MIN_POS -180
 #define I_MAX_POS 180
-#define J_MIN_POS -90
-#define J_MAX_POS 90
+#define J_MIN_POS -${config.bRange}
+#define J_MAX_POS ${config.bRange}
+
+// C-axis home position
+#define MANUAL_I_HOME_POS ${config.cHomePos}
 
 #define MIN_SOFTWARE_ENDSTOPS
 #if ENABLED(MIN_SOFTWARE_ENDSTOPS)

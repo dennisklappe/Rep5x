@@ -23,11 +23,7 @@ class UIController {
         this.setupSliderListeners();
         this.setupShapeListeners();
         this.setupMaterialPresetListeners();
-        this.setupKinematicsListeners();
-        this.setupCalibrationListeners();
         this.setupNozzleListeners();
-        this.loadSavedCalibration();
-        this.loadCalibrationData();
     }
 
     setupTabListeners() {
@@ -172,125 +168,6 @@ class UIController {
         if (speedSlider) speedSlider.addEventListener('input', setCustomPreset);
     }
 
-    setupKinematicsListeners() {
-        const enableKinematics = document.getElementById('enableKinematics');
-        const paramsDiv = document.getElementById('kinematicParams');
-
-        if (enableKinematics && paramsDiv) {
-            enableKinematics.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    paramsDiv.style.opacity = '1';
-                    paramsDiv.style.pointerEvents = 'auto';
-                } else {
-                    paramsDiv.style.opacity = '0.5';
-                    paramsDiv.style.pointerEvents = 'none';
-                }
-            });
-        }
-
-        // Save button for advanced LA/LB params
-        const saveAdvancedBtn = document.getElementById('saveAdvancedParams');
-        const laParamInput = document.getElementById('laParam');
-        const lbParamInput = document.getElementById('lbParam');
-
-        if (saveAdvancedBtn && laParamInput && lbParamInput) {
-            saveAdvancedBtn.addEventListener('click', () => {
-                const la = parseFloat(laParamInput.value) || 0;
-                const lb = parseFloat(lbParamInput.value) || 47;
-
-                if (typeof StorageManager !== 'undefined') {
-                    StorageManager.saveCalibrationResults(la, lb, {
-                        method: 'manual',
-                        testMode: false
-                    });
-                }
-
-                // Dispatch event so footer updates
-                document.dispatchEvent(new CustomEvent('laLbUpdated', {
-                    detail: { la, lb, source: 'advanced' }
-                }));
-
-                // Visual feedback
-                saveAdvancedBtn.textContent = 'Saved!';
-                setTimeout(() => {
-                    saveAdvancedBtn.textContent = 'Save LA/LB to browser';
-                }, 1500);
-            });
-
-            // Listen for updates from footer
-            document.addEventListener('laLbUpdated', (e) => {
-                if (e.detail.source !== 'advanced') {
-                    if (e.detail.la !== undefined) laParamInput.value = e.detail.la.toFixed(2);
-                    if (e.detail.lb !== undefined) lbParamInput.value = e.detail.lb.toFixed(2);
-                }
-            });
-        }
-    }
-
-    setupCalibrationListeners() {
-        const loadBtn = document.getElementById('loadCalibrationBtn');
-        const enableCheckbox = document.getElementById('enableCalibration');
-
-        if (loadBtn) {
-            loadBtn.addEventListener('click', () => {
-                this.loadCalibrationData();
-                loadBtn.textContent = 'Reloaded!';
-                setTimeout(() => {
-                    loadBtn.textContent = 'Reload from browser storage';
-                }, 1500);
-            });
-        }
-
-        // Disable checkbox if no calibration data
-        if (enableCheckbox && !this.calibrationCorrector?.loaded) {
-            enableCheckbox.disabled = true;
-        }
-    }
-
-    loadCalibrationData() {
-        if (typeof StorageManager === 'undefined' || typeof CalibrationCorrector === 'undefined') return;
-
-        const calibData = StorageManager.loadCalibrationData();
-        if (!calibData) {
-            this.updateCalibrationStatus(false);
-            return;
-        }
-
-        try {
-            this.calibrationCorrector = new CalibrationCorrector();
-            const result = this.calibrationCorrector.loadFromJSON(calibData);
-
-            this.updateCalibrationStatus(true, result);
-
-            // Enable checkbox
-            const checkbox = document.getElementById('enableCalibration');
-            if (checkbox) checkbox.disabled = false;
-
-        } catch (error) {
-            console.error('Error loading calibration data:', error);
-            this.updateCalibrationStatus(false);
-        }
-    }
-
-    updateCalibrationStatus(loaded, details) {
-        const notLoadedDiv = document.getElementById('calibrationNotLoaded');
-        const loadedDiv = document.getElementById('calibrationLoaded');
-        const detailsDiv = document.getElementById('calibrationDetails');
-
-        if (notLoadedDiv && loadedDiv) {
-            if (loaded) {
-                notLoadedDiv.classList.add('hidden');
-                loadedDiv.classList.remove('hidden');
-                if (detailsDiv && details) {
-                    detailsDiv.textContent = `${details.aSweepPoints} A-sweep + ${details.bSweepPoints} B-sweep points`;
-                }
-            } else {
-                notLoadedDiv.classList.remove('hidden');
-                loadedDiv.classList.add('hidden');
-            }
-        }
-    }
-
     setupNozzleListeners() {
         const nozzleDiameter = document.getElementById('nozzleDiameter');
         const layerHeight = document.getElementById('layerHeight');
@@ -311,35 +188,6 @@ class UIController {
         // Initial setup
         this.updateNozzleDiameterDisplay();
         this.validateLayerHeight();
-    }
-
-    loadSavedCalibration() {
-        if (typeof StorageManager === 'undefined') return;
-
-        const savedResults = StorageManager.loadCalibrationResults();
-        if (savedResults && (savedResults.la !== undefined || savedResults.lb !== undefined)) {
-            // Update footer display
-            const display = document.getElementById('savedKinematicsDisplay');
-            const laSpan = document.getElementById('savedLaValue');
-            const lbSpan = document.getElementById('savedLbValue');
-
-            if (display && laSpan && lbSpan) {
-                laSpan.textContent = savedResults.la?.toFixed(2) ?? '0';
-                lbSpan.textContent = savedResults.lb?.toFixed(2) ?? '47';
-                display.classList.remove('hidden');
-            }
-
-            // Prefill LA/LB input fields if they exist
-            const laInput = document.getElementById('laParam');
-            const lbInput = document.getElementById('lbParam');
-
-            if (laInput && savedResults.la !== undefined) {
-                laInput.value = savedResults.la.toFixed(2);
-            }
-            if (lbInput && savedResults.lb !== undefined) {
-                lbInput.value = savedResults.lb.toFixed(2);
-            }
-        }
     }
 
     updateValueDisplay(id, value) {
@@ -418,12 +266,7 @@ class UIController {
 
     getAdvancedSettings() {
         return {
-            enableKinematics: document.getElementById('enableKinematics')?.checked || false,
-            laParam: parseFloat(document.getElementById('laParam')?.value || 0),
-            lbParam: parseFloat(document.getElementById('lbParam')?.value || 47.9),
-            enableAAxisOptimization: document.getElementById('enableAAxisOptimization')?.checked || false,
-            enableCalibration: document.getElementById('enableCalibration')?.checked || false,
-            calibrationCorrector: this.calibrationCorrector || null,
+            enableCAxisOptimization: document.getElementById('enableCAxisOptimization')?.checked || false,
             startGcode: document.getElementById('startGcode')?.value || '',
             endGcode: document.getElementById('endGcode')?.value || ''
         };
@@ -432,12 +275,12 @@ class UIController {
     updateShapeInfo(shape) {
         const shapeInfo = {
             'elbow-pipe': 'Elbow pipe demonstrates the B-axis (pitch) printing capability.',
-            'mushroom': 'Mushroom shape demonstrates both A-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form.'
+            'mushroom': 'Mushroom shape demonstrates both C-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form.'
         };
 
         const shapeDescriptions = {
             'elbow-pipe': 'Configurable elbow pipe to demonstrate B-axis (pitch) printing',
-            'mushroom': 'Organic mushroom shape demonstrating both A and B axis movements'
+            'mushroom': 'Organic mushroom shape demonstrating both C and B axis movements'
         };
 
         const infoElem = document.getElementById('shapeInfo');

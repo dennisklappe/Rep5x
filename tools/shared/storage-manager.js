@@ -1,8 +1,8 @@
 /**
  * Storage Manager for Rep5x Tools
- * Handles persistence of calibration data, LA/LB values, and settings using localStorage
+ * Handles persistence of calibration data and settings using localStorage
  *
- * Used by: All tools (Calibrator, LA/LB Measure, Printer Setup, Printer Control, Vase Generator, G-code Corrector, G-code Viewer)
+ * Used by: Calibrator, Vase Generator (for calibration correction)
  */
 
 class StorageManager {
@@ -64,81 +64,6 @@ class StorageManager {
     }
 
     /**
-     * Save calibration results
-     * @param {number} la - LA parameter value
-     * @param {number} lb - LB parameter value
-     * @param {object} metadata - Additional calibration metadata
-     */
-    static saveCalibrationResults(la, lb, metadata = {}) {
-        const data = {
-            la: la,
-            lb: lb,
-            timestamp: new Date().toISOString(),
-            ...metadata
-        };
-        StorageManager.save('results', data);
-
-        // Also save individual values for easy access
-        StorageManager.save('la', la);
-        StorageManager.save('lb', lb);
-    }
-
-    /**
-     * Load saved calibration results
-     * @returns {object|null} Calibration results or null
-     */
-    static loadCalibrationResults() {
-        return StorageManager.load('results', null);
-    }
-
-    /**
-     * Export all calibration data as JSON string
-     * @returns {string} JSON string of calibration data
-     */
-    static exportJSON() {
-        const results = StorageManager.loadCalibrationResults();
-        if (!results) {
-            return JSON.stringify({ error: 'No calibration data found' }, null, 2);
-        }
-        return JSON.stringify({
-            rep5x_kinematic_calibration: results,
-            exported_at: new Date().toISOString()
-        }, null, 2);
-    }
-
-    /**
-     * Download calibration data as JSON file
-     */
-    static downloadJSON() {
-        const json = StorageManager.exportJSON();
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `rep5x-calibration-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    /**
-     * Load LA value directly
-     * @returns {number|null} LA value or null
-     */
-    static loadLa() {
-        return StorageManager.load('la', null);
-    }
-
-    /**
-     * Load LB value directly
-     * @returns {number|null} LB value or null
-     */
-    static loadLb() {
-        return StorageManager.load('lb', null);
-    }
-
-    /**
      * Save full calibration data (error curves, measurements, etc.)
      * @param {object} data - Full calibration data object
      */
@@ -158,18 +83,46 @@ class StorageManager {
     }
 
     /**
-     * Clear all calibration data
+     * Clear calibration data
      */
     static clearCalibration() {
-        const keys = ['results', 'la', 'lb', 'calibration_data'];
-        keys.forEach(key => {
-            const fullKey = StorageManager.PREFIX + key;
-            try {
-                localStorage.removeItem(fullKey);
-            } catch (e) {
-                StorageManager.setCookie(fullKey, '', -1);
-            }
-        });
+        const fullKey = StorageManager.PREFIX + 'calibration_data';
+        try {
+            localStorage.removeItem(fullKey);
+        } catch (e) {
+            StorageManager.setCookie(fullKey, '', -1);
+        }
+    }
+
+    /**
+     * Save calibration results (LC, LB, and optional fit data)
+     * @param {number} lc - LC value
+     * @param {number} lb - LB value
+     * @param {Object} fitData - Optional fit data
+     */
+    static saveCalibrationResults(lc, lb, fitData = null) {
+        const data = { lc, lb, fitData, timestamp: Date.now() };
+        StorageManager.save('calibration_results', data);
+    }
+
+    /**
+     * Load calibration results
+     * @returns {Object|null} - { lc, lb, fitData, timestamp } or null
+     */
+    static loadCalibrationResults() {
+        return StorageManager.load('calibration_results');
+    }
+
+    /**
+     * Clear calibration results
+     */
+    static clearCalibrationResults() {
+        const fullKey = StorageManager.PREFIX + 'calibration_results';
+        try {
+            localStorage.removeItem(fullKey);
+        } catch (e) {
+            StorageManager.setCookie(fullKey, '', -1);
+        }
     }
 
     /**

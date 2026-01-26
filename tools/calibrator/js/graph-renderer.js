@@ -22,7 +22,7 @@ class GraphRenderer {
 
         // Data
         this.engine = null;
-        this.viewMode = 'b';  // 'b' for view by B angle, 'a' for view by A angle
+        this.viewMode = 'b';  // 'b' for view by B angle, 'c' for view by C angle
         this.selectedAngle = null;  // Which angle slice to show
 
         // Animation
@@ -72,9 +72,9 @@ class GraphRenderer {
     }
 
     /**
-     * Set view mode ('b' for by B angle, 'a' for by A angle)
+     * Set view mode ('b' for by B angle, 'c' for by C angle)
      */
-    setViewMode(mode, angle = null) {
+    setViewMode(mode, angle = null) {  // mode: 'b' or 'c'
         this.viewMode = mode;
         this.selectedAngle = angle;
         this.render();
@@ -182,8 +182,8 @@ class GraphRenderer {
 
         // Sort data by angle to draw line in correct order along X axis
         const sortedData = [...data].sort((a, b) => {
-            const angleA = this.viewMode === 'b' ? a.a : a.b;
-            const angleB = this.viewMode === 'b' ? b.a : b.b;
+            const angleA = this.viewMode === 'b' ? a.c : a.b;
+            const angleB = this.viewMode === 'b' ? b.c : b.b;
             return angleValues.indexOf(angleA) - angleValues.indexOf(angleB);
         });
 
@@ -196,7 +196,7 @@ class GraphRenderer {
 
         let started = false;
         for (const point of sortedData) {
-            const angleIndex = angleValues.indexOf(this.viewMode === 'b' ? point.a : point.b);
+            const angleIndex = angleValues.indexOf(this.viewMode === 'b' ? point.c : point.b);
             if (angleIndex === -1) continue;
 
             const x = area.x + angleIndex * xStep;
@@ -215,7 +215,7 @@ class GraphRenderer {
         // Draw data points
         this.ctx.fillStyle = colour;
         for (const point of data) {
-            const angleIndex = angleValues.indexOf(this.viewMode === 'b' ? point.a : point.b);
+            const angleIndex = angleValues.indexOf(this.viewMode === 'b' ? point.c : point.b);
             if (angleIndex === -1) continue;
 
             const x = area.x + angleIndex * xStep;
@@ -240,9 +240,9 @@ class GraphRenderer {
         let measurements, angleValues, angleLabel;
 
         if (this.viewMode === 'b') {
-            // Show all A angles for selected B (or all B values)
-            angleValues = this.engine.aAngles;
-            angleLabel = 'A';
+            // Show all C angles for selected B (or all B values)
+            angleValues = this.engine.cAngles;
+            angleLabel = 'C';
 
             if (this.selectedAngle !== null) {
                 measurements = this.engine.getMeasurementsByB(this.selectedAngle);
@@ -259,11 +259,11 @@ class GraphRenderer {
             angleLabel = 'B';
 
             if (this.selectedAngle !== null) {
-                measurements = this.engine.getMeasurementsByA(this.selectedAngle);
+                measurements = this.engine.getMeasurementsByC(this.selectedAngle);
             } else {
-                // Show all A values, pick first one with data
-                for (const a of this.engine.aAngles) {
-                    measurements = this.engine.getMeasurementsByA(a);
+                // Show all C values, pick first one with data
+                for (const c of this.engine.cAngles) {
+                    measurements = this.engine.getMeasurementsByC(c);
                     if (measurements.length > 0) break;
                 }
             }
@@ -306,19 +306,19 @@ class GraphRenderer {
 
         // Prepare data for each axis
         const xData = measurements.map(m => ({
-            a: m.a,
+            c: m.c,
             b: m.b,
             error: m.error.x
         }));
 
         const yData = measurements.map(m => ({
-            a: m.a,
+            c: m.c,
             b: m.b,
             error: m.error.y
         }));
 
         const zData = measurements.map(m => ({
-            a: m.a,
+            c: m.c,
             b: m.b,
             error: m.error.z
         }));
@@ -334,7 +334,7 @@ class GraphRenderer {
 
         // Draw title showing current slice
         const title = this.selectedAngle !== null
-            ? `${this.viewMode === 'b' ? 'B' : 'A'} = ${this.selectedAngle}°`
+            ? `${this.viewMode === 'b' ? 'B' : 'C'} = ${this.selectedAngle}°`
             : 'All data';
         this.ctx.fillStyle = this.textColour;
         this.ctx.font = 'bold 12px system-ui, sans-serif';
@@ -362,7 +362,7 @@ class GraphRenderer {
             return;
         }
 
-        // For overview, show B on X axis (sorted: -90 to 90), with separate line for each A
+        // For overview, show B on X axis (sorted: -90 to 90), with separate line for each C
         const angleValues = this.engine.bAnglesSorted;
         const angleLabel = 'B';
 
@@ -379,17 +379,17 @@ class GraphRenderer {
         this.drawGrid(minY, maxY, angleValues);
         this.drawAxes(minY, maxY, angleValues, angleLabel);
 
-        // Draw all A slices with varying opacity
-        for (let i = 0; i < this.engine.aAngles.length; i++) {
-            const a = this.engine.aAngles[i];
-            const sliceMeasurements = this.engine.getMeasurementsByA(a);
+        // Draw all C slices with varying opacity
+        for (let i = 0; i < this.engine.cAngles.length; i++) {
+            const c = this.engine.cAngles[i];
+            const sliceMeasurements = this.engine.getMeasurementsByC(c);
             if (sliceMeasurements.length === 0) continue;
 
-            const opacity = 0.3 + (0.7 * (i / this.engine.aAngles.length));
+            const opacity = 0.3 + (0.7 * (i / this.engine.cAngles.length));
 
-            const xData = sliceMeasurements.map(m => ({ a: m.a, b: m.b, error: m.error.x }));
-            const yData = sliceMeasurements.map(m => ({ a: m.a, b: m.b, error: m.error.y }));
-            const zData = sliceMeasurements.map(m => ({ a: m.a, b: m.b, error: m.error.z }));
+            const xData = sliceMeasurements.map(m => ({ c: m.c, b: m.b, error: m.error.x }));
+            const yData = sliceMeasurements.map(m => ({ c: m.c, b: m.b, error: m.error.y }));
+            const zData = sliceMeasurements.map(m => ({ c: m.c, b: m.b, error: m.error.z }));
 
             this.ctx.globalAlpha = opacity;
             this.drawLine(xData, angleValues, minY, maxY, this.colours.x);

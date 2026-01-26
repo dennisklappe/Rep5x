@@ -1,17 +1,17 @@
 /**
- * LA/LB Measure Tool for Rep5x
+ * LC/LB Measure Tool for Rep5x
  * Main application controller
  */
 
-class LaLbMeasureApp {
+class LcLbMeasureApp {
     constructor() {
         this.currentStep = 0;
         this.totalSteps = 6;
         this.selectedMethod = null; // 'camera' or 'cone'
         this.testMode = false;
 
-        // Measurement selection (can skip LA or LB)
-        this.measureLa = true;
+        // Measurement selection (can skip LC or LB)
+        this.measureLc = true;
         this.measureLb = true;
 
         // Reference position set during prepare step
@@ -30,16 +30,16 @@ class LaLbMeasureApp {
         this.stepMethod = new StepMethod(this);
         this.stepConnect = new StepConnect(this);
         this.stepPrepare = new StepPrepare(this);
-        this.stepLa = new StepLaMeasure(this);
+        this.stepLc = new StepLcMeasure(this);
         this.stepLb = new StepLbMeasure(this);
         this.stepResults = new StepResults(this);
 
-        // Step indices: 0=method, 1=connect, 2=prepare, 3=LA, 4=LB, 5=results
+        // Step indices: 0=method, 1=connect, 2=prepare, 3=LC, 4=LB, 5=results
         this.steps = [
             this.stepMethod,
             this.stepConnect,
             this.stepPrepare,
-            this.stepLa,
+            this.stepLc,
             this.stepLb,
             this.stepResults
         ];
@@ -77,14 +77,14 @@ class LaLbMeasureApp {
         document.getElementById('prevBtn').addEventListener('click', () => this.previousStep());
 
         // Measurement selection toggles
-        const laToggle = document.getElementById('measureLaToggle');
+        const lcToggle = document.getElementById('measureLcToggle');
         const lbToggle = document.getElementById('measureLbToggle');
 
-        if (laToggle) {
-            laToggle.addEventListener('change', (e) => {
-                this.measureLa = e.target.checked;
+        if (lcToggle) {
+            lcToggle.addEventListener('change', (e) => {
+                this.measureLc = e.target.checked;
                 // Ensure at least one is selected
-                if (!this.measureLa && !this.measureLb) {
+                if (!this.measureLc && !this.measureLb) {
                     this.measureLb = true;
                     lbToggle.checked = true;
                 }
@@ -95,14 +95,14 @@ class LaLbMeasureApp {
             lbToggle.addEventListener('change', (e) => {
                 this.measureLb = e.target.checked;
                 // Ensure at least one is selected
-                if (!this.measureLa && !this.measureLb) {
-                    this.measureLa = true;
-                    laToggle.checked = true;
+                if (!this.measureLc && !this.measureLb) {
+                    this.measureLc = true;
+                    lcToggle.checked = true;
                 }
             });
         }
 
-        // Jog buttons (shared between LA and LB steps)
+        // Jog buttons (shared between LC and LB steps)
         document.querySelectorAll('.jog-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.handleJogButton(e));
         });
@@ -114,6 +114,38 @@ class LaLbMeasureApp {
         document.querySelectorAll('.step-size-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.handleStepSizeButton(e));
         });
+
+        // Camera reconnect buttons
+        ['prepCameraReconnect', 'lcCameraReconnect', 'lbCameraReconnect'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => this.reconnectCamera());
+            }
+        });
+    }
+
+    /**
+     * Reconnect camera after disconnection
+     */
+    async reconnectCamera() {
+        try {
+            // Stop existing stream if any
+            this.camera.stop();
+
+            // Request new camera access
+            await this.camera.requestAccess();
+
+            // Re-attach to all video elements
+            this.camera.attachToElement('cameraPreview', 'crosshairPreview');
+            this.camera.attachToElement('prepCamera', 'prepCrosshair');
+            this.camera.attachToElement('lcCamera', 'lcCrosshair');
+            this.camera.attachToElement('lbCamera', 'lbCrosshair');
+
+            console.log('[Camera] Reconnected successfully');
+        } catch (error) {
+            console.error('[Camera] Reconnect failed:', error);
+            alert(`Camera reconnect failed: ${error.message}`);
+        }
     }
 
     /**
@@ -131,7 +163,7 @@ class LaLbMeasureApp {
             dir = -dir;
         }
 
-        const isRotation = axis === 'A' || axis === 'B';
+        const isRotation = axis === 'C' || axis === 'B';
         const step = isRotation ? this.angularStepSize : this.linearStepSize;
         const delta = { [axis.toLowerCase()]: dir * step };
 
@@ -174,7 +206,7 @@ class LaLbMeasureApp {
             return;
         }
 
-        // Only respond to other keys during measurement steps (3=LA, 4=LB) or prepare step (2)
+        // Only respond to other keys during measurement steps (3=LC, 4=LB) or prepare step (2)
         if (this.currentStep < 2 || this.currentStep > 4) return;
 
         // Handle Enter key for confirm position
@@ -185,8 +217,8 @@ class LaLbMeasureApp {
                 const btn = document.getElementById('confirmReferenceBtn');
                 if (btn && !btn.disabled) btn.click();
             } else if (this.currentStep === 3) {
-                // LA measurement - confirm position
-                const btn = document.getElementById('laConfirmBtn');
+                // LC measurement - confirm position
+                const btn = document.getElementById('lcConfirmBtn');
                 if (btn && !btn.disabled) btn.click();
             } else if (this.currentStep === 4) {
                 // LB measurement - confirm position
@@ -302,18 +334,18 @@ class LaLbMeasureApp {
      * Update position display
      */
     updatePositionDisplay(pos) {
-        // Update all position displays (LA step, LB step, and prepare step)
+        // Update all position displays (LC step, LB step, and prepare step)
         ['', '2', '-prep'].forEach(suffix => {
             const xEl = document.getElementById(`pos-x${suffix}`);
             const yEl = document.getElementById(`pos-y${suffix}`);
             const zEl = document.getElementById(`pos-z${suffix}`);
-            const aEl = document.getElementById(`pos-a${suffix}`);
+            const cEl = document.getElementById(`pos-c${suffix}`);
             const bEl = document.getElementById(`pos-b${suffix}`);
 
             if (xEl) xEl.textContent = pos.x.toFixed(2);
             if (yEl) yEl.textContent = pos.y.toFixed(2);
             if (zEl) zEl.textContent = pos.z.toFixed(2);
-            if (aEl) aEl.textContent = pos.a.toFixed(1);
+            if (cEl) cEl.textContent = pos.c.toFixed(1);
             if (bEl) bEl.textContent = pos.b.toFixed(1);
         });
     }
@@ -324,8 +356,8 @@ class LaLbMeasureApp {
      * @returns {boolean}
      */
     shouldSkipStep(stepIndex) {
-        // Step 3 = LA measurement
-        if (stepIndex === 3 && !this.measureLa) return true;
+        // Step 3 = LC measurement
+        if (stepIndex === 3 && !this.measureLc) return true;
         // Step 4 = LB measurement
         if (stepIndex === 4 && !this.measureLb) return true;
         return false;
@@ -339,8 +371,8 @@ class LaLbMeasureApp {
         const nextBtn = document.getElementById('nextBtn');
         const saveAndNext = nextBtn.dataset.saveAndNext;
 
-        if (saveAndNext === 'la') {
-            this.stepLa.saveToStorage();
+        if (saveAndNext === 'lc') {
+            this.stepLc.saveToStorage();
             delete nextBtn.dataset.saveAndNext;
         } else if (saveAndNext === 'lb') {
             this.stepLb.saveToStorage();
@@ -404,14 +436,29 @@ class LaLbMeasureApp {
      * Update progress bar
      */
     updateProgressBar(stepIndex) {
-        document.querySelectorAll('.progress-step').forEach((step, i) => {
+        // Update step indicators
+        document.querySelectorAll('.step-indicator').forEach((step, i) => {
             step.classList.toggle('active', i === stepIndex);
             step.classList.toggle('completed', i < stepIndex);
         });
 
-        document.querySelectorAll('.progress-connector').forEach((connector, i) => {
+        // Update step connectors
+        document.querySelectorAll('.step-connector').forEach((connector, i) => {
             connector.classList.toggle('completed', i < stepIndex);
         });
+
+        // Update progress fill bar
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) {
+            const progress = ((stepIndex + 1) / this.totalSteps) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+
+        // Update step counter
+        const stepCounter = document.getElementById('stepCounter');
+        if (stepCounter) {
+            stepCounter.textContent = `Step ${stepIndex + 1} of ${this.totalSteps}`;
+        }
     }
 
     /**
@@ -426,8 +473,12 @@ class LaLbMeasureApp {
         if (stepIndex === this.totalSteps - 1) {
             nextBtn.style.display = 'none';
         } else {
-            nextBtn.style.display = 'block';
-            nextBtn.textContent = stepIndex === this.totalSteps - 2 ? 'Finish →' : 'Next →';
+            nextBtn.style.display = 'flex';
+            // Update button text while preserving the arrow icon
+            const isFinish = stepIndex === this.totalSteps - 2;
+            nextBtn.innerHTML = isFinish
+                ? 'Finish <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>'
+                : 'Next <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>';
         }
     }
 
@@ -443,6 +494,6 @@ class LaLbMeasureApp {
 
 // Initialise on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new LaLbMeasureApp();
+    window.app = new LcLbMeasureApp();
     window.app.init();
 });

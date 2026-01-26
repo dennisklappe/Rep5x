@@ -61,20 +61,21 @@ class CalibratorApp {
         // Set up shared event listeners
         this.setupEventListeners();
 
-        // Load saved LA/LB values
-        this.loadSavedLaLb();
+        // Load saved LC/LB values
+        this.loadSavedLcLb();
 
         // Show initial step
         this.showStep(0);
     }
 
     /**
-     * Load saved LA/LB values
+     * Load saved LC/LB values
      */
-    loadSavedLaLb() {
-        const la = StorageManager.loadLa() || 0;
-        const lb = StorageManager.loadLb() || 47;
-        this.engine.setLaLb(la, lb);
+    loadSavedLcLb() {
+        const results = StorageManager.loadCalibrationResults();
+        const lc = results?.lc ?? 0;
+        const lb = results?.lb ?? 54.67;
+        this.engine.setLcLb(lc, lb);
     }
 
     /**
@@ -121,7 +122,7 @@ class CalibratorApp {
 
             const distance = this.linearStepSize * dir;
 
-            if (['A', 'B'].includes(axis)) {
+            if (['C', 'B'].includes(axis)) {
                 await this.printer.sendCommand(`G91`);
                 await this.printer.sendCommand(`G0 ${axis}${distance}`);
                 await this.printer.sendCommand(`G90`);
@@ -350,7 +351,7 @@ class CalibratorApp {
     updatePositionDisplay(pos) {
         const formatPos = (val) => val !== undefined ? val.toFixed(2) : '---';
 
-        const displayText = `X: ${formatPos(pos.x)} Y: ${formatPos(pos.y)} Z: ${formatPos(pos.z)} A: ${formatPos(pos.a)} B: ${formatPos(pos.b)}`;
+        const displayText = `X: ${formatPos(pos.x)} Y: ${formatPos(pos.y)} Z: ${formatPos(pos.z)} A: ${formatPos(pos.c)} B: ${formatPos(pos.b)}`;
 
         ['prepare-position-display', 'calibration-position'].forEach(id => {
             const el = document.getElementById(id);
@@ -419,14 +420,29 @@ class CalibratorApp {
      * Update progress bar
      */
     updateProgressBar(stepIndex) {
-        document.querySelectorAll('.progress-step').forEach((step, i) => {
+        // Update step indicators
+        document.querySelectorAll('.step-indicator').forEach((step, i) => {
             step.classList.toggle('active', i === stepIndex);
             step.classList.toggle('completed', i < stepIndex);
         });
 
-        document.querySelectorAll('.progress-connector').forEach((connector, i) => {
+        // Update step connectors
+        document.querySelectorAll('.step-connector').forEach((connector, i) => {
             connector.classList.toggle('completed', i < stepIndex);
         });
+
+        // Update progress fill bar
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) {
+            const progress = ((stepIndex + 1) / this.totalSteps) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+
+        // Update step counter
+        const stepCounter = document.getElementById('stepCounter');
+        if (stepCounter) {
+            stepCounter.textContent = `Step ${stepIndex + 1} of ${this.totalSteps}`;
+        }
     }
 
     /**

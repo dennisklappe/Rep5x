@@ -34,7 +34,7 @@ class UIController {
             posX: document.getElementById('posX'),
             posY: document.getElementById('posY'),
             posZ: document.getElementById('posZ'),
-            posA: document.getElementById('posA'),
+            posC: document.getElementById('posC'),
             posB: document.getElementById('posB'),
             layer: document.getElementById('layer'),
 
@@ -46,7 +46,7 @@ class UIController {
             manualMode: document.getElementById('manualMode'),
             manualControls: document.getElementById('manualControls'),
             manualIK: document.getElementById('manualIK'),
-            manualLA: document.getElementById('manualLA'),
+            manualLC: document.getElementById('manualLC'),
             manualLB: document.getElementById('manualLB'),
             applyManual: document.getElementById('applyManual'),
 
@@ -124,14 +124,9 @@ class UIController {
             if (this.onManualModeChange) this.onManualModeChange(e.target.checked);
         });
 
-        // Load LA/LB from browser storage when IK is enabled
+        // Manual IK toggle (values come from G-code metadata or manual entry)
         this.elements.manualIK.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                const la = StorageManager.loadLa();
-                const lb = StorageManager.loadLb();
-                if (la !== null) this.elements.manualLA.value = la;
-                if (lb !== null) this.elements.manualLB.value = lb;
-            }
+            // Values are prefilled from G-code metadata when file is loaded
         });
 
         this.elements.applyManual.addEventListener('click', () => {
@@ -176,10 +171,29 @@ class UIController {
 
     // Display methods
     showFileSelected(fileName, fileSize) {
-        this.elements.dropContent.classList.add('hidden');
-        this.elements.fileSelected.classList.remove('hidden');
-        this.elements.fileName.textContent = fileName;
-        this.elements.fileSize.textContent = fileSize;
+        // Update file zone text for new horizontal toolbar layout
+        const fileZoneText = document.getElementById('fileZoneText');
+        const fileZone = document.getElementById('dropZone');
+        if (fileZoneText) {
+            fileZoneText.textContent = fileName.length > 20 ? fileName.substring(0, 17) + '...' : fileName;
+        }
+        if (fileZone) {
+            fileZone.classList.add('has-file');
+        }
+
+        // Also update hidden elements for compatibility
+        if (this.elements.dropContent) {
+            this.elements.dropContent.classList.add('hidden');
+        }
+        if (this.elements.fileSelected) {
+            this.elements.fileSelected.classList.remove('hidden');
+        }
+        if (this.elements.fileName) {
+            this.elements.fileName.textContent = fileName;
+        }
+        if (this.elements.fileSize) {
+            this.elements.fileSize.textContent = fileSize;
+        }
     }
 
     showLoading(message = 'Loading...') {
@@ -193,6 +207,14 @@ class UIController {
 
     displayFileInfo(metadata, statistics) {
         let html = '<div class="space-y-1">';
+
+        // Show notice if file uses A axis instead of C
+        if (metadata.usesAAxis) {
+            html += `<div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded mb-3 text-sm">
+                <strong>Note:</strong> This G-code uses the A axis for yaw rotation.
+                Rep5x firmware uses the <strong>C axis</strong> for yaw. The viewer has automatically converted A→C for display.
+            </div>`;
+        }
 
         if (metadata.shape) html += `<div><strong>Shape:</strong> ${metadata.shape}</div>`;
         if (metadata.diameter) html += `<div><strong>Diameter:</strong> ${metadata.diameter}mm</div>`;
@@ -210,7 +232,7 @@ class UIController {
         html += '<div class="mt-2 pt-2 border-t border-gray-300">';
         html += `<div><strong>Inverse Kinematics:</strong> ${metadata.inverseKinematics ? 'Yes' : 'No'}</div>`;
         if (metadata.inverseKinematics) {
-            html += `<div><strong>LA Parameter:</strong> ${metadata.laParameter}</div>`;
+            html += `<div><strong>LC Parameter:</strong> ${metadata.lcParameter}</div>`;
             html += `<div><strong>LB Parameter:</strong> ${metadata.lbParameter}</div>`;
         }
         html += '</div>';
@@ -240,7 +262,7 @@ class UIController {
         let calibHtml = '<div class="mt-2 pt-2 border-t border-gray-300">';
         calibHtml += '<div><strong>Calibration Correction:</strong></div>';
         calibHtml += `<div class="text-xs text-green-600">✓ Detected and reversed for display</div>`;
-        calibHtml += `<div class="text-xs">A-axis: ${summary.aHarmonics} Fourier harmonics</div>`;
+        calibHtml += `<div class="text-xs">C-axis: ${summary.cHarmonics} Fourier harmonics</div>`;
         calibHtml += `<div class="text-xs">B-axis: ${summary.bHarmonics} harmonics</div>`;
         calibHtml += '</div>';
 
@@ -275,7 +297,7 @@ class UIController {
         this.elements.posX.textContent = position.x.toFixed(3);
         this.elements.posY.textContent = position.y.toFixed(3);
         this.elements.posZ.textContent = position.z.toFixed(3);
-        this.elements.posA.textContent = position.a.toFixed(3);
+        this.elements.posC.textContent = position.c.toFixed(3);
         this.elements.posB.textContent = position.b.toFixed(3);
     }
 
@@ -330,7 +352,7 @@ class UIController {
 
     prefillAdvancedOptions(metadata) {
         this.elements.manualIK.checked = metadata.inverseKinematics || false;
-        this.elements.manualLA.value = metadata.laParameter || 0;
+        this.elements.manualLC.value = metadata.lcParameter || 0;
         this.elements.manualLB.value = metadata.lbParameter || 46;
     }
 
@@ -338,7 +360,7 @@ class UIController {
         const manualCalibration = document.getElementById('manualCalibration');
         return {
             inverseKinematics: this.elements.manualIK.checked,
-            laParameter: parseFloat(this.elements.manualLA.value) || 0,
+            lcParameter: parseFloat(this.elements.manualLC.value) || 0,
             lbParameter: parseFloat(this.elements.manualLB.value) || 46,
             reverseCalibration: manualCalibration ? manualCalibration.checked : true
         };
@@ -391,5 +413,35 @@ class UIController {
 
     getSelectedPrintheadId() {
         return this.elements.printheadSelect.value;
+    }
+
+    // Show a toast notification
+    showToast(message, type = 'info', duration = 5000) {
+        // Remove existing toast
+        const existing = document.getElementById('viewerToast');
+        if (existing) existing.remove();
+
+        const colors = {
+            info: 'bg-blue-100 border-blue-400 text-blue-800',
+            warning: 'bg-yellow-100 border-yellow-400 text-yellow-800',
+            error: 'bg-red-100 border-red-400 text-red-800',
+            success: 'bg-green-100 border-green-400 text-green-800'
+        };
+
+        const toast = document.createElement('div');
+        toast.id = 'viewerToast';
+        toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 px-4 py-3 rounded border ${colors[type] || colors.info} shadow-lg z-50 max-w-lg text-sm`;
+        toast.innerHTML = `
+            <div class="flex items-start gap-2">
+                <div class="flex-1">${message}</div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-current opacity-70 hover:opacity-100 font-bold">×</button>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+
+        if (duration > 0) {
+            setTimeout(() => toast.remove(), duration);
+        }
     }
 }

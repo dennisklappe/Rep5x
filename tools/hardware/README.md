@@ -9,4 +9,4 @@ Shared hardware components for Rep5x web tools.
 USB camera module for visual calibration and alignment tasks.
 
 **Used by:**
-- [LA/LB Measure](../la-lb-measure/) - Camera-based LA/LB parameter measurement
+- [LC/LB Measure](../lc-lb-measure/) - Camera-based LC/LB parameter measurement

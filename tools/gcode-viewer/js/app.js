@@ -92,6 +92,15 @@ class GcodePreviewerApp {
             this.ui.showAdvancedOptions();
             this.ui.prefillAdvancedOptions(parseResult.metadata);
 
+            // Show notice if file uses A axis instead of C
+            if (parseResult.metadata.usesAAxis) {
+                this.ui.showToast(
+                    '<strong>A axis detected:</strong> This G-code uses the A axis for yaw. Rep5x uses the <strong>C axis</strong> for yaw rotation. Values have been converted automatically.',
+                    'warning',
+                    8000
+                );
+            }
+
             // Process commands (with or without IK reversal)
             this.processCommands(parseResult);
 
@@ -130,7 +139,7 @@ class GcodePreviewerApp {
         // Step 2: Reverse IK if present and enabled
         if (parseResult.metadata.inverseKinematics && this.reverseIK) {
             this.ikReverser = new InverseKinematicsReverser(
-                parseResult.metadata.laParameter,
+                parseResult.metadata.lcParameter,
                 parseResult.metadata.lbParameter
             );
             commands = this.ikReverser.reverseCommandArray(commands);
@@ -250,7 +259,7 @@ class GcodePreviewerApp {
         // Apply IK reversal if enabled
         if (metadata.inverseKinematics) {
             this.ikReverser = new InverseKinematicsReverser(
-                metadata.laParameter,
+                metadata.lcParameter,
                 metadata.lbParameter
             );
             commands = this.ikReverser.reverseCommandArray(commands);
@@ -275,7 +284,9 @@ class GcodePreviewerApp {
 document.addEventListener('DOMContentLoaded', () => {
     const initApp = () => {
         if (typeof getTheme === 'function' && getTheme()) {
-            new GcodePreviewerApp();
+            window.gcodeApp = new GcodePreviewerApp();
+            // Expose engine for settings panel access
+            window.gcodeApp.engine = window.gcodeApp.animationEngine;
         } else {
             setTimeout(initApp, 50);
         }
@@ -285,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
-    if (window.app && window.app.animationEngine) {
-        window.app.animationEngine.dispose();
+    if (window.gcodeApp && window.gcodeApp.animationEngine) {
+        window.gcodeApp.animationEngine.dispose();
     }
 });

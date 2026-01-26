@@ -12,7 +12,7 @@ class GcodeProcessor {
         this.modalX = 0;
         this.modalY = 0;
         this.modalZ = 0;
-        this.modalA = 0;
+        this.modalC = 0;
         this.modalB = 0;
         this.isAbsolute = true;  // G90 (absolute) vs G91 (relative) mode
 
@@ -41,7 +41,7 @@ class GcodeProcessor {
             hasRep5xHeaders: false,
             ikEnabled: false,
             ikType: null,  // 'software' or 'firmware'
-            la: null,
+            lc: null,
             lb: null,
             calibrationEnabled: false,
             calibrationMode: null,  // 'standard' or 'firmware IK mode'
@@ -89,10 +89,10 @@ class GcodeProcessor {
                 }
             }
 
-            // Detect LA parameter
-            const laMatch = trimmed.match(/;\s*LA\s*(?:Parameter)?:?\s*([-+]?\d*\.?\d+)/i);
-            if (laMatch) {
-                result.la = parseFloat(laMatch[1]);
+            // Detect LC parameter
+            const lcMatch = trimmed.match(/;\s*LC\s*(?:Parameter)?:?\s*([-+]?\d*\.?\d+)/i);
+            if (lcMatch) {
+                result.lc = parseFloat(lcMatch[1]);
             }
 
             // Detect LB parameter
@@ -135,8 +135,8 @@ class GcodeProcessor {
     /**
      * Set IK parameters
      */
-    setIKParameters(la, lb) {
-        this.ik = new InverseKinematics(la, lb);
+    setIKParameters(lc, lb) {
+        this.ik = new InverseKinematics(lc, lb);
     }
 
     /**
@@ -146,7 +146,7 @@ class GcodeProcessor {
         this.modalX = 0;
         this.modalY = 0;
         this.modalZ = 0;
-        this.modalA = 0;
+        this.modalC = 0;
         this.modalB = 0;
         this.isAbsolute = true;
         this.stats = {
@@ -195,7 +195,7 @@ class GcodeProcessor {
         processedLines.push('; === Rep5x Corrections Applied ===');
         if (applyIK) {
             processedLines.push('; Inverse Kinematics: enabled (software)');
-            processedLines.push(`; LA Parameter: ${this.ik.la.toFixed(2)}`);
+            processedLines.push(`; LC Parameter: ${this.ik.lc.toFixed(2)}`);
             processedLines.push(`; LB Parameter: ${this.ik.lb.toFixed(2)}`);
         }
         if (applyCalibration) {
@@ -207,11 +207,11 @@ class GcodeProcessor {
 
             // Add Fourier coefficients so viewer can reverse the calibration
             const coeffs = this.corrector.getCoefficients();
-            if (coeffs.a) {
-                processedLines.push(`; Calibration A-axis coefficients (Fourier, ${coeffs.aHarmonics} harmonics):`);
-                processedLines.push(`; CalibAX: ${coeffs.a.x.map(c => c.toFixed(6)).join(',')}`);
-                processedLines.push(`; CalibAY: ${coeffs.a.y.map(c => c.toFixed(6)).join(',')}`);
-                processedLines.push(`; CalibAZ: ${coeffs.a.z.map(c => c.toFixed(6)).join(',')}`);
+            if (coeffs.c) {
+                processedLines.push(`; Calibration C-axis coefficients (Fourier, ${coeffs.cHarmonics} harmonics):`);
+                processedLines.push(`; CalibCX: ${coeffs.c.x.map(c => c.toFixed(6)).join(',')}`);
+                processedLines.push(`; CalibCY: ${coeffs.c.y.map(c => c.toFixed(6)).join(',')}`);
+                processedLines.push(`; CalibCZ: ${coeffs.c.z.map(c => c.toFixed(6)).join(',')}`);
             }
             if (coeffs.b) {
                 processedLines.push(`; Calibration B-axis coefficients (Harmonic, ${coeffs.bHarmonics} harmonics):`);
@@ -270,7 +270,7 @@ class GcodeProcessor {
         if (parsed.hasX) this.modalX = parsed.x;
         if (parsed.hasY) this.modalY = parsed.y;
         if (parsed.hasZ) this.modalZ = parsed.z;
-        if (parsed.hasA) this.modalA = parsed.a;
+        if (parsed.hasC) this.modalC = parsed.c;
         if (parsed.hasB) this.modalB = parsed.b;
 
         // Skip if no XYZ coordinates
@@ -288,7 +288,7 @@ class GcodeProcessor {
         let x = parsed.hasX ? parsed.x : this.modalX;
         let y = parsed.hasY ? parsed.y : this.modalY;
         let z = parsed.hasZ ? parsed.z : this.modalZ;
-        const a = this.modalA;
+        const a = this.modalC;
         const b = this.modalB;
 
         let correctedX = x;
@@ -349,7 +349,7 @@ class GcodeProcessor {
             x: /X([-+]?\d*\.?\d+)/i,
             y: /Y([-+]?\d*\.?\d+)/i,
             z: /Z([-+]?\d*\.?\d+)/i,
-            a: /A([-+]?\d*\.?\d+)/i,
+            c: /C([-+]?\d*\.?\d+)/i,
             b: /B([-+]?\d*\.?\d+)/i
         };
 
@@ -372,8 +372,8 @@ class GcodeProcessor {
         const result = {
             command: cmdMatch[1].toUpperCase(),
             x: this.modalX, y: this.modalY, z: this.modalZ,
-            a: this.modalA, b: this.modalB,
-            hasX: false, hasY: false, hasZ: false, hasA: false, hasB: false,
+            a: this.modalC, b: this.modalB,
+            hasX: false, hasY: false, hasZ: false, hasC: false, hasB: false,
             e: null, f: null,
             comment: null,
             original: line
@@ -392,7 +392,7 @@ class GcodeProcessor {
             x: /X([-+]?\d*\.?\d+)/i,
             y: /Y([-+]?\d*\.?\d+)/i,
             z: /Z([-+]?\d*\.?\d+)/i,
-            a: /A([-+]?\d*\.?\d+)/i,
+            c: /C([-+]?\d*\.?\d+)/i,
             b: /B([-+]?\d*\.?\d+)/i,
             e: /E([-+]?\d*\.?\d+)/i,
             f: /F([-+]?\d*\.?\d+)/i
@@ -403,7 +403,7 @@ class GcodeProcessor {
             if (match) {
                 const value = parseFloat(match[1]);
                 result[axis] = value;
-                if (['x', 'y', 'z', 'a', 'b'].includes(axis)) {
+                if (['x', 'y', 'z', 'c', 'b'].includes(axis)) {
                     result[`has${axis.toUpperCase()}`] = true;
                 }
             }
@@ -429,11 +429,11 @@ class GcodeProcessor {
         if (correctedZ !== null) {
             line += ` Z${correctedZ.toFixed(precision)}`;
         }
-        if (parsed.hasA) {
-            line += ` A${parsed.a.toFixed(1)}`;  // A/B use 1 decimal place (angular precision)
+        if (parsed.hasC) {
+            line += ` C${parsed.c.toFixed(1)}`;  // C/B use 1 decimal place (angular precision)
         }
         if (parsed.hasB) {
-            line += ` B${parsed.b.toFixed(1)}`;  // A/B use 1 decimal place (angular precision)
+            line += ` B${parsed.b.toFixed(1)}`;  // C/B use 1 decimal place (angular precision)
         }
         if (parsed.e !== null) {
             line += ` E${parsed.e.toFixed(4)}`;
@@ -468,7 +468,7 @@ class GcodeProcessor {
         const lines = gcode.split('\n');
 
         // Track ranges
-        let aRange = { min: Infinity, max: -Infinity };
+        let cRange = { min: Infinity, max: -Infinity };
         let bRange = { min: Infinity, max: -Infinity };
 
         // Track max corrections with their A/B values
@@ -495,16 +495,16 @@ class GcodeProcessor {
             if (parsed.hasX) this.modalX = parsed.x;
             if (parsed.hasY) this.modalY = parsed.y;
             if (parsed.hasZ) this.modalZ = parsed.z;
-            if (parsed.hasA) this.modalA = parsed.a;
+            if (parsed.hasC) this.modalC = parsed.c;
             if (parsed.hasB) this.modalB = parsed.b;
 
             if (!parsed.hasX && !parsed.hasY && !parsed.hasZ) continue;
 
             // Track A/B ranges
-            if (this.modalA !== 0 || this.modalB !== 0) {
+            if (this.modalC !== 0 || this.modalB !== 0) {
                 linesWithRotation++;
-                aRange.min = Math.min(aRange.min, this.modalA);
-                aRange.max = Math.max(aRange.max, this.modalA);
+                cRange.min = Math.min(cRange.min, this.modalC);
+                cRange.max = Math.max(cRange.max, this.modalC);
                 bRange.min = Math.min(bRange.min, this.modalB);
                 bRange.max = Math.max(bRange.max, this.modalB);
             }
@@ -513,32 +513,32 @@ class GcodeProcessor {
             let y = parsed.hasY ? parsed.y : this.modalY;
             let z = parsed.hasZ ? parsed.z : this.modalZ;
 
-            if (applyIK && (this.modalA !== 0 || this.modalB !== 0)) {
-                const ikResult = this.ik.apply(x, y, z, this.modalA, this.modalB);
+            if (applyIK && (this.modalC !== 0 || this.modalB !== 0)) {
+                const ikResult = this.ik.apply(x, y, z, this.modalC, this.modalB);
                 const dx = Math.abs(ikResult.x - x);
                 const dy = Math.abs(ikResult.y - y);
                 const dz = Math.abs(ikResult.z - z);
 
-                if (dx > maxIK.x.val) maxIK.x = { val: dx, a: this.modalA, b: this.modalB };
-                if (dy > maxIK.y.val) maxIK.y = { val: dy, a: this.modalA, b: this.modalB };
-                if (dz > maxIK.z.val) maxIK.z = { val: dz, a: this.modalA, b: this.modalB };
+                if (dx > maxIK.x.val) maxIK.x = { val: dx, a: this.modalC, b: this.modalB };
+                if (dy > maxIK.y.val) maxIK.y = { val: dy, a: this.modalC, b: this.modalB };
+                if (dz > maxIK.z.val) maxIK.z = { val: dz, a: this.modalC, b: this.modalB };
             }
 
-            if (applyCalibration && (this.modalA !== 0 || this.modalB !== 0)) {
-                const corr = this.corrector.getCorrection(this.modalA, this.modalB);
+            if (applyCalibration && (this.modalC !== 0 || this.modalB !== 0)) {
+                const corr = this.corrector.getCorrection(this.modalC, this.modalB);
                 const dx = Math.abs(corr.x);
                 const dy = Math.abs(corr.y);
                 const dz = Math.abs(corr.z);
 
-                if (dx > maxCalib.x.val) maxCalib.x = { val: dx, a: this.modalA, b: this.modalB };
-                if (dy > maxCalib.y.val) maxCalib.y = { val: dy, a: this.modalA, b: this.modalB };
-                if (dz > maxCalib.z.val) maxCalib.z = { val: dz, a: this.modalA, b: this.modalB };
+                if (dx > maxCalib.x.val) maxCalib.x = { val: dx, a: this.modalC, b: this.modalB };
+                if (dy > maxCalib.y.val) maxCalib.y = { val: dy, a: this.modalC, b: this.modalB };
+                if (dz > maxCalib.z.val) maxCalib.z = { val: dz, a: this.modalC, b: this.modalB };
             }
         }
 
         return {
             linesWithRotation,
-            aRange: aRange.min !== Infinity ? aRange : null,
+            cRange: cRange.min !== Infinity ? cRange : null,
             bRange: bRange.min !== Infinity ? bRange : null,
             maxIK: applyIK ? maxIK : null,
             maxCalib: applyCalibration ? maxCalib : null

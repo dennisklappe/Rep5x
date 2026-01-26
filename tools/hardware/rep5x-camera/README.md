@@ -4,7 +4,7 @@ Build guide for the Rep5x camera calibrator module used for visual calibration t
 
 ## Overview
 
-The camera calibrator provides accurate visual feedback for LA/LB parameter measurement and other calibration tasks. It features a magnetic mounting system for easy positioning on the printer bed.
+The camera calibrator provides accurate visual feedback for LC/LB parameter measurement and other calibration tasks. It features a magnetic mounting system for easy positioning on the printer bed.
 
 ## Bill of materials
 

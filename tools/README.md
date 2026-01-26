@@ -13,10 +13,10 @@ Configure and build custom Rep5x Marlin firmware with cloud compilation. No loca
 Control your printer directly from the browser. Jog all 5 axes, send G-code commands, and monitor position.
 
 ### [Printer Setup](https://tools.rep5x.com/printer-setup/)
-Calibrate Z height and A/B axis zero positions before kinematic calibration.
+Calibrate Z height and C/B axis zero positions before kinematic calibration.
 
-### [LA/LB Measure](https://tools.rep5x.com/la-lb-measure/)
-Measure your printer's LA and LB kinematic parameters with step-by-step guidance.
+### [LC/LB Measure](https://tools.rep5x.com/lc-lb-measure/)
+Measure your printer's LC and LB kinematic parameters with step-by-step guidance.
 
 ### [Vase Generator](https://tools.rep5x.com/vase-generator/)
 Generate sample 5-axis vase mode G-code to test and demonstrate Rep5x capabilities.
@@ -25,7 +25,7 @@ Generate sample 5-axis vase mode G-code to test and demonstrate Rep5x capabiliti
 Visualise and animate 5-axis G-code files with collision detection.
 
 ### [Calibrator](https://tools.rep5x.com/calibrator/)
-Find error curves for your 5-axis system across all A and B angles.
+Find error curves for your 5-axis system across all C and B angles.
 
 ### [G-code Corrector](https://tools.rep5x.com/gcode-corrector/)
 Apply calibration corrections and inverse kinematics to 5-axis G-code files.
@@ -45,7 +45,7 @@ tools/
 │   ├── header.js
 │   ├── footer.js
 │   ├── inverse-kinematics.js
-│   ├── a-axis-optimizer.js
+│   ├── c-axis-optimizer.js
 │   ├── calibration-corrector.js
 │   ├── calibration-visualizer.js
 │   ├── calibration-visualizer-3d.js
@@ -53,7 +53,7 @@ tools/
 ├── firmware-builder/
 ├── printer-control/
 ├── printer-setup/
-├── la-lb-measure/
+├── lc-lb-measure/
 ├── vase-generator/
 ├── gcode-viewer/
 ├── calibrator/

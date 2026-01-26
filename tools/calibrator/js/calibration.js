@@ -7,8 +7,7 @@ class StepCalibrateXY {
     constructor(app) {
         this.app = app;
         this.graphRenderer = null;
-        this.zSafetyOffset = 20;
-        this.currentSweep = 'a';
+        this.currentSweep = 'c';
         this.importedData = null;
         this.confirmInProgress = false;
         this.controlsLocked = false;
@@ -17,16 +16,9 @@ class StepCalibrateXY {
 
     setup() {
         document.getElementById('confirm-point-btn').addEventListener('click', () => this.confirmCurrentPoint());
-        document.getElementById('skip-a-sweep-btn')?.addEventListener('click', () => this.skipASweep());
+        document.getElementById('skip-c-sweep-btn')?.addEventListener('click', () => this.skipCSweep());
         document.getElementById('skip-to-z-btn')?.addEventListener('click', () => this.skipToZ());
         document.getElementById('redo-prev-btn')?.addEventListener('click', () => this.redoPreviousPoint());
-
-        const zSafetyInput = document.getElementById('zSafetyOffset');
-        if (zSafetyInput) {
-            zSafetyInput.addEventListener('change', (e) => {
-                this.zSafetyOffset = parseFloat(e.target.value) || 20;
-            });
-        }
 
         // Camera reconnect button
         const reconnectBtn = document.getElementById('reconnect-camera-btn');
@@ -40,7 +32,7 @@ class StepCalibrateXY {
                 document.querySelectorAll('#graph-axis-selector button').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 const sweep = btn.dataset.view;
-                const graphViewMode = sweep === 'a' ? 'b' : 'a';
+                const graphViewMode = sweep === 'c' ? 'b' : 'c';
                 this.graphRenderer.setViewMode(graphViewMode, 0);
             });
         });
@@ -56,8 +48,6 @@ class StepCalibrateXY {
     }
 
     showImportModal() {
-        const savedData = StorageManager.loadCalibrationData();
-
         let modal = document.getElementById('import-calibration-modal');
         if (modal) modal.remove();
 
@@ -68,66 +58,36 @@ class StepCalibrateXY {
             <div class="bg-white rounded-xl shadow-xl max-w-lg mx-4 p-6">
                 <h3 class="text-lg font-bold text-gray-900 mb-3">Start calibration</h3>
                 <p class="text-gray-600 mb-4">
-                    Import previous calibration data to use as a starting point, or start fresh.
+                    Choose calibration mode based on whether you have existing calibration data.
                 </p>
                 <div class="space-y-3 mb-4">
-                    ${savedData ? `
-                    <button id="import-browser-btn" class="w-full btn-secondary px-4 py-3 rounded-lg text-left">
-                        <div class="font-medium">Import from browser storage</div>
-                        <div class="text-sm text-gray-500">Last saved: ${new Date(savedData.metadata?.timestamp || Date.now()).toLocaleString()}</div>
+                    <button id="refine-calibration-btn" class="w-full btn-primary px-4 py-3 rounded-lg text-left">
+                        <div class="font-medium">Refine existing calibration</div>
+                        <div class="text-sm opacity-75">Measure residual errors and add to current M667 coefficients</div>
                     </button>
-                    ` : ''}
-                    <button id="import-file-btn" class="w-full btn-secondary px-4 py-3 rounded-lg text-left">
-                        <div class="font-medium">Import from file</div>
-                        <div class="text-sm text-gray-500">Load JSON or CSV calibration data</div>
+                    <button id="start-fresh-btn" class="w-full btn-secondary px-4 py-3 rounded-lg text-left">
+                        <div class="font-medium">Fresh calibration</div>
+                        <div class="text-sm text-gray-500">No existing calibration - measure raw mechanical errors</div>
                     </button>
-                    <button id="start-fresh-btn" class="w-full btn-primary px-4 py-3 rounded-lg">
-                        Start fresh calibration
-                    </button>
-                    <button id="skip-xy-btn" class="w-full btn-secondary px-4 py-3 rounded-lg text-gray-500">
-                        Skip XY calibration (go to Z)
+                    <button id="skip-xy-btn" class="w-full btn-outline px-4 py-3 rounded-lg text-left text-gray-600">
+                        <div class="font-medium">Skip to Z calibration</div>
+                        <div class="text-sm text-gray-500">Only calibrate Z axis (XY already done)</div>
                     </button>
                 </div>
-                <input type="file" id="import-file-input" accept=".json,.csv" class="hidden">
             </div>
         `;
         document.body.appendChild(modal);
 
-        if (savedData) {
-            document.getElementById('import-browser-btn').addEventListener('click', () => {
-                modal.remove();
-                this.importCalibrationData(savedData);
-            });
-        }
-
-        document.getElementById('import-file-btn').addEventListener('click', () => {
-            document.getElementById('import-file-input').click();
-        });
-
-        document.getElementById('import-file-input').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            try {
-                const text = await file.text();
-                let data;
-                if (file.name.endsWith('.json')) {
-                    data = JSON.parse(text);
-                } else if (file.name.endsWith('.csv')) {
-                    data = this.parseCSV(text);
-                }
-                if (data) {
-                    modal.remove();
-                    this.importCalibrationData(data);
-                }
-            } catch (error) {
-                alert('Failed to import file: ' + error.message);
-            }
+        document.getElementById('refine-calibration-btn').addEventListener('click', () => {
+            modal.remove();
+            this.app.refineMode = true;
+            this.startCalibration(false);  // Don't disable calibration correction
         });
 
         document.getElementById('start-fresh-btn').addEventListener('click', () => {
             modal.remove();
-            this.importedData = null;
-            this.startCalibration();
+            this.app.refineMode = false;
+            this.startCalibration(true);  // Disable calibration correction for fresh start
         });
 
         document.getElementById('skip-xy-btn').addEventListener('click', () => {
@@ -144,9 +104,9 @@ class StepCalibrateXY {
     }
 
     /**
-     * Skip remaining A sweep points and go to B sweep
+     * Skip remaining C sweep points and go to B sweep
      */
-    skipASweep() {
+    skipCSweep() {
         if (this.movementInProgress) return;
 
         // Find first B sweep point
@@ -177,7 +137,7 @@ class StepCalibrateXY {
             const values = lines[i].split(',');
             if (values.length >= 11) {
                 measurements.push({
-                    a: parseFloat(values[0]),
+                    c: parseFloat(values[0]),
                     b: parseFloat(values[1]),
                     expected: { x: parseFloat(values[2]), y: parseFloat(values[3]), z: parseFloat(values[4]) },
                     actual: { x: parseFloat(values[5]), y: parseFloat(values[6]), z: parseFloat(values[7]) },
@@ -193,16 +153,33 @@ class StepCalibrateXY {
         this.importedData = new Map();
         if (data.measurements) {
             for (const m of data.measurements) {
-                this.importedData.set(`${m.a}_${m.b}`, m);
+                this.importedData.set(`${m.c}_${m.b}`, m);
             }
         }
         this.startCalibration();
     }
 
-    async startCalibration() {
+    async startCalibration(disableCalibrationCorrection = true) {
         // Reset redo button
         const redoBtn = document.getElementById('redo-prev-btn');
         if (redoBtn) redoBtn.disabled = true;
+
+        // Disable or keep calibration correction based on mode
+        if (this.app.printer && this.app.printer.isConnected()) {
+            try {
+                if (disableCalibrationCorrection) {
+                    await this.app.printer.sendCommandAndWait('M667 S0', 5000);
+                    console.log('[Calibration] Calibration correction disabled for fresh calibration');
+                } else {
+                    // Explicitly enable calibration correction for refine mode
+                    // (ensures it's active even after page reload or printer reset)
+                    await this.app.printer.sendCommandAndWait('M667 S1', 5000);
+                    console.log('[Calibration] Calibration correction enabled for refine mode');
+                }
+            } catch (e) {
+                console.warn('[Calibration] Could not set calibration correction state:', e);
+            }
+        }
 
         const cameraPanel = document.getElementById('calibrationCameraPanel');
         const conePanel = document.getElementById('calibrationConePanel');
@@ -254,8 +231,7 @@ class StepCalibrateXY {
             <li>Press "Confirm" when aligned (Enter)</li>
         `;
 
-        this.zSafetyOffset = parseFloat(document.getElementById('zSafetyOffset')?.value) || 20;
-        this.currentSweep = 'a';
+        this.currentSweep = 'c';
         this.app.engine.currentIndex = 0;  // Reset to start from beginning
         this.app.engine.phase = 'xy';
         this.graphRenderer.calibrationPhase = 'xy';
@@ -271,13 +247,14 @@ class StepCalibrateXY {
         };
 
         this.app.engine.onMeasurementComplete = async () => {
-            // Move to safe position
+            // Move to safe position - use sendCommandAndWait to ensure all "ok" responses
+            // are consumed before moving to results page
             const safeZ = this.app.referencePosition.z + 50;
-            await this.app.printer.sendCommand('G90');
-            await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(2)} F3000`);
-            await this.app.printer.sendCommand('M400');
-            await this.app.printer.sendCommand('G0 A0 B0 F1800');
-            await this.app.printer.sendCommand('M400');
+            await this.app.printer.sendCommandAndWait('G90', 5000);
+            await this.app.printer.sendCommandAndWait(`G0 Z${safeZ.toFixed(2)} F3000`, 30000);
+            await this.app.printer.sendCommandAndWait('M400', 60000);
+            await this.app.printer.sendCommandAndWait('G0 C0 B0 F1800', 30000);
+            await this.app.printer.sendCommandAndWait('M400', 60000);
 
             // Show XY completion dialog instead of auto-advancing
             this.showXYCompletionDialog();
@@ -315,23 +292,29 @@ class StepCalibrateXY {
 
         try {
             // Update UI immediately
-            document.getElementById('current-a').textContent = point.a;
+            document.getElementById('current-c').textContent = point.c;
             document.getElementById('current-b').textContent = point.b;
 
-            // Check for sweep transition (A sweep -> B sweep)
-            // Transition happens when we reach the first B sweep point (index = aAngles.length)
-            const aAnglesCount = this.app.engine.aAngles.length;
-            if (this.currentSweep === 'a' && this.app.engine.currentIndex >= aAnglesCount) {
-                // Transition from A sweep to B sweep
+            // Check for sweep transition (C sweep -> B sweep)
+            // Transition happens when we reach the first B sweep point (index = cAngles.length)
+            const cAnglesCount = this.app.engine.cAngles.length;
+            console.log('[XY moveToCurrentPoint] Sweep check:', {
+                currentSweep: this.currentSweep,
+                currentIndex: this.app.engine.currentIndex,
+                cAnglesCount: cAnglesCount,
+                willTransition: this.currentSweep === 'c' && this.app.engine.currentIndex >= cAnglesCount
+            });
+            if (this.currentSweep === 'c' && this.app.engine.currentIndex >= cAnglesCount) {
+                // Transition from C sweep to B sweep
                 this.movementInProgress = false;
                 this.setControlsLocked(false);
                 await this.transitionToBSweep(point);
                 return;  // Will continue after transition
             }
 
-            // Special case: A0B0 at start of A sweep (index 0) - auto-confirm
-            // A0B0 at start of B sweep (index = aAngles.length) - DON'T auto-confirm, let user set new reference
-            if (point.a === 0 && point.b === 0 && this.app.engine.currentIndex === 0) {
+            // Special case: C0B0 at start of C sweep (index 0) - auto-confirm
+            // C0B0 at start of B sweep (index = cAngles.length) - DON'T auto-confirm, let user set new reference
+            if (point.c === 0 && point.b === 0 && this.app.engine.currentIndex === 0) {
                 // Get current position and record it
                 const pos = this.app.printer.getPosition();
                 const expected = this.app.engine.getExpectedPosition(0, 0);
@@ -352,16 +335,16 @@ class StepCalibrateXY {
                     // Move to next point immediately
                     await this.moveToCurrentPoint();
                 } else {
-                    console.error('Position not available for A0B0 auto-confirm');
+                    console.error('Position not available for C0B0 auto-confirm');
                     this.setControlsLocked(false);
                     this.movementInProgress = false;
                 }
                 return;
             }
 
-            // Special case: A0B0 at start of B sweep (index = aAngles.length)
+            // Special case: C0B0 at start of B sweep (index = cAngles.length)
             // This is the new reference point - show offset as 0.000 and let user confirm to reset reference
-            if (point.a === 0 && point.b === 0 && this.app.engine.currentIndex === this.app.engine.aAngles.length) {
+            if (point.c === 0 && point.b === 0 && this.app.engine.currentIndex === this.app.engine.cAngles.length) {
                 // Clear offset display to show this is the reference
                 document.getElementById('offset-x').textContent = '0.000';
                 document.getElementById('offset-y').textContent = '0.000';
@@ -373,65 +356,57 @@ class StepCalibrateXY {
                 return;
             }
 
-            // Calculate expected position using IK
-            const expected = this.app.engine.getExpectedPosition(point.a, point.b);
-            console.log('IK calculation:', {
+            // With firmware IK enabled, we just send the reference position with the desired angles
+            // Firmware handles all the position compensation automatically
+            const ref = this.app.referencePosition;
+
+            console.log('Moving to reference position with firmware IK:', {
                 point,
-                referencePosition: this.app.engine.referencePosition,
-                expected
+                reference: { x: ref.x, y: ref.y, z: ref.z }
             });
-
-            let targetX = expected.x;
-            let targetY = expected.y;
-            let targetZ = Math.max(0, expected.z);
-
-            console.log('Target position:', { targetX, targetY, targetZ });
 
             // Reset offset display - will be updated after position is received
             document.getElementById('offset-x').textContent = '0.000';
             document.getElementById('offset-y').textContent = '0.000';
 
-            // Movement sequence - send commands without waiting for position after each
+            // Check if we need a safety lift for large B angle changes
+            // This is critical when B changes sign (e.g., B90 to B-15) as the nozzle swings through
+            // intermediate positions that could hit the bed
+            const prevIndex = this.app.engine.currentIndex - 1;
+            const gridPoints = this.app.engine.getGridPoints();
+            const prevPoint = prevIndex >= 0 ? gridPoints[prevIndex] : null;
+
+            const needsSafetyLift = prevPoint && (
+                // B angle sign change (e.g., +90 to -15)
+                (prevPoint.b > 0 && point.b < 0) ||
+                (prevPoint.b < 0 && point.b > 0) ||
+                // Large B angle change (> 45 degrees)
+                Math.abs(point.b - prevPoint.b) > 45
+            );
+
             await this.app.printer.sendCommand('G90');  // Absolute mode
 
-            // 1. Lift Z for safety (if B != 0)
-            if (point.b !== 0) {
-                const safeZ = this.app.referencePosition.z + this.zSafetyOffset;
-                console.log('Lifting Z to safe height:', safeZ);
-                await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(2)} F3000`);
-                await this.app.printer.sendCommand('M400');  // Wait for move
+            if (needsSafetyLift) {
+                // Lift to safe Z first, then move - use sendCommandAndWait for proper sequencing
+                const safeZ = ref.z + 50;  // 50mm safety offset (increased for more clearance)
+                console.log('XY calibration: Safety lift for large B change:', prevPoint?.b, '->', point.b);
+
+                // 1. Lift Z to safe height and wait
+                await this.app.printer.sendCommandAndWait(`G0 Z${safeZ.toFixed(2)} F3000`, 30000);
+
+                // 2. Move B axis first (while lifted), then C, to avoid intermediate swing positions
+                await this.app.printer.sendCommandAndWait(`G0 B${point.b.toFixed(1)} F1000`, 30000);
+                await this.app.printer.sendCommandAndWait(`G0 C${point.c.toFixed(1)} F1800`, 30000);
+
+                // 3. Move XY to target position
+                await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} F3000`, 30000);
+
+                // 4. Lower back to reference Z slowly
+                await this.app.printer.sendCommandAndWait(`G0 Z${ref.z.toFixed(2)} F1500`, 30000);
+            } else {
+                // Normal single movement - safe for small angle changes
+                await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${ref.z.toFixed(2)} C${point.c.toFixed(1)} B${point.b.toFixed(1)} F1800`, 30000);
             }
-
-            // 2. Rotate to correct A/B angle
-            // Ensure absolute mode before rotation (safety check)
-            await this.app.printer.sendCommand('G90');
-            console.log('Rotating to A:', point.a, 'B:', point.b);
-            await this.app.printer.sendCommand(`G0 A${point.a.toFixed(1)} B${point.b.toFixed(1)} F1800`);
-            await this.app.printer.sendCommand('M400');  // Wait for rotation
-
-            // Verify A/B position after rotation (non-blocking)
-            try {
-                await this.app.printer.requestPosition();
-                const posAfterRot = this.app.printer.getPosition();
-                if (posAfterRot) {
-                    console.log('Position after rotation:', { a: posAfterRot.a, b: posAfterRot.b });
-                    if (Math.abs(posAfterRot.a - point.a) > 1 || Math.abs(posAfterRot.b - point.b) > 1) {
-                        console.error('WARNING: A/B position mismatch! Expected:', point, 'Got:', { a: posAfterRot.a, b: posAfterRot.b });
-                    }
-                }
-            } catch (e) {
-                console.warn('Position verification after rotation failed:', e.message);
-            }
-
-            // 3. Move to XY position (IK calculated)
-            console.log('Moving to XY:', targetX.toFixed(2), targetY.toFixed(2));
-            await this.app.printer.sendCommand(`G0 X${targetX.toFixed(2)} Y${targetY.toFixed(2)} F3000`);
-            await this.app.printer.sendCommand('M400');  // Wait for XY move
-
-            // 4. Lower Z to IK expected height (both A and B sweep use exact IK Z)
-            console.log('Lowering Z to IK expected:', targetZ.toFixed(2));
-            await this.app.printer.sendCommand(`G0 Z${targetZ.toFixed(2)} F1500`);
-            await this.app.printer.sendCommand('M400');  // Wait for Z move
 
             // Unlock controls immediately after movement completes
             this.setControlsLocked(false);
@@ -450,57 +425,68 @@ class StepCalibrateXY {
     }
 
     /**
-     * Transition from A sweep to B sweep
-     * Completes the A rotation (to 360° = 0°) and sets new reference at A0B0
+     * Transition from C sweep to B sweep
+     * Completes the C rotation (to 360° = 0°) and sets new reference at C0B0
      */
     async transitionToBSweep(nextPoint) {
-        console.log('Transitioning from A sweep to B sweep');
+        console.log('Transitioning from C sweep to B sweep');
 
-        await this.app.printer.sendCommand('G90');
-
-        // 1. Lift Z for safety
-        const safeZ = this.app.referencePosition.z + this.zSafetyOffset;
-        console.log('Lifting Z for sweep transition:', safeZ);
-        await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(2)} F3000`);
-        await this.app.printer.sendCommand('M400');
-
-        // 2. Complete A rotation using relative move (avoids A360 limit issues)
-        // We're at A315, need to complete to 360° = 0°
-        console.log('Completing A rotation (+45° relative to reach 360)');
-        await this.app.printer.sendCommand('G91');
-        await this.app.printer.sendCommand('G0 A45 F1800');
-        await this.app.printer.sendCommand('G90');
-        await this.app.printer.sendCommand('M400');
-
-        // Reset A to 0 (we're now physically at 360° = 0°)
-        await this.app.printer.sendCommand('G92 A0');
-        await this.app.printer.sendCommand('M400');
-
-        // 3. Move to A0B0 reference position (use actual reference, not IK expected)
-        const refX = this.app.referencePosition.x;
-        const refY = this.app.referencePosition.y;
-        console.log('Moving to A0B0 reference position:', { x: refX, y: refY });
-        await this.app.printer.sendCommand(`G0 X${refX.toFixed(2)} Y${refY.toFixed(2)} F3000`);
-        await this.app.printer.sendCommand('M400');
-
-        // 4. Lower Z to original reference height
-        console.log('Lowering Z to reference height:', this.app.referencePosition.z);
-        await this.app.printer.sendCommand(`G0 Z${this.app.referencePosition.z.toFixed(2)} F1500`);
-        await this.app.printer.sendCommand('M400');
-
-        // Request position update
-        await this.app.printer.requestPosition();
-
-        // Switch to B sweep mode
+        // IMPORTANT: Set sweep mode FIRST, before any async operations that might fail
+        // This prevents the transition from running twice if position request times out
+        console.log('[transitionToBSweep] Setting currentSweep to b');
         this.currentSweep = 'b';
-        const graphViewMode = 'a';
+
+        // Update graph mode immediately
+        const graphViewMode = 'c';
         document.querySelectorAll('#graph-axis-selector button').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.view === 'b');
         });
         this.graphRenderer.setViewMode(graphViewMode, 0);
         this.graphRenderer.render();
 
-        // Continue to first B sweep point (A0B0 - user will confirm to reset reference)
+        const ref = this.app.referencePosition;
+
+        // Temporarily disable IK for rotation/reset (avoids IK interference)
+        await this.app.printer.sendCommand('G49');
+        await this.app.printer.sendCommand('M400');
+
+        // 1. Complete C rotation using relative move (avoids C360 limit issues)
+        // We're at C315, need to complete to 360° = 0°
+        console.log('Completing C rotation (+45° relative to reach 360)');
+        await this.app.printer.sendCommand('G91');
+        await this.app.printer.sendCommand('G0 C45 F1800');
+        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommand('G90');
+
+        // Reset C to 0 (we're now physically at 360° = 0°)
+        await this.app.printer.sendCommand('G92 C0');
+        await this.app.printer.sendCommand('M400');
+
+        // Explicit move to C0 to confirm reset
+        await this.app.printer.sendCommand('G0 C0 F1800');
+        await this.app.printer.sendCommand('M400');
+
+        // Re-enable IK
+        await this.app.printer.sendCommand('G43.4');
+        await this.app.printer.sendCommand('M400');
+
+        // 2. Move to C0B0 reference position - firmware IK handles everything
+        console.log('Moving to C0B0 reference position with firmware IK');
+        await this.app.printer.sendCommand(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${ref.z.toFixed(2)} C0 B0 F1800`);
+        await this.app.printer.sendCommand('M400');
+
+        // Wait for position to settle
+        await new Promise(r => setTimeout(r, 500));
+
+        // Request position update (wrapped in try-catch to prevent breaking flow)
+        try {
+            await this.app.printer.requestPosition();
+            await new Promise(r => setTimeout(r, 200));
+        } catch (e) {
+            console.warn('Position request failed during transition:', e.message);
+        }
+
+        // Continue to first B sweep point (C0B0 - user will confirm to reset reference)
         await this.moveToCurrentPoint();
     }
 
@@ -540,7 +526,7 @@ class StepCalibrateXY {
                 return;
             }
 
-            console.log('Confirming point:', point.a, point.b);
+            console.log('Confirming point:', point.c, point.b);
 
             // Use cached position - it's already up to date from position display
             const pos = this.app.printer.getPosition();
@@ -549,8 +535,9 @@ class StepCalibrateXY {
                 return;
             }
 
-            // Special case: A0B0 at start of B sweep (resetting reference)
-            if (point.a === 0 && point.b === 0 && this.app.engine.currentIndex === this.app.engine.aAngles.length) {
+            // Special case: C0B0 at start of B sweep (resetting reference)
+            if (point.c === 0 && point.b === 0 && this.app.engine.currentIndex === this.app.engine.cAngles.length) {
+                console.log('[confirmCurrentPoint] B sweep reference case - currentSweep is:', this.currentSweep);
                 console.log('Resetting XY reference for B sweep to:', pos);
                 // Reset the reference to current position
                 this.app.referencePosition = {
@@ -569,7 +556,7 @@ class StepCalibrateXY {
 
                 // Record the new reference
                 this.app.engine.recordMeasurement(0, 0, { x: pos.x, y: pos.y, z: actualZ });
-                console.log('Recorded new B sweep reference at A0B0, advancing to next point');
+                console.log('Recorded new B sweep reference at C0B0, advancing to next point');
 
                 this.graphRenderer.render();
 
@@ -577,12 +564,16 @@ class StepCalibrateXY {
                 const redoBtn = document.getElementById('redo-prev-btn');
                 if (redoBtn) redoBtn.disabled = false;
 
+                // Wait a moment for the reference to settle before moving to first B point
+                await this.app.printer.sendCommand('M400');
+                await new Promise(r => setTimeout(r, 500));
+
                 await this.moveToCurrentPoint();
                 return;
             }
 
             // Normal point confirmation
-            const expected = this.app.engine.getExpectedPosition(point.a, point.b);
+            const expected = this.app.engine.getExpectedPosition(point.c, point.b);
 
             // Record the actual offset (current pos - expected = error)
             const errorX = pos.x - expected.x;
@@ -590,11 +581,11 @@ class StepCalibrateXY {
             console.log('Recording error:', { errorX, errorY });
 
             // Get existing measurement to preserve Z value if it exists (from Z calibration)
-            const existingMeasurement = this.app.engine.getMeasurement(point.a, point.b);
+            const existingMeasurement = this.app.engine.getMeasurement(point.c, point.b);
             const actualZ = existingMeasurement?.actual?.z ?? expected.z;
 
             // Record XY, preserve existing Z or use expected Z
-            this.app.engine.recordMeasurement(point.a, point.b, { x: pos.x, y: pos.y, z: actualZ });
+            this.app.engine.recordMeasurement(point.c, point.b, { x: pos.x, y: pos.y, z: actualZ });
             console.log('Recorded XY measurement, advancing to next point');
 
             this.graphRenderer.render();
@@ -648,28 +639,19 @@ class StepCalibrateXY {
                 </div>
 
                 <div class="space-y-3">
-                    <button id="save-xy-btn" class="w-full btn-secondary py-2 rounded-lg font-medium">
-                        💾 Save XY data to browser
-                    </button>
                     <button id="continue-to-z-btn" class="w-full btn-primary py-3 rounded-lg font-medium">
                         Continue to Z calibration →
                     </button>
                     <button id="skip-z-from-xy-btn" class="w-full btn-outline py-2 rounded-lg text-sm text-gray-500">
-                        Skip Z calibration (finish)
+                        Skip Z calibration (go to results)
                     </button>
                 </div>
+                <p class="text-xs text-gray-400 mt-3 text-center">Calibration data will be exported to printer at the end</p>
             </div>
         `;
         document.body.appendChild(modal);
 
         // Event handlers
-        document.getElementById('save-xy-btn').addEventListener('click', () => {
-            this.saveXYToStorage();
-            const btn = document.getElementById('save-xy-btn');
-            btn.textContent = '✓ Saved!';
-            btn.disabled = true;
-        });
-
         document.getElementById('continue-to-z-btn').addEventListener('click', () => {
             modal.remove();
             this.app.nextStep();
@@ -677,22 +659,15 @@ class StepCalibrateXY {
 
         document.getElementById('skip-z-from-xy-btn').addEventListener('click', () => {
             modal.remove();
+            // Mark Z calibration as skipped
+            this.app.zCalibrationCompleted = false;
+            console.log('[XY Calibration] Skipping Z - Z coefficients will not be updated');
             // Skip to results
             this.app.currentStep = 5;  // Results step
             this.app.showStep(5);
         });
     }
 
-    /**
-     * Save XY calibration data to browser storage
-     */
-    saveXYToStorage() {
-        const data = this.app.engine.exportJSON();
-        data.metadata.calibrationType = 'xy';
-        data.metadata.savedAt = new Date().toISOString();
-        StorageManager.saveCalibrationData(data);
-        console.log('XY calibration data saved to browser storage');
-    }
 
     /**
      * Redo the previous measurement point
@@ -716,14 +691,14 @@ class StepCalibrateXY {
             console.log('Redoing previous point:', prevPoint);
 
             // Remove the measurement for the previous point
-            const key = `${prevPoint.a}_${prevPoint.b}`;
+            const key = `${prevPoint.c}_${prevPoint.b}`;
             this.app.engine.measurements.delete(key);
 
             // Go back to the previous point
             this.app.engine.currentIndex = prevIndex;
 
             // Update sweep state if needed
-            this.currentSweep = prevPoint.b === 0 ? 'a' : 'b';
+            this.currentSweep = prevPoint.b === 0 ? 'c' : 'b';
 
             // Update progress display
             if (this.app.engine.onProgressUpdate) {
@@ -755,7 +730,7 @@ class StepCalibrateXY {
         const point = this.app.engine.getCurrentPoint();
         if (!point) return;
 
-        const expected = this.app.engine.getExpectedPosition(point.a, point.b);
+        const expected = this.app.engine.getExpectedPosition(point.c, point.b);
         const pos = this.app.printer.getPosition();
 
         console.log('updateOffsetDisplay:', {
@@ -823,8 +798,7 @@ class StepCalibrateZ {
     constructor(app) {
         this.app = app;
         this.graphRenderer = null;
-        this.zSafetyOffset = 20;
-        this.currentSweep = 'a';
+        this.currentSweep = 'c';
         this.confirmInProgress = false;
         this.controlsLocked = false;
         this.zReferenceConfirmed = false;
@@ -870,22 +844,11 @@ class StepCalibrateZ {
         // Get imported data from XY calibration step (for XY corrections during movement)
         this.importedData = this.app.stepCalibrateXY.importedData || null;
 
-        // IMPORTANT: Load existing XY calibration data into engine
-        // This ensures Z calibration preserves XY values when updating measurements
-        if (this.app.engine.measurements.size === 0) {
-            // Engine is empty - try to load from browser storage or XY step
-            const savedData = StorageManager.loadCalibrationData();
-            if (savedData && savedData.measurements && savedData.measurements.length > 0) {
-                console.log('Loading existing XY calibration data into engine for Z calibration');
-                // Convert array to Map
-                savedData.measurements.forEach(m => {
-                    const key = `${m.a}_${m.b}`;
-                    this.app.engine.measurements.set(key, m);
-                });
-                console.log('Loaded', this.app.engine.measurements.size, 'XY measurements');
-            }
+        // Check if we have XY calibration data from the previous step
+        if (this.app.engine.measurements.size > 0) {
+            console.log('Engine has', this.app.engine.measurements.size, 'measurements from XY calibration');
         } else {
-            console.log('Engine already has', this.app.engine.measurements.size, 'measurements from XY calibration');
+            console.log('Starting Z calibration without XY data (XY was skipped)');
         }
 
         // Show reference panel, hide calibration panel
@@ -902,7 +865,7 @@ class StepCalibrateZ {
 
     async setupReferenceCamera() {
         // Move nozzle to center X for Z reference setup (if reference is set)
-        // Keep Y at reference, move X to center (100), A=0, B=0
+        // Keep Y at reference, move X to center (100), C=0, B=0
         if (this.app.referencePosition) {
             const refPos = this.app.referencePosition;
             const centerX = 100;  // Center of bed
@@ -912,7 +875,7 @@ class StepCalibrateZ {
             await this.app.printer.sendCommand('G90');
             await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(2)} F3000`);  // Lift first
             await this.app.printer.sendCommand('M400');
-            await this.app.printer.sendCommand('G0 A0 B0 F1800');  // Ensure A/B at 0
+            await this.app.printer.sendCommand('G0 C0 B0 F1800');  // Ensure C/B at 0
             await this.app.printer.sendCommand('M400');
             await this.app.printer.sendCommand(`G0 X${centerX} Y${refPos.y.toFixed(2)} F3000`);  // Move to center X
             await this.app.printer.sendCommand('M400');
@@ -976,7 +939,7 @@ class StepCalibrateZ {
                 x: pos.x,
                 y: pos.y,
                 z: pos.z,
-                a: pos.a || 0,
+                a: pos.c || 0,
                 b: pos.b || 0
             };
             // Set reference position in engine for IK calculations
@@ -1003,10 +966,30 @@ class StepCalibrateZ {
     }
 
     skip() {
+        // Mark Z calibration as skipped so results page knows not to use Z data
+        this.app.zCalibrationCompleted = false;
+        console.log('[Z Calibration] Skipped - Z coefficients will not be updated');
         this.app.nextStep();
     }
 
     async startCalibration() {
+        // Handle M667 calibration correction based on refine mode
+        if (this.app.printer && this.app.printer.isConnected()) {
+            try {
+                if (this.app.refineMode) {
+                    // Enable calibration correction for refine mode
+                    await this.app.printer.sendCommandAndWait('M667 S1', 5000);
+                    console.log('[Z Calibration] Calibration correction enabled for refine mode');
+                } else {
+                    // Disable calibration correction for fresh calibration
+                    await this.app.printer.sendCommandAndWait('M667 S0', 5000);
+                    console.log('[Z Calibration] Calibration correction disabled for fresh calibration');
+                }
+            } catch (e) {
+                console.warn('[Z Calibration] Could not set calibration correction state:', e);
+            }
+        }
+
         // Setup UI
         document.getElementById('calibration-title-z').textContent = 'Z calibration';
         document.getElementById('jog-z-controls-z').classList.remove('hidden');
@@ -1034,9 +1017,8 @@ class StepCalibrateZ {
         const video = document.getElementById('calibration-video-z');
         if (video) video.style.transform = 'scale(4) rotate(180deg)';
 
-        this.zSafetyOffset = parseFloat(document.getElementById('zSafetyOffset')?.value) || 20;
-        this.currentSweep = 'a';
-        // Start at index 0 (A0B0) - will auto-confirm and advance to A45
+        this.currentSweep = 'c';
+        // Start at index 0 (C0B0) - will auto-confirm and advance to C45
         this.app.engine.currentIndex = 0;
         this.app.engine.phase = 'z';
 
@@ -1055,25 +1037,25 @@ class StepCalibrateZ {
         };
 
         this.app.engine.onMeasurementComplete = async () => {
+            // Move to safe position - use sendCommandAndWait to ensure all "ok" responses
+            // are consumed before moving to results page
             const safeZ = this.zReferencePosition + 50;
-            await this.app.printer.sendCommand('G90');
-            await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(2)} F3000`);
-            await this.app.printer.sendCommand('M400');
-            await this.app.printer.sendCommand('G0 A0 B0 F1800');
-            await this.app.printer.sendCommand('M400');
+            await this.app.printer.sendCommandAndWait('G90', 5000);
+            await this.app.printer.sendCommandAndWait(`G0 Z${safeZ.toFixed(2)} F3000`, 30000);
+            await this.app.printer.sendCommandAndWait('M400', 60000);
+            await this.app.printer.sendCommandAndWait('G0 C0 B0 F1800', 30000);
+            await this.app.printer.sendCommandAndWait('M400', 60000);
 
-            // Auto-save Z calibration data to browser storage
-            const data = this.app.engine.exportJSON();
-            data.metadata.calibrationType = 'z';
-            data.metadata.savedAt = new Date().toISOString();
-            StorageManager.saveCalibrationData(data);
-            console.log('Z calibration data auto-saved to browser storage');
+            // Mark Z calibration as completed
+            this.app.zCalibrationCompleted = true;
+            console.log('[Z Calibration] Completed - Z coefficients will be updated');
 
+            // Continue to results (export to printer happens there)
             this.app.nextStep();
         };
 
-        // Start at A0B0 (will auto-confirm reference and move to A45)
-        console.log('Starting Z calibration at A0B0 (will auto-confirm and advance)');
+        // Start at C0B0 (will auto-confirm reference and move to C45)
+        console.log('Starting Z calibration at C0B0 (will auto-confirm and advance)');
         this.moveToCurrentPoint();
     }
 
@@ -1090,26 +1072,26 @@ class StepCalibrateZ {
         this.setControlsLocked(true);
 
         try {
-            const currentA = document.getElementById('current-a-z');
+            const currentC = document.getElementById('current-c-z');
             const currentB = document.getElementById('current-b-z');
-            if (currentA) currentA.textContent = point.a;
+            if (currentC) currentC.textContent = point.c;
             if (currentB) currentB.textContent = point.b;
 
-            // Check for sweep transition (A sweep -> B sweep)
-            // Transition happens when we reach the first B sweep point (index = aAngles.length)
-            const aAnglesCount = this.app.engine.aAngles.length;
-            if (this.currentSweep === 'a' && this.app.engine.currentIndex >= aAnglesCount) {
-                // Transition from A sweep to B sweep
-                console.log('Z calibration: Transitioning from A sweep to B sweep at index', this.app.engine.currentIndex);
+            // Check for sweep transition (C sweep -> B sweep)
+            // Transition happens when we reach the first B sweep point (index = cAngles.length)
+            const cAnglesCount = this.app.engine.cAngles.length;
+            if (this.currentSweep === 'c' && this.app.engine.currentIndex >= cAnglesCount) {
+                // Transition from C sweep to B sweep
+                console.log('Z calibration: Transitioning from C sweep to B sweep at index', this.app.engine.currentIndex);
                 this.setControlsLocked(false);
                 await this.transitionToBSweepZ(point);
                 return;  // Will continue after transition
             }
 
-            // Special case: A0B0 at start of A sweep (index 0) - auto-confirm
-            // A0B0 at start of B sweep (index = aAngles.length) - DON'T auto-confirm, let user set new reference
-            if (point.a === 0 && point.b === 0 && this.app.engine.currentIndex === 0) {
-                console.log('Z calibration: A0B0 start of A sweep - auto-confirming');
+            // Special case: C0B0 at start of C sweep (index 0) - auto-confirm
+            // C0B0 at start of B sweep (index = cAngles.length) - DON'T auto-confirm, let user set new reference
+            if (point.c === 0 && point.b === 0 && this.app.engine.currentIndex === 0) {
+                console.log('Z calibration: C0B0 start of C sweep - auto-confirming');
 
                 // Get current position and record it with Z reference
                 const pos = this.app.printer.getPosition();
@@ -1130,7 +1112,7 @@ class StepCalibrateZ {
                     // Record the measurement
                     this.app.engine.recordMeasurement(0, 0, { x: actualX, y: actualY, z: adjustedZ });
                     if (this.graphRenderer) this.graphRenderer.render();
-                    console.log('Z calibration: A0B0 auto-confirmed, advancing to next point');
+                    console.log('Z calibration: C0B0 auto-confirmed, advancing to next point');
 
                     // Unlock and move to next point
                     this.setControlsLocked(false);
@@ -1138,16 +1120,16 @@ class StepCalibrateZ {
                     // Move to next point immediately
                     await this.moveToCurrentPoint();
                 } else {
-                    console.error('Position not available for A0B0 auto-confirm');
+                    console.error('Position not available for C0B0 auto-confirm');
                     this.setControlsLocked(false);
                 }
                 return;
             }
 
-            // Special case: A0B0 at start of B sweep (index = aAngles.length)
+            // Special case: C0B0 at start of B sweep (index = cAngles.length)
             // This is the new reference point - show offset as 0.000 and let user confirm to reset reference
-            if (point.a === 0 && point.b === 0 && this.app.engine.currentIndex === this.app.engine.aAngles.length) {
-                console.log('Z calibration: A0B0 start of B sweep - setting as new reference point');
+            if (point.c === 0 && point.b === 0 && this.app.engine.currentIndex === this.app.engine.cAngles.length) {
+                console.log('Z calibration: C0B0 start of B sweep - setting as new reference point');
                 // Clear offset display to show this is the reference
                 const offsetZ = document.getElementById('offset-z-z');
                 if (offsetZ) offsetZ.textContent = '0.000';
@@ -1158,76 +1140,55 @@ class StepCalibrateZ {
                 return;
             }
 
-            const expected = this.app.engine.getExpectedPosition(point.a, point.b);
+            // With firmware IK enabled, we just send reference position with desired angles
+            // Firmware handles all position compensation automatically
+            // Use Z reference position (may differ from XY reference if Z calibration started fresh)
+            const ref = this.app.referencePosition;
+            const refZ = this.zReferencePosition || ref.z;
 
-            // Get XY from previous measurement (XY calibration), or from imported data
-            const measurement = this.app.engine.getMeasurement(point.a, point.b);
-            let targetX = expected.x;
-            let targetY = expected.y;
-            let importedZError = 0;
+            console.log('Z calibration: Moving to reference position with firmware IK:', {
+                point,
+                reference: { x: ref.x, y: ref.y, z: refZ }
+            });
 
-            if (measurement && measurement.actual) {
-                // Use measured XY position from XY calibration
-                targetX = measurement.actual.x;
-                targetY = measurement.actual.y;
-                console.log('Using measured XY:', { targetX, targetY });
-            } else if (this.importedData) {
-                // Use imported XY corrections if available
-                const imported = this.importedData.get(`${point.a}_${point.b}`);
-                if (imported?.error) {
-                    targetX += imported.error.x;
-                    targetY += imported.error.y;
-                    importedZError = imported.error.z || 0;
-                    console.log('Using imported corrections:', imported.error);
-                }
-            }
+            // Check if we need a safety lift for large B angle changes
+            // This is critical when B changes sign (e.g., B90 to B-15) as the nozzle swings through
+            // intermediate positions that could hit the bed
+            const prevIndex = this.app.engine.currentIndex - 1;
+            const gridPoints = this.app.engine.getGridPoints();
+            const prevPoint = prevIndex >= 0 ? gridPoints[prevIndex] : null;
 
-            // Calculate Z offset from IK
-            // If we have XY reference position, use it; otherwise use Z reference as baseline
-            const referenceZ = (this.app.referencePosition && this.app.referencePosition.z !== undefined)
-                ? this.app.referencePosition.z
-                : this.zReferencePosition;
-            const zOffset = expected.z - referenceZ;
+            const needsSafetyLift = prevPoint && (
+                // B angle sign change (e.g., +90 to -15)
+                (prevPoint.b > 0 && point.b < 0) ||
+                (prevPoint.b < 0 && point.b > 0) ||
+                // Large B angle change (> 45 degrees)
+                Math.abs(point.b - prevPoint.b) > 45
+            );
 
-            // Calculate target Z based on sweep type
-            let targetZ;
-            const MIN_SAFE_Z = 10;  // Never go below 10mm for safety
-
-            // Both A and B sweep: go directly to expected Z (apply imported correction if available)
-            targetZ = this.zReferencePosition + zOffset - importedZError;
-            console.log('Z calibration target:', { sweep: point.b === 0 ? 'A' : 'B', zOffset, importedZError, targetZ });
-
-            // Apply minimum safety limit
-            targetZ = Math.max(MIN_SAFE_Z, targetZ);
-
-            console.log('Z calibration IK movement:', { point, targetX, targetY, targetZ, zOffset });
-
-            // IK movement sequence
             await this.app.printer.sendCommand('G90');
 
-            // For B sweep (B != 0), lift Z for safety before rotating
-            // A sweep (B = 0) doesn't need Z lift - nozzle stays level
-            if (point.b !== 0) {
-                const safeZ = this.zReferencePosition + this.zSafetyOffset;
-                console.log('Z calibration - B sweep, lifting Z to safe height:', safeZ);
-                await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(2)} F3000`);
-                await this.app.printer.sendCommand('M400');
+            if (needsSafetyLift) {
+                // Lift to safe Z first, then move - use sendCommandAndWait for proper sequencing
+                const safeZ = refZ + 50;  // 50mm safety offset (increased for more clearance)
+                console.log('Z calibration: Safety lift for large B change:', prevPoint?.b, '->', point.b);
+
+                // 1. Lift Z to safe height and wait
+                await this.app.printer.sendCommandAndWait(`G0 Z${safeZ.toFixed(2)} F3000`, 30000);
+
+                // 2. Move B axis first (while lifted), then C, to avoid intermediate swing positions
+                await this.app.printer.sendCommandAndWait(`G0 B${point.b.toFixed(1)} F1000`, 30000);
+                await this.app.printer.sendCommandAndWait(`G0 C${point.c.toFixed(1)} F1800`, 30000);
+
+                // 3. Move XY to target position
+                await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} F3000`, 30000);
+
+                // 4. Lower back to reference Z slowly
+                await this.app.printer.sendCommandAndWait(`G0 Z${refZ.toFixed(2)} F1500`, 30000);
+            } else {
+                // Normal single movement - safe for small angle changes
+                await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${refZ.toFixed(2)} C${point.c.toFixed(1)} B${point.b.toFixed(1)} F1800`, 30000);
             }
-
-            // Rotate A/B
-            console.log('Z calibration - rotating to A:', point.a, 'B:', point.b);
-            await this.app.printer.sendCommand(`G0 A${point.a.toFixed(1)} B${point.b.toFixed(1)} F1800`);
-            await this.app.printer.sendCommand('M400');
-
-            // Move XY to IK position
-            console.log('Z calibration - moving XY to:', targetX.toFixed(2), targetY.toFixed(2));
-            await this.app.printer.sendCommand(`G0 X${targetX.toFixed(2)} Y${targetY.toFixed(2)} F3000`);
-            await this.app.printer.sendCommand('M400');
-
-            // Lower Z to target height (already calculated with safety limits)
-            console.log('Z calibration - lowering Z to:', targetZ.toFixed(2));
-            await this.app.printer.sendCommand(`G0 Z${targetZ.toFixed(2)} F1500`);
-            await this.app.printer.sendCommand('M400');
 
             // Unlock controls immediately after movement completes
             this.setControlsLocked(false);
@@ -1244,59 +1205,57 @@ class StepCalibrateZ {
     }
 
     /**
-     * Transition from A sweep to B sweep for Z calibration
-     * Moves to A=0,B=0 as the new reference point - automatic, no modal
+     * Transition from C sweep to B sweep for Z calibration
+     * Moves to C=0,B=0 as the new reference point - automatic, no modal
      */
     async transitionToBSweepZ(nextPoint) {
-        console.log('Z calibration: Transitioning from A sweep to B sweep');
+        console.log('Z calibration: Transitioning from C sweep to B sweep');
 
-        await this.app.printer.sendCommand('G90');
-
-        // 1. Lift Z for safety
-        const safeZ = this.zReferencePosition + this.zSafetyOffset;
-        console.log('B sweep transition - lifting Z to:', safeZ);
-        await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(2)} F3000`);
-        await this.app.printer.sendCommand('M400');
-
-        // 2. Complete rotation using relative move (avoids A360 limit issues)
-        console.log('Completing A rotation (+45° relative)');
-        await this.app.printer.sendCommand('G91');
-        await this.app.printer.sendCommand('G0 A45 F1800');
-        await this.app.printer.sendCommand('G90');
-        await this.app.printer.sendCommand('M400');
-        await this.app.printer.sendCommand('G92 A0');
-        await this.app.printer.sendCommand('M400');
-
-        // 3. Get XY from A0B0 measurement if available (from A sweep)
-        const xyMeasurement = this.app.engine.getMeasurement(0, 0);
-        if (xyMeasurement?.actual) {
-            // Use measured XY from A sweep
-            console.log('Moving to A0B0 using measured XY:', { x: xyMeasurement.actual.x, y: xyMeasurement.actual.y });
-            await this.app.printer.sendCommand(`G0 X${xyMeasurement.actual.x.toFixed(2)} Y${xyMeasurement.actual.y.toFixed(2)} F3000`);
-            await this.app.printer.sendCommand('M400');
-        } else {
-            // Fallback to IK position
-            const expected = this.app.engine.getExpectedPosition(0, 0);
-            console.log('Moving to A0B0 using IK:', expected);
-            await this.app.printer.sendCommand(`G0 X${expected.x.toFixed(2)} Y${expected.y.toFixed(2)} F3000`);
-            await this.app.printer.sendCommand('M400');
-        }
-
-        // 4. Lower Z to reference height
-        console.log('Lowering Z to reference height:', this.zReferencePosition);
-        await this.app.printer.sendCommand(`G0 Z${this.zReferencePosition.toFixed(2)} F1500`);
-        await this.app.printer.sendCommand('M400');
-
-        // Request position update
-        await this.app.printer.requestPosition();
-
-        // Continue with B sweep - no modal, automatic transition
+        // IMPORTANT: Set sweep mode FIRST, before any async operations that might fail
         this.currentSweep = 'b';
         if (this.graphRenderer) {
-            this.graphRenderer.setViewMode('a', 0);
+            this.graphRenderer.setViewMode('c', 0);
         }
 
-        // Continue to first B sweep point (A0B0 - user will confirm to reset Z reference)
+        const ref = this.app.referencePosition;
+        const refZ = this.zReferencePosition || ref.z;
+
+        // Temporarily disable IK for rotation/reset (avoids IK interference)
+        await this.app.printer.sendCommand('G49');
+        await this.app.printer.sendCommand('M400');
+
+        // 1. Complete rotation using relative move (avoids C360 limit issues)
+        console.log('Completing C rotation (+45° relative)');
+        await this.app.printer.sendCommand('G91');
+        await this.app.printer.sendCommand('G0 C45 F1800');
+        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommand('G90');
+
+        // Reset C to 0
+        await this.app.printer.sendCommand('G92 C0');
+        await this.app.printer.sendCommand('M400');
+
+        // Explicit move to C0 to confirm reset
+        await this.app.printer.sendCommand('G0 C0 F1800');
+        await this.app.printer.sendCommand('M400');
+
+        // Re-enable IK
+        await this.app.printer.sendCommand('G43.4');
+        await this.app.printer.sendCommand('M400');
+
+        // 2. Move to C0B0 reference position - firmware IK handles everything
+        console.log('Moving to C0B0 reference position with firmware IK');
+        await this.app.printer.sendCommand(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${refZ.toFixed(2)} C0 B0 F1800`);
+        await this.app.printer.sendCommand('M400');
+
+        // Request position update (wrapped in try-catch to prevent breaking flow)
+        try {
+            await this.app.printer.requestPosition();
+        } catch (e) {
+            console.warn('Position request failed during Z transition:', e.message);
+        }
+
+        // Continue to first B sweep point (C0B0 - user will confirm to reset Z reference)
         await this.moveToCurrentPoint();
     }
 
@@ -1336,7 +1295,7 @@ class StepCalibrateZ {
                 return;
             }
 
-            console.log('Confirming Z point:', point.a, point.b);
+            console.log('Confirming Z point:', point.c, point.b);
 
             // Use cached position
             const pos = this.app.printer.getPosition();
@@ -1345,14 +1304,14 @@ class StepCalibrateZ {
                 return;
             }
 
-            // Special case: A0B0 at start of B sweep (resetting reference)
-            if (point.a === 0 && point.b === 0 && this.app.engine.currentIndex === this.app.engine.aAngles.length) {
+            // Special case: C0B0 at start of B sweep (resetting reference)
+            if (point.c === 0 && point.b === 0 && this.app.engine.currentIndex === this.app.engine.cAngles.length) {
                 console.log('Resetting Z reference for B sweep to:', pos.z);
                 // Reset the Z reference to current position
                 this.zReferencePosition = pos.z;
 
                 // Update existing measurement with actual Z
-                const measurement = this.app.engine.getMeasurement(point.a, point.b);
+                const measurement = this.app.engine.getMeasurement(point.c, point.b);
                 const actualX = measurement ? measurement.actual.x : pos.x;
                 const actualY = measurement ? measurement.actual.y : pos.y;
 
@@ -1361,8 +1320,8 @@ class StepCalibrateZ {
                     ? this.app.referencePosition.z
                     : this.zReferencePosition;
 
-                this.app.engine.recordMeasurement(point.a, point.b, { x: actualX, y: actualY, z: adjustedZ });
-                console.log('Recorded new B sweep reference at A0B0, advancing to next point');
+                this.app.engine.recordMeasurement(point.c, point.b, { x: actualX, y: actualY, z: adjustedZ });
+                console.log('Recorded new B sweep reference at C0B0, advancing to next point');
 
                 if (this.graphRenderer) this.graphRenderer.render();
                 await this.moveToCurrentPoint();
@@ -1371,7 +1330,7 @@ class StepCalibrateZ {
 
             // Normal point confirmation
             // Update existing measurement with actual Z
-            const measurement = this.app.engine.getMeasurement(point.a, point.b);
+            const measurement = this.app.engine.getMeasurement(point.c, point.b);
             const actualX = measurement ? measurement.actual.x : pos.x;
             const actualY = measurement ? measurement.actual.y : pos.y;
 
@@ -1386,7 +1345,7 @@ class StepCalibrateZ {
                 adjustedZ = pos.z;
             }
 
-            this.app.engine.recordMeasurement(point.a, point.b, { x: actualX, y: actualY, z: adjustedZ });
+            this.app.engine.recordMeasurement(point.c, point.b, { x: actualX, y: actualY, z: adjustedZ });
             console.log('Recorded Z measurement, advancing to next point');
 
             if (this.graphRenderer) this.graphRenderer.render();
@@ -1407,19 +1366,9 @@ class StepCalibrateZ {
         const offsetZ = document.getElementById('offset-z-z');
 
         if (pos && pos.z !== undefined && this.zReferencePosition !== null) {
-            // Calculate expected Z offset from reference (IK-based)
-            const expected = this.app.engine.getExpectedPosition(point.a, point.b);
-            const referenceZ = (this.app.referencePosition && this.app.referencePosition.z !== undefined)
-                ? this.app.referencePosition.z
-                : this.zReferencePosition;
-            const expectedZOffset = expected.z - referenceZ;
-
-            // Calculate actual Z offset from Z reference
-            const actualZOffset = pos.z - this.zReferencePosition;
-
-            // Error is actual - expected
-            const zError = actualZOffset - expectedZOffset;
-
+            // With firmware IK, error is simply actual - reference
+            // Firmware should keep nozzle at reference Z; any deviation is calibration error
+            const zError = pos.z - this.zReferencePosition;
             if (offsetZ) offsetZ.textContent = zError.toFixed(3);
         }
     }

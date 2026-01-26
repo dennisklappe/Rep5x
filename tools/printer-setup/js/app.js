@@ -8,7 +8,7 @@ class PrinterSetupApp {
         this.currentStep = 0;
         this.totalSteps = 7;
         this.testMode = false;
-        this.position = { a: 0, b: 0, z: 0 };
+        this.position = { c: 0, b: 0, z: 0 };
 
         // Step sizes for keyboard control (1-4 keys select these)
         this.zStepSizes = [0.05, 0.1, 1, 10];      // mm
@@ -16,20 +16,20 @@ class PrinterSetupApp {
         this.currentZStepIndex = 1;                // Default: 0.1mm
         this.currentRotationStepIndex = 1;         // Default: 1°
 
-        // Printer interface (reused from la-lb-measure)
+        // Printer interface (reused from lc-lb-measure)
         this.printer = new PrinterInterface();
 
         // Step controllers
         this.stepConnect = new StepConnect(this);
         this.stepPrepare = new StepPrepare(this);
         this.stepDirectionCheck = new StepDirectionCheck(this);
-        this.stepAAxis = new StepAAxis(this);
+        this.stepCAxis = new StepCAxis(this);
         this.stepBAxis = new StepBAxis(this);
         this.stepZAxis = new StepZAxis(this);
         this.stepApply = new StepApply(this);
 
-        // Order: Connect -> Prepare -> Direction Check -> A-axis -> B-axis -> Z-axis -> Apply
-        this.steps = [this.stepConnect, this.stepPrepare, this.stepDirectionCheck, this.stepAAxis, this.stepBAxis, this.stepZAxis, this.stepApply];
+        // Order: Connect -> Prepare -> Direction Check -> C-axis -> B-axis -> Z-axis -> Apply
+        this.steps = [this.stepConnect, this.stepPrepare, this.stepDirectionCheck, this.stepCAxis, this.stepBAxis, this.stepZAxis, this.stepApply];
     }
 
     /**
@@ -61,7 +61,7 @@ class PrinterSetupApp {
         document.getElementById('prevBtn').addEventListener('click', () => this.previousStep());
         document.getElementById('skipToEndBtn').addEventListener('click', () => this.skipToEnd());
 
-        // Jog buttons (shared between B and A axis steps)
+        // Jog buttons (shared between B and C axis steps)
         document.querySelectorAll('.jog-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.handleJogButton(e));
         });
@@ -76,8 +76,8 @@ class PrinterSetupApp {
     skipToEnd() {
         // Mark remaining axes as skipped with dummy values
         if (this.currentStep <= 3) {
-            // Skipping from A-axis or earlier
-            this.stepAAxis.measurements.recorded = { 0: 0, 360: 360 };
+            // Skipping from C-axis or earlier
+            this.stepCAxis.measurements.recorded = { 0: 0, 360: 360 };
         }
         if (this.currentStep <= 4) {
             // Skipping from B-axis or earlier
@@ -108,7 +108,7 @@ class PrinterSetupApp {
      * Handle keyboard controls
      * Spacebar: Emergency stop (always active)
      * Enter: Confirm position (during calibration steps)
-     * A-axis (step 3): Left/Right arrows for movement, 1-3 for step size
+     * C-axis (step 3): Left/Right arrows for movement, 1-3 for step size
      * B-axis (step 4): Left/Right arrows for movement (left=+, right=-), 1-3 for step size
      * Z-axis (step 5): Page Up/Down for movement, 1-4 for step size
      */
@@ -127,8 +127,8 @@ class PrinterSetupApp {
         if (e.key === 'Enter') {
             e.preventDefault();
             if (this.currentStep === 3) {
-                // A-axis: click confirm button
-                document.getElementById('confirmAPosition')?.click();
+                // C-axis: click confirm button
+                document.getElementById('confirmCPosition')?.click();
             } else if (this.currentStep === 4) {
                 // B-axis: click confirm button
                 document.getElementById('confirmBPosition')?.click();
@@ -139,7 +139,7 @@ class PrinterSetupApp {
             return;
         }
 
-        // Only respond to other keys during calibration steps (3=A-axis, 4=B-axis, 5=Z-axis)
+        // Only respond to other keys during calibration steps (3=C-axis, 4=B-axis, 5=Z-axis)
         if (this.currentStep < 3 || this.currentStep > 5) return;
 
         const isZAxis = this.currentStep === 5;
@@ -156,7 +156,7 @@ class PrinterSetupApp {
                     this.showStepSizeIndicator('z', this.zStepSizes[index]);
                 }
             } else {
-                // B/A-axis: 1=0.1°, 2=1°, 3=10°
+                // B/C-axis: 1=0.1°, 2=1°, 3=10°
                 if (index < this.rotationStepSizes.length) {
                     this.currentRotationStepIndex = index;
                     this.showStepSizeIndicator('rotation', this.rotationStepSizes[index]);
@@ -176,8 +176,8 @@ class PrinterSetupApp {
             else if (e.key === 'PageDown') direction = -1;
             else return;
         } else if (this.currentStep === 3) {
-            // A-axis: Left/Right arrows
-            axis = 'a';
+            // C-axis: Left/Right arrows
+            axis = 'c';
             if (e.key === 'ArrowLeft') direction = 1;
             else if (e.key === 'ArrowRight') direction = -1;
             else return;
@@ -219,7 +219,7 @@ class PrinterSetupApp {
         if (type === 'z') {
             indicatorId = 'zStepIndicator';
         } else if (this.currentStep === 3) {
-            indicatorId = 'aStepIndicator';
+            indicatorId = 'cStepIndicator';
         } else {
             indicatorId = 'rotationStepIndicator';
         }
@@ -272,9 +272,9 @@ class PrinterSetupApp {
             const size = this.zStepSizes[this.currentZStepIndex];
             this.showStepSizeIndicator('z', size);
         } else if (this.currentStep === 3) {
-            // A-axis
+            // C-axis
             const size = this.rotationStepSizes[this.currentRotationStepIndex];
-            this.showStepSizeIndicator('a', size);
+            this.showStepSizeIndicator('c', size);
         } else if (this.currentStep === 4) {
             // B-axis
             const size = this.rotationStepSizes[this.currentRotationStepIndex];
@@ -304,7 +304,7 @@ class PrinterSetupApp {
             const index = this.rotationStepSizes.indexOf(absAmount);
             if (index !== -1) {
                 this.currentRotationStepIndex = index;
-                const type = this.currentStep === 3 ? 'a' : 'rotation';
+                const type = this.currentStep === 3 ? 'c' : 'rotation';
                 this.showStepSizeIndicator(type, absAmount);
             }
         }
@@ -322,7 +322,7 @@ class PrinterSetupApp {
      * Update position display
      */
     updatePositionDisplay(pos) {
-        this.position = { a: pos.a, b: pos.b, z: pos.z };
+        this.position = { c: pos.c, b: pos.b, z: pos.z };
 
         const zDisplay = document.getElementById('zAxisDisplay');
         if (zDisplay) zDisplay.textContent = pos.z.toFixed(2);
@@ -330,8 +330,8 @@ class PrinterSetupApp {
         const bDisplay = document.getElementById('bAxisDisplay');
         if (bDisplay) bDisplay.textContent = pos.b.toFixed(1);
 
-        const aDisplay = document.getElementById('aAxisDisplay');
-        if (aDisplay) aDisplay.textContent = pos.a.toFixed(1);
+        const cDisplay = document.getElementById('cAxisDisplay');
+        if (cDisplay) cDisplay.textContent = pos.c.toFixed(1);
     }
 
     /**
@@ -394,14 +394,29 @@ class PrinterSetupApp {
      * Update progress bar
      */
     updateProgressBar(stepIndex) {
-        document.querySelectorAll('.progress-step').forEach((step, i) => {
+        // Update step indicators
+        document.querySelectorAll('.step-indicator').forEach((step, i) => {
             step.classList.toggle('active', i === stepIndex);
             step.classList.toggle('completed', i < stepIndex);
         });
 
-        document.querySelectorAll('.progress-connector').forEach((connector, i) => {
+        // Update step connectors
+        document.querySelectorAll('.step-connector').forEach((connector, i) => {
             connector.classList.toggle('completed', i < stepIndex);
         });
+
+        // Update progress fill bar
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) {
+            const progress = ((stepIndex + 1) / this.totalSteps) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+
+        // Update step counter
+        const stepCounter = document.getElementById('stepCounter');
+        if (stepCounter) {
+            stepCounter.textContent = `Step ${stepIndex + 1} of ${this.totalSteps}`;
+        }
     }
 
     /**
@@ -417,11 +432,11 @@ class PrinterSetupApp {
         if (stepIndex === this.totalSteps - 1) {
             nextBtn.style.display = 'none';
         } else {
-            nextBtn.style.display = 'block';
-            nextBtn.textContent = 'Next →';
+            nextBtn.style.display = 'flex';
+            nextBtn.innerHTML = `Next <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
         }
 
-        // Show "Skip to end" button on A-axis, B-axis and Z-axis steps (3, 4, 5)
+        // Show "Skip to end" button on C-axis, B-axis and Z-axis steps (3, 4, 5)
         if (stepIndex >= 3 && stepIndex <= 5) {
             skipToEndBtn.classList.remove('hidden');
         } else {

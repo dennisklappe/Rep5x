@@ -165,14 +165,14 @@ class ElbowPipe extends ShapeBase {
         let totalSpiralAngle = 0;
 
         // Helper to add G-code line
-        const addMove = (x, y, z, A, B, isFirst, speedMult = 1) => {
+        const addMove = (x, y, z, C, B, isFirst, speedMult = 1) => {
             const pos = { x, y, z };
             const deltaE = prevPos ? distance3D(pos, prevPos) * 0.05 : 0;
 
             if (isFirst) {
-                gcode.push(`G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} ; move to start`);
+                gcode.push(`G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} C${C.toFixed(3)} B${B.toFixed(3)} ; move to start`);
             } else {
-                gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${Math.round(speed * speedMult)}`);
+                gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} C${C.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${Math.round(speed * speedMult)}`);
             }
             prevPos = pos;
         };

@@ -22,7 +22,7 @@ class CalibrationVisualizer3D {
         this.controls = null;
 
         // Objects
-        this.nozzleA = null;       // Nozzle for A sweep
+        this.nozzleC = null;       // Nozzle for C sweep
         this.nozzleB = null;       // Nozzle for B sweep (only in 'both' mode)
         this.gridHelper = null;
         this.axisHelper = null;
@@ -31,16 +31,16 @@ class CalibrationVisualizer3D {
         // Animation state
         this.animating = false;
         this.animationId = null;
-        this.currentA = 0;
+        this.currentC = 0;
         this.currentB = 0;
-        this.sweepMode = 'both';  // 'a', 'b', 'both' (separate A+B), 'combined'
+        this.sweepMode = 'both';  // 'c', 'b', 'both' (separate C+B), 'combined'
         this.animationSpeed = 2;
 
         // Mode
         this.mode = 'uncalibrated';
 
-        // Trail (primary - A sweep or combined)
-        this.trailPointsA = [];
+        // Trail (primary - C sweep or combined)
+        this.trailPointsC = [];
         this.maxTrailPoints = 200;
 
         // Trail for B sweep (only in 'both' mode)
@@ -106,14 +106,14 @@ class CalibrationVisualizer3D {
         this.centerMarker = new THREE.Mesh(centerGeometry, centerMaterial);
         this.scene.add(this.centerMarker);
 
-        // Nozzle A (A sweep or combined - red/teal)
+        // Nozzle C (C sweep or combined - red/teal)
         const nozzleGeometry = new THREE.SphereGeometry(5, 32, 32);
-        this.nozzleMaterialA = new THREE.MeshPhongMaterial({
+        this.nozzleMaterialC = new THREE.MeshPhongMaterial({
             color: 0xff6b6b,
             emissive: 0x331111
         });
-        this.nozzleA = new THREE.Mesh(nozzleGeometry, this.nozzleMaterialA);
-        this.scene.add(this.nozzleA);
+        this.nozzleC = new THREE.Mesh(nozzleGeometry, this.nozzleMaterialC);
+        this.scene.add(this.nozzleC);
 
         // Nozzle B (B sweep only in 'both' mode - orange/cyan)
         this.nozzleMaterialB = new THREE.MeshPhongMaterial({
@@ -124,14 +124,14 @@ class CalibrationVisualizer3D {
         this.nozzleB.visible = false;  // Hidden by default
         this.scene.add(this.nozzleB);
 
-        // Trail for A sweep (red/teal)
-        this.trailMaterialA = new THREE.MeshBasicMaterial({
+        // Trail for C sweep (red/teal)
+        this.trailMaterialC = new THREE.MeshBasicMaterial({
             color: 0xff6b6b,
             transparent: true,
             opacity: 0.7
         });
-        this.trailGroupA = new THREE.Group();
-        this.scene.add(this.trailGroupA);
+        this.trailGroupC = new THREE.Group();
+        this.scene.add(this.trailGroupC);
 
         // Trail for B sweep (orange/cyan - only in 'both' mode)
         this.trailMaterialB = new THREE.MeshBasicMaterial({
@@ -246,23 +246,23 @@ class CalibrationVisualizer3D {
 
     setCorrector(corrector) {
         this.corrector = corrector;
-        this.trailPointsA = [];
+        this.trailPointsC = [];
         this.trailPointsB = [];
         this.updateTrail();
     }
 
     setMode(mode) {
         this.mode = mode;
-        this.trailPointsA = [];
+        this.trailPointsC = [];
         this.trailPointsB = [];
         this.updateTrail();
     }
 
     setSweepMode(mode) {
         this.sweepMode = mode;
-        this.trailPointsA = [];
+        this.trailPointsC = [];
         this.trailPointsB = [];
-        this.currentA = 0;
+        this.currentC = 0;
         this.currentB = 0;
 
         // Show/hide B nozzle and trail based on mode
@@ -273,19 +273,19 @@ class CalibrationVisualizer3D {
         this.updateTrail();
     }
 
-    getError(a, b) {
+    getError(c, b) {
         if (!this.corrector || !this.corrector.loaded) {
             return { x: 0, y: 0, z: 0 };
         }
 
         // Get the fitted correction
-        const correction = this.corrector.getCorrection(a, b);
+        const correction = this.corrector.getCorrection(c, b);
 
         if (this.mode === 'calibrated') {
             // Show residual error (difference between raw measurement and fitted curve)
             // This shows how much error remains after calibration correction
             const residual = this.corrector.getResidual ?
-                this.corrector.getResidual(a, b) :
+                this.corrector.getResidual(c, b) :
                 { x: 0, y: 0, z: 0 };
 
             // Map to Three.js coordinates:
@@ -308,20 +308,20 @@ class CalibrationVisualizer3D {
 
     updateNozzle() {
         if (this.sweepMode === 'both') {
-            // A sweep at B=0
-            const errorA = this.getError(this.currentA, 0);
-            if (this.nozzleA) {
-                this.nozzleA.position.set(errorA.x, errorA.y, errorA.z);
+            // C sweep at B=0
+            const errorC = this.getError(this.currentC, 0);
+            if (this.nozzleC) {
+                this.nozzleC.position.set(errorC.x, errorC.y, errorC.z);
             }
-            // B sweep at A=0
+            // B sweep at C=0
             const errorB = this.getError(0, this.currentB);
             if (this.nozzleB) {
                 this.nozzleB.position.set(errorB.x, errorB.y, errorB.z);
             }
         } else {
-            const error = this.getError(this.currentA, this.currentB);
-            if (this.nozzleA) {
-                this.nozzleA.position.set(error.x, error.y, error.z);
+            const error = this.getError(this.currentC, this.currentB);
+            if (this.nozzleC) {
+                this.nozzleC.position.set(error.x, error.y, error.z);
             }
         }
     }
@@ -369,11 +369,11 @@ class CalibrationVisualizer3D {
 
     updateTrail() {
         // Clear both trails
-        this.clearTrailGroup(this.trailGroupA);
+        this.clearTrailGroup(this.trailGroupC);
         this.clearTrailGroup(this.trailGroupB);
 
-        // Build trail A
-        this.buildTrailFromPoints(this.trailPointsA, this.trailGroupA, this.trailMaterialA);
+        // Build trail C
+        this.buildTrailFromPoints(this.trailPointsC, this.trailGroupC, this.trailMaterialC);
 
         // Build trail B (only in 'both' mode)
         if (this.sweepMode === 'both') {
@@ -385,61 +385,61 @@ class CalibrationVisualizer3D {
         if (!this.animating) return;
 
         if (this.sweepMode === 'both') {
-            // Both mode: A and B sweep simultaneously, synchronized timing
-            // A goes 0->360 while B goes -90->90 in the same time
-            this.currentA += this.animationSpeed;
-            if (this.currentA >= 360) this.currentA = 0;
+            // Both mode: C and B sweep simultaneously, synchronized timing
+            // C goes 0->360 while B goes -90->90 in the same time
+            this.currentC += this.animationSpeed;
+            if (this.currentC >= 360) this.currentC = 0;
 
-            // B is synchronized: maps A 0->360 to B -90->90
-            // Using sine for smooth back-and-forth: B = 90 * sin(A * pi / 180)
-            // This makes B go from 0 -> 90 -> 0 -> -90 -> 0 as A goes 0 -> 360
-            this.currentB = 90 * Math.sin(this.currentA * Math.PI / 180);
+            // B is synchronized: maps C 0->360 to B -90->90
+            // Using sine for smooth back-and-forth: B = 90 * sin(C * pi / 180)
+            // This makes B go from 0 -> 90 -> 0 -> -90 -> 0 as C goes 0 -> 360
+            this.currentB = 90 * Math.sin(this.currentC * Math.PI / 180);
 
             // Update nozzle positions
             this.updateNozzle();
 
-            // Add to trails - A trail (red/teal) shows A sweep at B=0
-            const errorA = this.getError(this.currentA, 0);
-            this.trailPointsA.push({ x: errorA.x, y: errorA.y, z: errorA.z });
-            if (this.trailPointsA.length > this.maxTrailPoints) {
-                this.trailPointsA.shift();
+            // Add to trails - C trail (red/teal) shows C sweep at B=0
+            const errorC = this.getError(this.currentC, 0);
+            this.trailPointsC.push({ x: errorC.x, y: errorC.y, z: errorC.z });
+            if (this.trailPointsC.length > this.maxTrailPoints) {
+                this.trailPointsC.shift();
             }
 
-            // B trail (orange/cyan) shows B sweep at A=0
+            // B trail (orange/cyan) shows B sweep at C=0
             const errorB = this.getError(0, this.currentB);
             this.trailPointsB.push({ x: errorB.x, y: errorB.y, z: errorB.z });
             if (this.trailPointsB.length > this.maxTrailPoints) {
                 this.trailPointsB.shift();
             }
         } else if (this.sweepMode === 'combined') {
-            // Combined mode: A and B vary together in a smooth pattern
-            this.currentA += this.animationSpeed;
-            if (this.currentA >= 360) this.currentA = 0;
-            this.currentB = Math.sin(this.currentA * Math.PI / 180) * 60;
+            // Combined mode: C and B vary together in a smooth pattern
+            this.currentC += this.animationSpeed;
+            if (this.currentC >= 360) this.currentC = 0;
+            this.currentB = Math.sin(this.currentC * Math.PI / 180) * 60;
 
             this.updateNozzle();
 
-            const error = this.getError(this.currentA, this.currentB);
-            this.trailPointsA.push({ x: error.x, y: error.y, z: error.z });
-            if (this.trailPointsA.length > this.maxTrailPoints) {
-                this.trailPointsA.shift();
+            const error = this.getError(this.currentC, this.currentB);
+            this.trailPointsC.push({ x: error.x, y: error.y, z: error.z });
+            if (this.trailPointsC.length > this.maxTrailPoints) {
+                this.trailPointsC.shift();
             }
-        } else if (this.sweepMode === 'a') {
-            // A sweep only at B=0
-            this.currentA += this.animationSpeed;
-            if (this.currentA >= 360) this.currentA = 0;
+        } else if (this.sweepMode === 'c') {
+            // C sweep only at B=0
+            this.currentC += this.animationSpeed;
+            if (this.currentC >= 360) this.currentC = 0;
             this.currentB = 0;
 
             this.updateNozzle();
 
-            const error = this.getError(this.currentA, this.currentB);
-            this.trailPointsA.push({ x: error.x, y: error.y, z: error.z });
-            if (this.trailPointsA.length > this.maxTrailPoints) {
-                this.trailPointsA.shift();
+            const error = this.getError(this.currentC, this.currentB);
+            this.trailPointsC.push({ x: error.x, y: error.y, z: error.z });
+            if (this.trailPointsC.length > this.maxTrailPoints) {
+                this.trailPointsC.shift();
             }
         } else if (this.sweepMode === 'b') {
-            // B sweep only at A=0, oscillates -90 to 90
-            this.currentA = 0;
+            // B sweep only at C=0, oscillates -90 to 90
+            this.currentC = 0;
             this.currentB += (this.bDirection || 1) * this.animationSpeed;
             if (this.currentB >= 90) {
                 this.currentB = 90;
@@ -451,10 +451,10 @@ class CalibrationVisualizer3D {
 
             this.updateNozzle();
 
-            const error = this.getError(this.currentA, this.currentB);
-            this.trailPointsA.push({ x: error.x, y: error.y, z: error.z });
-            if (this.trailPointsA.length > this.maxTrailPoints) {
-                this.trailPointsA.shift();
+            const error = this.getError(this.currentC, this.currentB);
+            this.trailPointsC.push({ x: error.x, y: error.y, z: error.z });
+            if (this.trailPointsC.length > this.maxTrailPoints) {
+                this.trailPointsC.shift();
             }
         }
 
@@ -493,10 +493,10 @@ class CalibrationVisualizer3D {
 
     reset() {
         this.stop();
-        this.currentA = 0;
+        this.currentC = 0;
         this.currentB = 0;
         this.bDirection = 1;
-        this.trailPointsA = [];
+        this.trailPointsC = [];
         this.trailPointsB = [];
         this.updateNozzle();
         this.updateTrail();
@@ -513,7 +513,7 @@ class CalibrationVisualizer3D {
 
     /**
      * Generate G-code for printer demo
-     * Creates a smooth continuous motion that holds the nozzle at center while sweeping A/B
+     * Creates a smooth continuous motion that holds the nozzle at center while sweeping C/B
      */
     generateDemoGcode(options = {}) {
         if (!this.corrector || !this.corrector.loaded) {
@@ -525,13 +525,13 @@ class CalibrationVisualizer3D {
             centerY = 99.5,
             centerZ = 141.3,
             mode = this.mode,
-            sweepMode = 'both',   // 'a', 'b', or 'both' (combined A+B)
+            sweepMode = 'both',   // 'c', 'b', or 'both' (combined C+B)
             speed = 600,          // Smooth continuous motion
-            rotations = 2,        // Number of full A rotations
+            rotations = 2,        // Number of full C rotations
             angleStep = 1,        // Degrees per step for smooth motion (smaller = slower)
             maxB = 60,            // Maximum B angle amplitude
             applyIK = true,
-            la = this.corrector.la || 0,
+            lc = this.corrector.lc || 0,
             lb = this.corrector.lb || 47
         } = options;
 
@@ -543,7 +543,7 @@ class CalibrationVisualizer3D {
         gcode.push(`; Generated: ${new Date().toISOString()}`);
         gcode.push(';');
         gcode.push(`; Inverse Kinematics: ${applyIK ? 'enabled (software)' : 'disabled'}`);
-        gcode.push(`; LA Parameter: ${la}`);
+        gcode.push(`; LC Parameter: ${lc}`);
         gcode.push(`; LB Parameter: ${lb}`);
         gcode.push(`; Calibration Correction: ${mode === 'calibrated' ? 'enabled' : 'disabled'}`);
         gcode.push(';');
@@ -554,47 +554,47 @@ class CalibrationVisualizer3D {
         gcode.push(';');
         gcode.push('; Smooth continuous motion demo');
         gcode.push('; The nozzle tip should stay at the same point');
-        gcode.push('; while A/B axes rotate smoothly');
+        gcode.push('; while C/B axes rotate smoothly');
         gcode.push('');
 
         // IK function (matches firmware IK formulas)
-        const applyIKTransform = (tipX, tipY, tipZ, aDeg, bDeg) => {
-            const aRad = aDeg * Math.PI / 180;
+        const applyIKTransform = (tipX, tipY, tipZ, cDeg, bDeg) => {
+            const cRad = cDeg * Math.PI / 180;
             const bRad = bDeg * Math.PI / 180;
 
             return {
-                x: tipX + Math.sin(aRad) * la + Math.cos(aRad) * Math.sin(bRad) * lb,
-                y: tipY - la + Math.cos(aRad) * la - Math.sin(aRad) * Math.sin(bRad) * lb,
+                x: tipX + Math.sin(cRad) * lc + Math.cos(cRad) * Math.sin(bRad) * lb,
+                y: tipY - lc + Math.cos(cRad) * lc - Math.sin(cRad) * Math.sin(bRad) * lb,
                 z: tipZ + Math.cos(bRad) * lb - lb
             };
         };
 
         // Helper to generate a move command
-        // Output continuous A values, optimizer wraps to 0-360 and adds G92
-        const generateMove = (a, b) => {
+        // Output continuous C values, optimizer wraps to 0-360 and adds G92
+        const generateMove = (c, b) => {
             const tipX = centerX;
             const tipY = centerY;
             const tipZ = centerZ;
 
-            // Wrap A for calibration/IK calculations (physical angle is 0-360)
-            const aWrapped = ((a % 360) + 360) % 360;
+            // Wrap C for calibration/IK calculations (physical angle is 0-360)
+            const cWrapped = ((c % 360) + 360) % 360;
 
             // Apply IK first (uses wrapped angle for physical position)
             let machinePos = { x: tipX, y: tipY, z: tipZ };
             if (applyIK) {
-                machinePos = applyIKTransform(tipX, tipY, tipZ, aWrapped, b);
+                machinePos = applyIKTransform(tipX, tipY, tipZ, cWrapped, b);
             }
 
             // Apply calibration correction AFTER IK (correction is in machine coordinates)
             if (mode === 'calibrated') {
-                const correction = this.corrector.getCorrection(aWrapped, b);
+                const correction = this.corrector.getCorrection(cWrapped, b);
                 machinePos.x -= correction.x;
                 machinePos.y -= correction.y;
                 machinePos.z -= correction.z;
             }
 
-            // Output CONTINUOUS A value - optimizer wraps to 0-360 and adds G92
-            return `G1 X${machinePos.x.toFixed(3)} Y${machinePos.y.toFixed(3)} Z${machinePos.z.toFixed(3)} A${a.toFixed(1)} B${b.toFixed(1)} F${speed}`;
+            // Output CONTINUOUS C value - optimizer wraps to 0-360 and adds G92
+            return `G1 X${machinePos.x.toFixed(3)} Y${machinePos.y.toFixed(3)} Z${machinePos.z.toFixed(3)} C${c.toFixed(1)} B${b.toFixed(1)} F${speed}`;
         };
 
         // Start sequence - matching vase-generator style (homing only, no heating)
@@ -611,22 +611,22 @@ class CalibrationVisualizer3D {
         const startPos = applyIK
             ? applyIKTransform(centerX, centerY, centerZ, 0, 0)
             : { x: centerX, y: centerY, z: centerZ };
-        gcode.push(`G0 X${startPos.x.toFixed(3)} Y${startPos.y.toFixed(3)} Z${startPos.z.toFixed(3)} A0.0 B0.0 F3000 ;Move to demo position`);
+        gcode.push(`G0 X${startPos.x.toFixed(3)} Y${startPos.y.toFixed(3)} Z${startPos.z.toFixed(3)} C0.0 B0.0 F3000 ;Move to demo position`);
         gcode.push('G4 P500 ;Brief pause before starting');
         gcode.push('');
 
         // Generate smooth continuous sweep pattern
-        const totalADegrees = 360 * rotations;
+        const totalCDegrees = 360 * rotations;
 
-        if (sweepMode === 'a') {
-            // Pure A rotation at B=0
-            gcode.push('; Smooth A-axis rotation at B=0');
-            for (let a = 0; a <= totalADegrees; a += angleStep) {
-                gcode.push(generateMove(a, 0));
+        if (sweepMode === 'c') {
+            // Pure C rotation at B=0
+            gcode.push('; Smooth C-axis rotation at B=0');
+            for (let c = 0; c <= totalCDegrees; c += angleStep) {
+                gcode.push(generateMove(c, 0));
             }
         } else if (sweepMode === 'b') {
             // Smooth B sweep from -maxB to +maxB and back, multiple times
-            gcode.push('; Smooth B-axis sweep at A=0');
+            gcode.push('; Smooth B-axis sweep at C=0');
             const bCycles = rotations;
             for (let cycle = 0; cycle < bCycles; cycle++) {
                 // Forward: -maxB to +maxB
@@ -639,19 +639,19 @@ class CalibrationVisualizer3D {
                 }
             }
         } else if (sweepMode === 'both' || sweepMode === 'combined') {
-            // Combined: A rotates while B oscillates sinusoidally
-            // A does 360° while B does one half-oscillation (e.g., -60 to +60)
-            gcode.push('; Combined A+B sweep');
-            gcode.push('; A rotates 360 while B goes from min to max (or max to min)');
+            // Combined: C rotates while B oscillates sinusoidally
+            // C does 360° while B does one half-oscillation (e.g., -60 to +60)
+            gcode.push('; Combined C+B sweep');
+            gcode.push('; C rotates 360 while B goes from min to max (or max to min)');
 
-            // B does half an oscillation per A rotation
-            // So for 3 A rotations, B does 1.5 full oscillations (3 half-cycles)
+            // B does half an oscillation per C rotation
+            // So for 3 C rotations, B does 1.5 full oscillations (3 half-cycles)
             const bOscillations = rotations / 2;
-            for (let a = 0; a <= totalADegrees; a += angleStep) {
-                // B varies sinusoidally with A
-                const bPhase = (a / totalADegrees) * bOscillations * 2 * Math.PI;
+            for (let c = 0; c <= totalCDegrees; c += angleStep) {
+                // B varies sinusoidally with C
+                const bPhase = (c / totalCDegrees) * bOscillations * 2 * Math.PI;
                 const b = Math.sin(bPhase) * maxB;
-                gcode.push(generateMove(a, b));
+                gcode.push(generateMove(c, b));
             }
         }
 
@@ -671,16 +671,16 @@ class CalibrationVisualizer3D {
         gcode.push('G4 P1000 ;Wait for Z axis to settle');
         gcode.push('');
         gcode.push('G0 X110 Y200 F3000 ;Move bed to back for easy access');
-        gcode.push('G0 A0 B0 ;Return A and B to 0 degrees');
+        gcode.push('G0 C0 B0 ;Return C and B to 0 degrees');
         gcode.push('');
         gcode.push('M211 S1 ;Re-enable soft endstops');
-        gcode.push('M84 X Y A B ;Disable all steppers except Z');
+        gcode.push('M84 X Y C B ;Disable all steppers except Z');
         gcode.push('M117 Demo complete');
 
-        // Apply A-axis shortest route optimization for smooth continuous rotation
+        // Apply C-axis shortest route optimization for smooth continuous rotation
         let result = gcode.join('\n');
-        if (typeof optimizeAAxisRotation === 'function') {
-            result = optimizeAAxisRotation(result, true);
+        if (typeof optimizeCAxisRotation === 'function') {
+            result = optimizeCAxisRotation(result, true);
         }
 
         return result;

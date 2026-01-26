@@ -7,11 +7,11 @@
 class CalibrationCorrector {
     constructor() {
         // Calibration data storage
-        this.aSweepData = [];  // {a, errorX, errorY, errorZ} at B=0
-        this.bSweepData = [];  // {b, errorX, errorY, errorZ} at A=0
+        this.cSweepData = [];  // {c, errorX, errorY, errorZ} at B=0
+        this.bSweepData = [];  // {b, errorX, errorY, errorZ} at C=0
 
         // Metadata
-        this.la = 0;
+        this.lc = 0;
         this.lb = 47;
         this.loaded = false;
     }
@@ -26,21 +26,21 @@ class CalibrationCorrector {
         }
 
         // Clear existing data
-        this.aSweepData = [];
+        this.cSweepData = [];
         this.bSweepData = [];
 
         // Load metadata
         if (data.metadata) {
-            this.la = data.metadata.la || 0;
+            this.lc = data.metadata.lc || 0;
             this.lb = data.metadata.lb || 47;
         }
 
-        // Separate A sweep (B=0) and B sweep (A=0)
+        // Separate C sweep (B=0) and B sweep (C=0)
         for (const m of data.measurements) {
             if (m.skipped) continue;
 
             const point = {
-                a: m.a,
+                c: m.c,
                 b: m.b,
                 errorX: m.error?.x || 0,
                 errorY: m.error?.y || 0,
@@ -48,38 +48,38 @@ class CalibrationCorrector {
             };
 
             if (m.b === 0) {
-                // A sweep point
-                this.aSweepData.push(point);
+                // C sweep point
+                this.cSweepData.push(point);
             }
-            if (m.a === 0) {
+            if (m.c === 0) {
                 // B sweep point
                 this.bSweepData.push(point);
             }
         }
 
         // Sort by angle for interpolation
-        this.aSweepData.sort((a, b) => a.a - b.a);
+        this.cSweepData.sort((a, b) => a.c - b.c);
         this.bSweepData.sort((a, b) => a.b - b.b);
 
         this.loaded = true;
 
         console.log('Calibration data loaded:', {
-            aSweepPoints: this.aSweepData.length,
+            cSweepPoints: this.cSweepData.length,
             bSweepPoints: this.bSweepData.length,
-            la: this.la,
+            lc: this.lc,
             lb: this.lb
         });
 
         return {
-            aSweepPoints: this.aSweepData.length,
+            cSweepPoints: this.cSweepData.length,
             bSweepPoints: this.bSweepData.length
         };
     }
 
     /**
-     * Get correction for given A/B angles
+     * Get correction for given C/B angles
      * Uses linear interpolation and additive model
-     * @param {number} a - A angle in degrees
+     * @param {number} a - C angle in degrees (parameter name 'a' kept for backward compatibility)
      * @param {number} b - B angle in degrees
      * @returns {Object} {x, y, z} corrections to ADD to coordinates
      */
@@ -88,62 +88,62 @@ class CalibrationCorrector {
             return { x: 0, y: 0, z: 0 };
         }
 
-        // Normalize A to 0-360 range
+        // Normalize C to 0-360 range
         a = ((a % 360) + 360) % 360;
 
-        // Get A-based correction (at B=0)
-        const aCorrection = this.interpolateASweep(a);
+        // Get C-based correction (at B=0)
+        const cCorrection = this.interpolateCSweep(a);
 
-        // Get B-based correction (at A=0)
+        // Get B-based correction (at C=0)
         const bCorrection = this.interpolateBSweep(b);
 
         // Combine corrections (additive model)
-        // Subtract A=0,B=0 baseline to avoid double-counting
+        // Subtract C=0,B=0 baseline to avoid double-counting
         const baseline = this.getBaseline();
 
         return {
-            x: aCorrection.x + bCorrection.x - baseline.x,
-            y: aCorrection.y + bCorrection.y - baseline.y,
-            z: aCorrection.z + bCorrection.z - baseline.z
+            x: cCorrection.x + bCorrection.x - baseline.x,
+            y: cCorrection.y + bCorrection.y - baseline.y,
+            z: cCorrection.z + bCorrection.z - baseline.z
         };
     }
 
     /**
-     * Get baseline correction at A=0, B=0
+     * Get baseline correction at C=0, B=0
      */
     getBaseline() {
-        // Find the A=0, B=0 point
-        const a0Point = this.aSweepData.find(p => p.a === 0);
-        if (a0Point) {
+        // Find the C=0, B=0 point
+        const c0Point = this.cSweepData.find(p => p.c === 0);
+        if (c0Point) {
             return {
-                x: a0Point.errorX,
-                y: a0Point.errorY,
-                z: a0Point.errorZ
+                x: c0Point.errorX,
+                y: c0Point.errorY,
+                z: c0Point.errorZ
             };
         }
         return { x: 0, y: 0, z: 0 };
     }
 
     /**
-     * Interpolate A sweep data
-     * @param {number} a - A angle (0-360)
+     * Interpolate C sweep data
+     * @param {number} c - C angle (0-360)
      */
-    interpolateASweep(a) {
-        if (this.aSweepData.length === 0) {
+    interpolateCSweep(c) {
+        if (this.cSweepData.length === 0) {
             return { x: 0, y: 0, z: 0 };
         }
 
-        // Handle wrap-around for A axis (360° = 0°)
+        // Handle wrap-around for C axis (360° = 0°)
         // Create extended data with wrap-around points
-        const extended = [...this.aSweepData];
+        const extended = [...this.cSweepData];
 
         // Add wrap-around point if needed (360° = 0°)
-        const first = this.aSweepData[0];
-        if (first.a === 0) {
-            extended.push({ ...first, a: 360 });
+        const first = this.cSweepData[0];
+        if (first.c === 0) {
+            extended.push({ ...first, c: 360 });
         }
 
-        return this.interpolateArray(extended, a, 'a');
+        return this.interpolateArray(extended, c, 'c');
     }
 
     /**
@@ -162,7 +162,7 @@ class CalibrationCorrector {
      * Linear interpolation in sorted array
      * @param {Array} data - Sorted array of points
      * @param {number} value - Value to interpolate at
-     * @param {string} key - Key to use for lookup ('a' or 'b')
+     * @param {string} key - Key to use for lookup ('c' or 'b')
      */
     interpolateArray(data, value, key) {
         if (data.length === 0) {
@@ -211,7 +211,7 @@ class CalibrationCorrector {
     getStatistics() {
         if (!this.loaded) return null;
 
-        const allErrors = [...this.aSweepData, ...this.bSweepData];
+        const allErrors = [...this.cSweepData, ...this.bSweepData];
 
         const xErrors = allErrors.map(p => p.errorX);
         const yErrors = allErrors.map(p => p.errorY);
@@ -228,17 +228,17 @@ class CalibrationCorrector {
             x: calcStats(xErrors),
             y: calcStats(yErrors),
             z: calcStats(zErrors),
-            aSweepPoints: this.aSweepData.length,
+            cSweepPoints: this.cSweepData.length,
             bSweepPoints: this.bSweepData.length
         };
     }
 
     /**
-     * Get A sweep data for visualization
+     * Get C sweep data for visualization
      */
-    getASweepData() {
-        return this.aSweepData.map(p => ({
-            angle: p.a,
+    getCSweepData() {
+        return this.cSweepData.map(p => ({
+            angle: p.c,
             errorX: p.errorX,
             errorY: p.errorY,
             errorZ: p.errorZ

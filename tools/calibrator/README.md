@@ -1,12 +1,12 @@
 # Rep5x - Calibrator
 
-A calibration tool for finding the error curves of your 5-axis printer across different A and B axis positions. This tool helps identify systematic errors in your printer's kinematic system by measuring the actual nozzle position versus the expected position at multiple points.
+A calibration tool for finding the error curves of your 5-axis printer across different C and B axis positions. This tool helps identify systematic errors in your printer's kinematic system by measuring the actual nozzle position versus the expected position at multiple points.
 
 ## Overview
 
-The calibrator measures position errors at a grid of A and B axis angles:
+The calibrator measures position errors at a grid of C and B axis angles:
 - **B axis**: 90° to -90° in 15° steps (13 values)
-- **A axis**: 0° to 315° in 45° steps (8 values)
+- **C axis**: 0° to 315° in 45° steps (8 values)
 - **Total**: 104 measurement points
 
 For each point, the tool:
@@ -77,7 +77,7 @@ The graph displays error curves in real-time as you calibrate:
 - **Cyan line**: Y axis error
 - **Yellow line**: Z axis error
 
-You can switch between viewing errors by B angle or by A angle using the buttons below the graph.
+You can switch between viewing errors by B angle or by C angle using the buttons below the graph.
 
 ## Data export
 
@@ -95,7 +95,7 @@ A,B,Expected_X,Expected_Y,Expected_Z,Actual_X,Actual_Y,Actual_Z,Error_X,Error_Y,
 {
   "metadata": {
     "timestamp": "2024-01-15T10:30:00.000Z",
-    "la": 0.5,
+    "lc": 0.5,
     "lb": 47.2,
     "referencePosition": {"x": 100, "y": 100, "z": 50}
   },
@@ -112,13 +112,13 @@ A,B,Expected_X,Expected_Y,Expected_Z,Actual_X,Actual_Y,Actual_Z,Error_X,Error_Y,
 
 The error data shows how your printer's kinematic model differs from reality. Common patterns include:
 
-- **Consistent offset**: May indicate LA/LB values need adjustment
-- **Sinusoidal pattern on A**: May indicate axis misalignment
+- **Consistent offset**: May indicate LC/LB values need adjustment
+- **Sinusoidal pattern on C**: May indicate axis misalignment
 - **Progressive error on B**: May indicate LB inaccuracy
 - **Random scatter**: Mechanical backlash or measurement error
 
 Use this data to:
-1. Refine your LA and LB parameters
+1. Refine your LC and LB parameters
 2. Identify mechanical issues
 3. Create error compensation tables for your slicer
 
@@ -146,7 +146,7 @@ calibrator/
 
 ## Tips
 
-- Run the LA/LB Measure tool first to get accurate LA and LB values
+- Run the LC/LB Measure tool first to get accurate LC and LB values
 - Ensure the printer is warmed up and stable before calibrating
 - Use a small step size (0.1mm) for final adjustments
 - Take your time - accuracy is more important than speed

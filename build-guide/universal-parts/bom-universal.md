@@ -10,7 +10,7 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 
 | Component | File | Description |
 |-----------|------|-------------|
-| A-driven-pulley | A-driven-pulley_v1.1.0.3mf | Drive pulley for A-axis |
+| C-driven-pulley | C-driven-pulley_v1.1.0.3mf | Drive pulley for C-axis |
 | B-driven-pulley | b-driven-pulley_v1.1.0.3mf | Custom pulley for B-axis drive |
 | B_arm | B_arm_v1.0.0.3mf | Rotational arm for B-axis |
 | Slip ring holder | slip-ring-holder_v1.1.1.3mf | Mount for slip ring assembly |
@@ -21,14 +21,14 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 
 | Qty | Part Number | Description | Notes | Purchase links |
 |-----|-------------|-------------|-------|----------------|
-| 2 | Nema17 stepper motor | Stepper motors for A and B axis | Standard 42mm body | [AliExpress](https://s.click.aliexpress.com/e/_c4c2iJMv)<br>[Amazon](https://amzn.to/4i9SpMc) |
-| 2 | GT2 20T 5mm bore | Drive pulleys for A and B axis | 20 teeth, 5mm bore | [AliExpress](https://s.click.aliexpress.com/e/_c4c25zbJ)<br>[Amazon](https://amzn.to/3XxPq6t) |
-| 1 | GT2 timing belt 6x188mm | Drive belt for A-axis | 6mm wide, 188mm length | [AliExpress](https://s.click.aliexpress.com/e/_c3iFUMNX)<br>[Amazon](https://amzn.to/3LBjJXs) |
+| 2 | Nema17 stepper motor | Stepper motors for C and B axis | Standard 42mm body | [AliExpress](https://s.click.aliexpress.com/e/_c4c2iJMv)<br>[Amazon](https://amzn.to/4i9SpMc) |
+| 2 | GT2 20T 5mm bore | Drive pulleys for C and B axis | 20 teeth, 5mm bore | [AliExpress](https://s.click.aliexpress.com/e/_c4c25zbJ)<br>[Amazon](https://amzn.to/3XxPq6t) |
+| 1 | GT2 timing belt 6x188mm | Drive belt for C-axis | 6mm wide, 188mm length | [AliExpress](https://s.click.aliexpress.com/e/_c3iFUMNX)<br>[Amazon](https://amzn.to/3LBjJXs) |
 | 1 | GT2 timing belt 6x158mm | Drive belt for B-axis | 6mm wide, 158mm length | [AliExpress](https://s.click.aliexpress.com/e/_c4EfUQFx)<br>[Amazon](https://amzn.to/3K1CsuB) |
 | 2 | 608 2RS bearing DIN625 | Ball bearings for B-axis rotation | Standard skateboard bearings | [AliExpress](https://s.click.aliexpress.com/e/_c4TmSNYv)<br>[Amazon](https://amzn.to/4p7kIwW) |
-| 2 | 61804 bearing | Thin section bearing for carriage mount | For A-axis rotation | [AliExpress](https://s.click.aliexpress.com/e/_c3f9UJ2d)<br>[Amazon](https://amzn.to/47YWRs9) |
+| 2 | 61804 bearing | Thin section bearing for carriage mount | For C-axis rotation | [AliExpress](https://s.click.aliexpress.com/e/_c3f9UJ2d)<br>[Amazon](https://amzn.to/47YWRs9) |
 | 1 | Microswitch | Endstop switch for B-axis | 2-pin micro limit switch | [AliExpress](https://s.click.aliexpress.com/e/_c3jaHbCv)<br>[Amazon](https://amzn.to/47Vp3w5) |
-| 1 | Optical sensor | A-axis homing sensor | 3-pin optical endstop sensor | [AliExpress](https://s.click.aliexpress.com/e/_c2xizb7R)<br>[Amazon](https://amzn.to/3LGSqed) |
+| 1 | Optical sensor | C-axis homing sensor | 3-pin optical endstop sensor | [AliExpress](https://s.click.aliexpress.com/e/_c2xizb7R)<br>[Amazon](https://amzn.to/3LGSqed) |
 | 1 | Control board | 6+ stepper driver board | See tested control boards section| [AliExpress](https://s.click.aliexpress.com/e/_c4ahdz8D)<br>[Amazon](https://amzn.to/44cmTHi) |
 | 6 | TMC2208 | Stepper drivers | UART mode, for all 6 axes | [AliExpress](https://s.click.aliexpress.com/e/_c3kOJ4tX)<br>[Amazon](https://amzn.to/444ykkm) |
 | 1 | MST-005-12A slipring | Slipring assembly | 12 channels, 2A each, 5mm bore | [AliExpress](https://s.click.aliexpress.com/e/_c4bPjNQN)<br>[Amazon](https://amzn.to/3JRFemi) |
@@ -57,7 +57,7 @@ All files available in [`../3d-printed-parts/current/3mf/`](../3d-printed-parts/
 
 ### Stepper drivers
 - **Required**: 6x TMC2208 (UART) or equivalent
-- **Configuration**: X, Y, Z, Extruder, A-axis, B-axis
+- **Configuration**: X, Y, Z, Extruder, C-axis, B-axis
 - **Benefits**: Unified driver type simplifies wiring and configuration
 
 ## Component specifications

@@ -97,9 +97,10 @@ const wizardState = {
         invertE: false,
 
         // Step 6: Kinematics
-        ikEnabled: true,
-        ikLC: 0,
-        ikLB: 47.9,
+        ikLC: 2.30,
+        ikLB: 52.87,
+        cHomePos: 0,  // C axis coordinate at home switch
+        bRange: 135,  // B axis travel limit (±degrees)
         segmentsPerSecond: 200
     }
 };
@@ -164,6 +165,8 @@ function setupInputListeners() {
         { id: 'stepsE', key: 'stepsE' },
         { id: 'ikLC', key: 'ikLC' },
         { id: 'ikLB', key: 'ikLB' },
+        { id: 'cHomePos', key: 'cHomePos' },
+        { id: 'bRange', key: 'bRange' },
         { id: 'segmentsPerSecond', key: 'segmentsPerSecond' }
     ];
 
@@ -224,8 +227,7 @@ function setupInputListeners() {
         { id: 'invertZ', key: 'invertZ' },
         { id: 'invertC', key: 'invertC' },
         { id: 'invertB', key: 'invertB' },
-        { id: 'invertE', key: 'invertE' },
-        { id: 'ikEnabled', key: 'ikEnabled' }
+        { id: 'invertE', key: 'invertE' }
     ];
 
     checkboxInputs.forEach(({ id, key }) => {
@@ -236,6 +238,7 @@ function setupInputListeners() {
             });
         }
     });
+
 }
 
 /**
@@ -564,7 +567,7 @@ function generateConfigSummary() {
         { label: 'Z height', value: `${config.zMaxPos} mm` },
         { label: 'Display', value: formatDisplayName(config.display) },
         { label: 'IK parameters', value: `LC=${config.ikLC}, LB=${config.ikLB}` },
-        { label: 'IK default', value: config.ikEnabled ? 'Enabled' : 'Disabled' }
+        { label: 'Axis limits', value: `C home=${config.cHomePos}°, B=±${config.bRange}°` }
     ];
 
     container.innerHTML = summaryItems.map(item => `
@@ -767,9 +770,10 @@ async function buildFirmware() {
             invertB: config.invertB,
             invertE: config.invertE,
             // IK parameters
-            ikEnabled: config.ikEnabled,
             ikLC: config.ikLC,
             ikLB: config.ikLB,
+            cHomePos: config.cHomePos,
+            bRange: config.bRange,
             segmentsPerSecond: config.segmentsPerSecond
         };
 
@@ -1109,7 +1113,6 @@ function applyImportedConfig(config) {
     });
 
     // === IK Parameters ===
-    document.getElementById('ikEnabled').checked = config.ikEnabled;
     document.getElementById('ikLC').value = config.ikLC;
     document.getElementById('ikLB').value = config.ikLB;
     document.getElementById('segmentsPerSecond').value = config.segmentsPerSecond;

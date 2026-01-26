@@ -4,26 +4,26 @@
  */
 class CalibrationEngine {
     constructor() {
-        // Sweep configuration - measure A and B axes separately
-        this.aAngles = [0, 45, 90, 135, 180, 225, 270, 315];  // A sweep at B=0
-        this.bAngles = [0, 15, 30, 45, 60, 75, 90, -15, -30, -45, -60, -75, -90];  // B sweep at A=0 (order for safe measurement)
+        // Sweep configuration - measure C and B axes separately
+        this.cAngles = [0, 45, 90, 135, 180, 225, 270, 315];  // C sweep at B=0
+        this.bAngles = [0, 15, 30, 45, 60, 75, 90, -15, -30, -45, -60, -75, -90];  // B sweep at C=0 (order for safe measurement)
         this.bAnglesSorted = [-90, -75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75, 90];  // Sorted for graph display
 
-        // Current sweep: 'a' (varying A at B=0) or 'b' (varying B at A=0)
-        this.currentSweep = 'a';
+        // Current sweep: 'c' (varying C at B=0) or 'b' (varying B at C=0)
+        this.currentSweep = 'c';
 
         // Calibration data storage
-        this.measurements = new Map();  // Key: "A_B", Value: {x, y, z, skipped}
+        this.measurements = new Map();  // Key: "C_B", Value: {x, y, z, skipped}
 
-        // Reference position (nozzle tip at A=0, B=0)
+        // Reference position (nozzle tip at C=0, B=0)
         this.referencePosition = { x: 0, y: 0, z: 0 };
 
-        // LA/LB values from previous calibration
-        this.la = 0;
+        // LC/LB values from previous calibration
+        this.lc = 0;
         this.lb = 47;
 
         // IK instance using shared module
-        this.ik = new InverseKinematics(this.la, this.lb);
+        this.ik = new InverseKinematics(this.lc, this.lb);
 
         // Current measurement state
         this.currentIndex = 0;
@@ -52,11 +52,11 @@ class CalibrationEngine {
     }
 
     /**
-     * Get total number of measurement points (A sweep + B sweep)
+     * Get total number of measurement points (C sweep + B sweep)
      */
     get totalPoints() {
-        // A sweep (all A at B=0) + B sweep (all B at A=0, including B=0 as reference)
-        return this.aAngles.length + this.bAngles.length;
+        // C sweep (all C at B=0) + B sweep (all B at C=0, including B=0 as reference)
+        return this.cAngles.length + this.bAngles.length;
     }
 
     /**
@@ -81,16 +81,16 @@ class CalibrationEngine {
     }
 
     /**
-     * Set LA/LB values
+     * Set LC/LB values
      */
-    setLaLb(la, lb) {
-        this.la = la;
+    setLcLb(lc, lb) {
+        this.lc = lc;
         this.lb = lb;
-        this.ik.setParameters(la, lb);
+        this.ik.setParameters(lc, lb);
     }
 
     /**
-     * Set reference position (nozzle tip at A=0, B=0)
+     * Set reference position (nozzle tip at C=0, B=0)
      */
     setReferencePosition(x, y, z) {
         this.referencePosition = { x, y, z };
@@ -98,20 +98,20 @@ class CalibrationEngine {
 
     /**
      * Get all sweep points in order
-     * First: A sweep (varying A at B=0)
-     * Then: B sweep (varying B at A=0, starting with B=0 as reference point)
+     * First: C sweep (varying C at B=0)
+     * Then: B sweep (varying B at C=0, starting with B=0 as reference point)
      */
     getGridPoints() {
         const points = [];
 
-        // A sweep: all A angles at B=0
-        for (const a of this.aAngles) {
-            points.push({ a, b: 0 });
+        // C sweep: all C angles at B=0
+        for (const c of this.cAngles) {
+            points.push({ c, b: 0 });
         }
 
-        // B sweep: all B angles at A=0 (including B=0 as reference point for B sweep)
+        // B sweep: all B angles at C=0 (including B=0 as reference point for B sweep)
         for (const b of this.bAngles) {
-            points.push({ a: 0, b });
+            points.push({ c: 0, b });
         }
 
         return points;
@@ -134,8 +134,8 @@ class CalibrationEngine {
     getNextUnmeasuredPoint() {
         const points = this.getGridPoints();
         for (let i = this.currentIndex; i < points.length; i++) {
-            const { a, b } = points[i];
-            const key = `${a}_${b}`;
+            const { c, b } = points[i];
+            const key = `${c}_${b}`;
             if (!this.measurements.has(key)) {
                 this.currentIndex = i;
                 return points[i];
@@ -146,40 +146,41 @@ class CalibrationEngine {
 
     /**
      * Apply inverse kinematics to get machine position
-     * Given a desired nozzle tip position and A/B angles, calculate machine XYZ
+     * Given a desired nozzle tip position and C/B angles, calculate machine XYZ
      * Uses shared InverseKinematics module
      */
-    applyInverseKinematics(tipX, tipY, tipZ, a, b) {
-        return this.ik.apply(tipX, tipY, tipZ, a, b);
+    applyInverseKinematics(tipX, tipY, tipZ, c, b) {
+        return this.ik.apply(tipX, tipY, tipZ, c, b);
     }
 
     /**
-     * Get expected machine position for current A/B
-     * Uses reference position and IK to calculate where machine should be
+     * Get expected tool tip position for current C/B
+     * With firmware IK enabled, the expected position is always the reference position
+     * because firmware compensates to keep the tool tip at the reference location
      */
-    getExpectedPosition(a, b) {
-        return this.applyInverseKinematics(
-            this.referencePosition.x,
-            this.referencePosition.y,
-            this.referencePosition.z,
-            a,
-            b
-        );
+    getExpectedPosition(c, b) {
+        // With firmware IK, expected position is always the reference position
+        // The firmware handles all compensation to keep tool tip at this location
+        return {
+            x: this.referencePosition.x,
+            y: this.referencePosition.y,
+            z: this.referencePosition.z
+        };
     }
 
     /**
      * Record a measurement
-     * @param {number} a - A angle
+     * @param {number} c - C angle
      * @param {number} b - B angle
      * @param {object} actualPosition - Actual machine position {x, y, z}
      * @param {boolean} skipped - Whether this point was skipped
      */
-    recordMeasurement(a, b, actualPosition, skipped = false) {
-        const key = `${a}_${b}`;
-        const expected = this.getExpectedPosition(a, b);
+    recordMeasurement(c, b, actualPosition, skipped = false) {
+        const key = `${c}_${b}`;
+        const expected = this.getExpectedPosition(c, b);
 
         const measurement = {
-            a,
+            c,
             b,
             expected,
             actual: actualPosition,
@@ -210,10 +211,10 @@ class CalibrationEngine {
     }
 
     /**
-     * Get measurement for specific A/B
+     * Get measurement for specific C/B
      */
-    getMeasurement(a, b) {
-        const key = `${a}_${b}`;
+    getMeasurement(c, b) {
+        const key = `${c}_${b}`;
         return this.measurements.get(key);
     }
 
@@ -228,14 +229,14 @@ class CalibrationEngine {
      * Get measurements filtered by B angle (for graphing)
      */
     getMeasurementsByB(b) {
-        return this.aAngles.map(a => this.getMeasurement(a, b)).filter(m => m && !m.skipped);
+        return this.cAngles.map(c => this.getMeasurement(c, b)).filter(m => m && !m.skipped);
     }
 
     /**
-     * Get measurements filtered by A angle (for graphing)
+     * Get measurements filtered by C angle (for graphing)
      */
-    getMeasurementsByA(a) {
-        return this.bAngles.map(b => this.getMeasurement(a, b)).filter(m => m && !m.skipped);
+    getMeasurementsByC(c) {
+        return this.bAngles.map(b => this.getMeasurement(c, b)).filter(m => m && !m.skipped);
     }
 
     /**
@@ -276,11 +277,11 @@ class CalibrationEngine {
         return {
             metadata: {
                 timestamp: new Date().toISOString(),
-                la: this.la,
+                lc: this.lc,
                 lb: this.lb,
                 referencePosition: this.referencePosition,
                 bAngles: this.bAngles,
-                aAngles: this.aAngles
+                cAngles: this.cAngles
             },
             measurements: this.getAllMeasurements(),
             statistics: this.getStatistics()
@@ -292,10 +293,10 @@ class CalibrationEngine {
      */
     exportCSV() {
         const measurements = this.getAllMeasurements();
-        const headers = ['A', 'B', 'Expected_X', 'Expected_Y', 'Expected_Z', 'Actual_X', 'Actual_Y', 'Actual_Z', 'Error_X', 'Error_Y', 'Error_Z'];
+        const headers = ['C', 'B', 'Expected_X', 'Expected_Y', 'Expected_Z', 'Actual_X', 'Actual_Y', 'Actual_Z', 'Error_X', 'Error_Y', 'Error_Z'];
 
         const rows = measurements.map(m => [
-            m.a,
+            m.c,
             m.b,
             m.expected.x.toFixed(3),
             m.expected.y.toFixed(3),
@@ -324,7 +325,7 @@ class CalibrationEngine {
      */
     loadFromData(data) {
         if (data.metadata) {
-            this.la = data.metadata.la || 0;
+            this.lc = data.metadata.lc || 0;
             this.lb = data.metadata.lb || 47;
             this.referencePosition = data.metadata.referencePosition || { x: 0, y: 0, z: 0 };
         }
@@ -332,7 +333,7 @@ class CalibrationEngine {
         if (data.measurements) {
             this.measurements.clear();
             for (const m of data.measurements) {
-                const key = `${m.a}_${m.b}`;
+                const key = `${m.c}_${m.b}`;
                 this.measurements.set(key, m);
             }
         }

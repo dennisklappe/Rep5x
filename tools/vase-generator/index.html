@@ -14,48 +14,40 @@
     <div id="shared-header"></div>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Info Banner -->
-        <div class="info-banner border border-light-theme rounded-lg p-4 mb-8">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 icon" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-gray-800">5-Axis Vase G-code Generator</h3>
-                    <p class="mt-1 text-sm text-gray-700">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">5-axis vase G-code generator</h2>
+                    <p class="text-sm text-gray-600 mt-1">
                         Generate sample 5-axis vase mode G-code to test your Rep5x printer setup.
-                        Customize shape, size, and printing parameters.
                     </p>
                 </div>
             </div>
-        </div>
 
-        <!-- Warning Banner -->
-        <div class="border-2 border-yellow-500 bg-yellow-50 rounded-lg p-4 mb-8">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+            <!-- Warning Banner -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+                <div class="flex gap-3">
+                    <svg class="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                     </svg>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-yellow-800">Use at Your Own Risk</h3>
-                    <p class="mt-1 text-sm text-yellow-700">
-                        This is experimental software. Always review and verify the generated G-code before printing.
-                        Test carefully with dry runs to ensure your printer moves as expected and won't crash.
-                    </p>
+                    <div class="text-sm text-yellow-700">
+                        <p class="font-medium text-yellow-800">Use at your own risk</p>
+                        <p class="mt-1">
+                            This is experimental software. Always review and verify the generated G-code before printing.
+                            Test carefully with dry runs to ensure your printer moves as expected.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Main Grid -->
-        <div class="grid lg:grid-cols-2 gap-8">
+        <div class="grid lg:grid-cols-2 gap-6">
             <!-- Controls -->
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">Parameters</h2>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-6">Parameters</h3>
 
                 <!-- Tabs -->
                 <div class="border-b border-gray-200 mb-6">
@@ -313,91 +305,14 @@
 
                 <!-- Tab Content: Advanced -->
                 <div id="contentAdvanced" class="tab-content space-y-6 hidden">
-                    <!-- Inverse Kinematics Settings -->
-                    <details class="border border-gray-200 rounded-lg">
-                        <summary class="cursor-pointer p-4 font-medium text-gray-700 hover:bg-gray-50">
-                            5-Axis Kinematics
-                        </summary>
-                        <div class="px-4 pb-4 space-y-4 border-t border-gray-200">
-                            <!-- Enable Inverse Kinematics -->
-                            <div class="flex items-center">
-                                <input type="checkbox" id="enableKinematics" checked class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" />
-                                <label for="enableKinematics" class="ml-2 text-sm font-medium text-gray-700">Enable inverse kinematics correction</label>
-                            </div>
-                            <p class="text-xs text-gray-500">Adjusts XYZ coordinates based on A/B axis rotations for Rep5x printer</p>
-
-                            <!-- Enable A-axis Optimization -->
-                            <div class="flex items-center mt-3">
-                                <input type="checkbox" id="enableAAxisOptimization" checked class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" />
-                                <label for="enableAAxisOptimization" class="ml-2 text-sm font-medium text-gray-700">Enable A-axis shortest route optimization</label>
-                            </div>
-                            <p class="text-xs text-gray-500">Optimizes A-axis rotation to take the shortest path (continuous rotation capable)</p>
-
-                            <!-- Kinematic Parameters -->
-                            <div id="kinematicParams" class="space-y-3">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">LA Parameter (mm)</label>
-                                        <input type="number" id="laParam" value="0" step="0.5" min="-50" max="50"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
-                                        <p class="mt-1 text-xs text-gray-500">A-axis offset distance</p>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">LB Parameter (mm)</label>
-                                        <input type="number" id="lbParam" value="47.9" step="0.1" min="0" max="100"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
-                                        <p class="mt-1 text-xs text-gray-500">B-axis offset distance</p>
-                                    </div>
-                                </div>
-                                <button id="saveAdvancedParams" class="w-full px-3 py-2 btn-success rounded-lg text-sm font-medium">
-                                    Save LA/LB to browser
-                                </button>
-                                
-                                <!-- Formula Display -->
-                                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                                    <h4 class="text-sm font-medium text-gray-700 mb-2">Rep5x Kinematic Formulas:</h4>
-                                    <div class="text-xs font-mono text-gray-600 space-y-1">
-                                        <div><strong>X:</strong> X = X' + sin(A') × LA + cos(A') × sin(B') × LB</div>
-                                        <div><strong>Y:</strong> Y = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB</div>
-                                        <div><strong>Z:</strong> Z = Z' + cos(B') × LB - LB</div>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- C-axis Optimization -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="enableCAxisOptimization" checked class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" />
+                            <label for="enableCAxisOptimization" class="ml-2 text-sm font-medium text-gray-700">Enable C-axis shortest route optimization</label>
                         </div>
-                    </details>
-
-                    <!-- Calibration Correction -->
-                    <details class="border border-gray-200 rounded-lg">
-                        <summary class="cursor-pointer p-4 font-medium text-gray-700 hover:bg-gray-50">
-                            Calibration Correction
-                        </summary>
-                        <div class="px-4 pb-4 space-y-4 border-t border-gray-200">
-                            <!-- Enable calibration -->
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="enableCalibration" class="w-4 h-4 text-primary rounded">
-                                <span class="text-sm font-medium text-gray-700">Apply calibration correction</span>
-                            </label>
-
-                            <!-- Calibration status -->
-                            <div id="calibrationStatus" class="p-3 bg-gray-50 rounded-lg">
-                                <div id="calibrationNotLoaded" class="text-sm text-gray-500">
-                                    No calibration data loaded. Run the <a href="../calibrator/" class="text-primary hover:underline">Calibrator</a> and save results first.
-                                </div>
-                                <div id="calibrationLoaded" class="hidden">
-                                    <div class="text-sm text-green-600 font-medium">✓ Calibration data loaded</div>
-                                    <div id="calibrationDetails" class="text-xs text-gray-500 mt-1"></div>
-                                </div>
-                            </div>
-
-                            <button id="loadCalibrationBtn" class="w-full px-3 py-2 btn-secondary rounded-lg text-sm font-medium">
-                                Reload from browser storage
-                            </button>
-
-                            <p class="text-xs text-gray-500">
-                                Calibration corrections use Fourier curve fitting for smooth, accurate results.
-                            </p>
-                        </div>
-                    </details>
+                        <p class="text-xs text-gray-500 mt-2">Optimizes C-axis rotation to take the shortest path (continuous rotation capable)</p>
+                    </div>
 
                     <!-- G-code Settings -->
                     <details class="border border-gray-200 rounded-lg">
@@ -408,7 +323,9 @@
                             <!-- Start G-code -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Start G-code</label>
-                                <textarea id="startGcode" rows="12" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono" placeholder="Rep5x start G-code">M220 S100 ;Reset Feedrate
+                                <textarea id="startGcode" rows="14" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono" placeholder="Rep5x start G-code">G49 ;Disable IK during homing
+M667 S0 ;Disable calibration during homing
+M220 S100 ;Reset Feedrate
 M221 S100 ;Reset Flowrate
 
 M104 S[nozzle_temperature_initial_layer] ;Set final nozzle temp
@@ -419,7 +336,7 @@ G28 ;Home all axes
 G91 ;Relative positioning
 G0 Z-20 F3000 ;Move Z down 20mm from top for bowden tube alignment
 G90 ;Absolute positioning
-G0 A0 B0 F3000 ;Move rotation axes to 0
+G0 C0 B0 F3000 ;Move rotation axes to 0
 
 ; Purge line (at original coordinates before centering)
 G92 E0 ;Reset Extruder
@@ -436,8 +353,11 @@ G1 E0.0000 F1800
 
 ; Post-homing positioning
 G0 X[bed_center_x] Y[bed_center_y] F1800 ;Move to center
-G92 X0 Y0 A0 B0 ;Set bed center as origin (0,0) and reset rotation axes
-M211 S0 ;Disable software endstops (required for A-axis optimization with negative values)
+G92 X0 Y0 C0 B0 ;Set bed center as origin (0,0) and reset rotation axes
+M211 S0 ;Disable software endstops (required for C-axis optimization with negative values)
+
+G43.4 ;Enable IK
+M667 S1 ;Enable calibration
 </textarea>
                                 <p class="mt-1 text-xs text-gray-500">Commands executed at the start of printing</p>
                             </div>
@@ -445,16 +365,19 @@ M211 S0 ;Disable software endstops (required for A-axis optimization with negati
                             <!-- End G-code -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">End G-code</label>
-                                <textarea id="endGcode" rows="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono" placeholder="Rep5x end G-code">G91 ;Relative positioning
+                                <textarea id="endGcode" rows="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-mono" placeholder="Rep5x end G-code">G91 ;Relative positioning
 G1 E-2 F2700 ;Retract a bit
 G1 E-2 Z0.2 F2400 ;Retract and raise Z
 G1 X5 Y5 F3000 ;Wipe out
 G90 ;Absolute positioning
+
+G49 ;Disable IK before homing
+M667 S0 ;Disable calibration
 G28 Z ;Home Z to max height
 G4 P1000 ;Wait for Z axis to settle
 
 G0 X110 Y200 ;Move bed to back for easy part removal
-G0 A0 B0 ;Return A and B to 0 degrees
+G0 C0 B0 ;Return C and B to 0 degrees
 
 M106 S0 ;Turn-off fan
 M104 S0 ;Turn-off hotend
@@ -480,8 +403,8 @@ M84 X Y E A B ;Disable all steppers except Z
             </div>
 
             <!-- Preview -->
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">3D Preview</h2>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-6">3D preview</h3>
                 <div class="bg-gray-100 rounded-lg relative overflow-hidden h-canvas">
                     <canvas id="canvas3d" class="w-full h-full"></canvas>
                     <div class="absolute top-4 right-4 bg-white bg-opacity-90 px-3 py-2 rounded-lg text-xs text-gray-600">
@@ -500,8 +423,8 @@ M84 X Y E A B ;Disable all steppers except Z
                 </div>
 
                 <!-- Shape Info -->
-                <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <h3 class="font-semibold text-gray-900 mb-2">Shape Information</h3>
+                <div class="mt-4 p-4 border border-gray-200 rounded-lg">
+                    <h4 class="font-semibold text-gray-900 mb-2">Shape information</h4>
                     <div id="shapeInfo" class="text-sm text-gray-600">
                     </div>
                 </div>
@@ -518,7 +441,6 @@ M84 X Y E A B ;Disable all steppers except Z
 
     <!-- Shared components -->
     <script src="../shared/theme.js"></script>
-    <script src="../shared/storage-manager.js"></script>
     <script src="../shared/header.js"></script>
     <script src="../shared/footer.js"></script>
 
@@ -532,8 +454,7 @@ M84 X Y E A B ;Disable all steppers except Z
 
     <!-- Core modules -->
     <script src="../shared/inverse-kinematics.js"></script>
-    <script src="../shared/calibration-corrector.js"></script>
-    <script src="../shared/a-axis-optimizer.js"></script>
+    <script src="../shared/c-axis-optimizer.js"></script>
     <script src="js/scene-manager.js"></script>
     <script src="js/ui-controller.js"></script>
     <script src="js/gcode-generator.js"></script>

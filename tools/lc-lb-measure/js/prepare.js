@@ -59,16 +59,24 @@ class StepPrepare {
             await this.app.printer.sendCommandAndWait('M211 S0', 5000);
             this.setItemComplete('endstops');
 
-            // Step 3: Home all axes
+            // Step 3: Disable IK (so rotations don't move XYZ)
+            this.setItemActive('ik');
+            btn.textContent = 'Disabling inverse kinematics...';
+            await this.app.printer.sendCommandAndWait('G49', 5000);
+            this.setItemComplete('ik');
+
+            // Step 4: Home all axes
             this.setItemActive('homing');
             btn.textContent = 'Homing all axes...';
             await this.app.printer.sendCommandAndWait('G28', 120000); // 2 min timeout for homing
+            // Re-disable IK after homing (G28 may re-enable it)
+            await this.app.printer.sendCommandAndWait('G49', 5000);
             this.setItemComplete('homing');
 
-            // Step 4: Move to starting position
+            // Step 5: Move to starting position
             this.setItemActive('position');
             btn.textContent = 'Moving to starting position...';
-            await this.app.printer.sendCommandAndWait('G0 X100 Y100 Z50 A0 B0 F3000', 30000);
+            await this.app.printer.sendCommandAndWait('G0 X100 Y100 Z50 C0 B0 F3000', 30000);
             await this.app.printer.sendCommandAndWait('M400', 30000); // Wait for move to complete
             await this.app.printer.requestPosition(); // Update position display
             this.setItemComplete('position');
@@ -100,12 +108,12 @@ class StepPrepare {
     confirmReference() {
         const position = this.app.printer.getPosition();
 
-        // Store reference position for use in LA/LB measurements
+        // Store reference position for use in LC/LB measurements
         this.app.referencePosition = {
             x: position.x,
             y: position.y,
             z: position.z,
-            a: position.a,
+            c: position.c,
             b: position.b
         };
 
@@ -134,7 +142,7 @@ class StepPrepare {
     skip() {
 
         // Mark as ready without setting a reference position
-        // Reference will be set during LA measurement at A=0 confirmation
+        // Reference will be set during LC measurement at C=0 confirmation
         this.isReady = true;
         this.referenceConfirmed = true;
 
@@ -172,7 +180,7 @@ class StepPrepare {
      * Reset all items to initial state
      */
     resetAllItems() {
-        ['stepper', 'endstops', 'homing', 'position'].forEach(id => {
+        ['stepper', 'endstops', 'ik', 'homing', 'position'].forEach(id => {
             const el = document.getElementById(`prep-${id}`);
             if (!el) return;
             el.classList.remove('text-primary', 'font-medium');

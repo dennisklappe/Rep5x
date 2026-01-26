@@ -4,8 +4,8 @@ class Mushroom extends ShapeBase {
     constructor() {
         super(
             'mushroom',
-            'Organic mushroom shape demonstrating both A and B axis movements',
-            'Mushroom shape demonstrates both A-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form.'
+            'Organic mushroom shape demonstrating both C and B axis movements',
+            'Mushroom shape demonstrates both C-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form.'
         );
     }
 
@@ -172,15 +172,15 @@ class Mushroom extends ShapeBase {
         let totalAngle = 0;
 
         // Helper to add G-code line
-        const addMove = (x, y, z, A, B, isFirst, speedMult = 1) => {
+        const addMove = (x, y, z, C, B, isFirst, speedMult = 1) => {
             let deltaE = 0;
             const pos = { x, y, z };
             if (prevPos) deltaE = distance3D(pos, prevPos) * extrusionMultiplier;
 
             if (isFirst) {
-                gcode.push(`G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)}`);
+                gcode.push(`G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} C${C.toFixed(3)} B${B.toFixed(3)}`);
             } else {
-                gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} A${A.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${Math.round(speed * speedMult)}`);
+                gcode.push(`G1 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} C${C.toFixed(3)} B${B.toFixed(3)} E${deltaE.toFixed(4)} F${Math.round(speed * speedMult)}`);
             }
             prevPos = pos;
         };
@@ -256,27 +256,27 @@ class Mushroom extends ShapeBase {
 
             const x = radius * Math.cos(angle);
             const y = radius * Math.sin(angle);
-            const baseA = -angle * 180 / Math.PI;
+            const baseC = -angle * 180 / Math.PI;
             const baseBdeg = tiltAngle * 180 / Math.PI;
 
-            let A, B;
+            let C, B;
             if (t < 0.33) {
-                A = baseA + 180;
+                C = baseC + 180;
                 B = -baseBdeg;
             } else if (t < 0.43) {
                 // B-axis flip
-                A = baseA + 180;
+                C = baseC + 180;
                 B = baseBdeg * (2 * smoothstep((t - 0.33) / 0.10) - 1);
             } else if (t < 0.85) {
-                A = baseA + 180;
+                C = baseC + 180;
                 B = baseBdeg;
             } else {
-                A = baseA + 180 * (1 - smoothstep((t - 0.85) / 0.15));
+                C = baseC + 180 * (1 - smoothstep((t - 0.85) / 0.15));
                 B = baseBdeg;
             }
 
             const inCriticalZone = t >= 0.30 && t < 0.65;
-            addMove(x, y, z, A, B, false, inCriticalZone ? 0.35 : 0.6);
+            addMove(x, y, z, C, B, false, inCriticalZone ? 0.35 : 0.6);
         }
         totalAngle += capRotations * 2 * Math.PI;
 

@@ -6,9 +6,9 @@
 
 class CalibrationReverser {
     constructor() {
-        // Fourier coefficients for A-axis
-        this.aCoeffs = null;  // { x: [...], y: [...], z: [...] }
-        this.aHarmonics = 0;
+        // Fourier coefficients for C-axis
+        this.cCoeffs = null;  // { x: [...], y: [...], z: [...] }
+        this.cHarmonics = 0;
 
         // Fourier coefficients for B-axis
         this.bCoeffs = null;  // { x: [...], y: [...], z: [...] }
@@ -27,7 +27,7 @@ class CalibrationReverser {
         const lines = gcode.split('\n').slice(0, 100);
 
         let foundCalibration = false;
-        this.aCoeffs = { x: null, y: null, z: null };
+        this.cCoeffs = { x: null, y: null, z: null };
         this.bCoeffs = { x: null, y: null, z: null };
 
         for (const line of lines) {
@@ -39,10 +39,10 @@ class CalibrationReverser {
                 foundCalibration = true;
             }
 
-            // Parse A-axis harmonics count
-            const aHarmonicsMatch = trimmed.match(/A-axis coefficients.*?(\d+)\s*harmonics/i);
-            if (aHarmonicsMatch) {
-                this.aHarmonics = parseInt(aHarmonicsMatch[1]);
+            // Parse C-axis harmonics count
+            const cHarmonicsMatch = trimmed.match(/C-axis coefficients.*?(\d+)\s*harmonics/i);
+            if (cHarmonicsMatch) {
+                this.cHarmonics = parseInt(cHarmonicsMatch[1]);
             }
 
             // Parse B-axis harmonics count
@@ -52,19 +52,19 @@ class CalibrationReverser {
             }
 
             // Parse coefficient arrays
-            const calibAXMatch = trimmed.match(/;\s*CalibAX:\s*([\d.,\-+e]+)/i);
-            if (calibAXMatch) {
-                this.aCoeffs.x = calibAXMatch[1].split(',').map(parseFloat);
+            const calibCXMatch = trimmed.match(/;\s*CalibCX:\s*([\d.,\-+e]+)/i);
+            if (calibCXMatch) {
+                this.cCoeffs.x = calibCXMatch[1].split(',').map(parseFloat);
             }
 
-            const calibAYMatch = trimmed.match(/;\s*CalibAY:\s*([\d.,\-+e]+)/i);
-            if (calibAYMatch) {
-                this.aCoeffs.y = calibAYMatch[1].split(',').map(parseFloat);
+            const calibCYMatch = trimmed.match(/;\s*CalibCY:\s*([\d.,\-+e]+)/i);
+            if (calibCYMatch) {
+                this.cCoeffs.y = calibCYMatch[1].split(',').map(parseFloat);
             }
 
-            const calibAZMatch = trimmed.match(/;\s*CalibAZ:\s*([\d.,\-+e]+)/i);
-            if (calibAZMatch) {
-                this.aCoeffs.z = calibAZMatch[1].split(',').map(parseFloat);
+            const calibCZMatch = trimmed.match(/;\s*CalibCZ:\s*([\d.,\-+e]+)/i);
+            if (calibCZMatch) {
+                this.cCoeffs.z = calibCZMatch[1].split(',').map(parseFloat);
             }
 
             const calibBXMatch = trimmed.match(/;\s*CalibBX:\s*([\d.,\-+e]+)/i);
@@ -84,16 +84,16 @@ class CalibrationReverser {
         }
 
         // Validate we have valid coefficients
-        const hasACoeffs = this.aCoeffs.x && this.aCoeffs.y && this.aCoeffs.z;
+        const hasCCoeffs = this.cCoeffs.x && this.cCoeffs.y && this.cCoeffs.z;
         const hasBCoeffs = this.bCoeffs.x && this.bCoeffs.y && this.bCoeffs.z;
 
-        this.enabled = foundCalibration && (hasACoeffs || hasBCoeffs);
+        this.enabled = foundCalibration && (hasCCoeffs || hasBCoeffs);
 
         if (this.enabled) {
             console.log('Calibration reverser loaded:', {
-                aHarmonics: this.aHarmonics,
+                cHarmonics: this.cHarmonics,
                 bHarmonics: this.bHarmonics,
-                hasACoeffs,
+                hasCCoeffs,
                 hasBCoeffs
             });
         }
@@ -124,24 +124,24 @@ class CalibrationReverser {
     }
 
     /**
-     * Get calibration correction for given A/B angles
-     * @param {number} a - A angle in degrees
+     * Get calibration correction for given C/B angles
+     * @param {number} c - C angle in degrees
      * @param {number} b - B angle in degrees
      * @returns {Object} {x, y, z} corrections
      */
-    getCorrection(a, b) {
+    getCorrection(c, b) {
         if (!this.enabled) {
             return { x: 0, y: 0, z: 0 };
         }
 
-        // Normalize A to 0-360
-        a = ((a % 360) + 360) % 360;
+        // Normalize C to 0-360
+        c = ((c % 360) + 360) % 360;
 
-        // Get A-axis correction
-        const aCorr = {
-            x: this.aCoeffs.x ? this.evaluateFourier(this.aCoeffs.x, a) : 0,
-            y: this.aCoeffs.y ? this.evaluateFourier(this.aCoeffs.y, a) : 0,
-            z: this.aCoeffs.z ? this.evaluateFourier(this.aCoeffs.z, a) : 0
+        // Get C-axis correction
+        const cCorr = {
+            x: this.cCoeffs.x ? this.evaluateFourier(this.cCoeffs.x, c) : 0,
+            y: this.cCoeffs.y ? this.evaluateFourier(this.cCoeffs.y, c) : 0,
+            z: this.cCoeffs.z ? this.evaluateFourier(this.cCoeffs.z, c) : 0
         };
 
         // Get B-axis correction
@@ -151,18 +151,18 @@ class CalibrationReverser {
             z: this.bCoeffs.z ? this.evaluateFourier(this.bCoeffs.z, b) : 0
         };
 
-        // Get baseline (A=0, B=0)
+        // Get baseline (C=0, B=0)
         const baseline = {
-            x: this.aCoeffs.x ? this.evaluateFourier(this.aCoeffs.x, 0) : 0,
-            y: this.aCoeffs.y ? this.evaluateFourier(this.aCoeffs.y, 0) : 0,
-            z: this.aCoeffs.z ? this.evaluateFourier(this.aCoeffs.z, 0) : 0
+            x: this.cCoeffs.x ? this.evaluateFourier(this.cCoeffs.x, 0) : 0,
+            y: this.cCoeffs.y ? this.evaluateFourier(this.cCoeffs.y, 0) : 0,
+            z: this.cCoeffs.z ? this.evaluateFourier(this.cCoeffs.z, 0) : 0
         };
 
         // Combine using additive model
         return {
-            x: aCorr.x + bCorr.x - baseline.x,
-            y: aCorr.y + bCorr.y - baseline.y,
-            z: aCorr.z + bCorr.z - baseline.z
+            x: cCorr.x + bCorr.x - baseline.x,
+            y: cCorr.y + bCorr.y - baseline.y,
+            z: cCorr.z + bCorr.z - baseline.z
         };
     }
 
@@ -172,19 +172,19 @@ class CalibrationReverser {
      * @param {number} x - X position (calibration-corrected)
      * @param {number} y - Y position (calibration-corrected)
      * @param {number} z - Z position (calibration-corrected)
-     * @param {number} a - A angle
+     * @param {number} c - C angle
      * @param {number} b - B angle
      * @returns {Object} {x, y, z} original positions
      */
-    reverseCalibration(x, y, z, a, b) {
-        const correction = this.getCorrection(a, b);
+    reverseCalibration(x, y, z, c, b) {
+        const correction = this.getCorrection(c, b);
 
         // The corrector SUBTRACTED the error, so we ADD it back
         return {
             x: x + correction.x,
             y: y + correction.y,
             z: z + correction.z,
-            a: a,
+            c: c,
             b: b
         };
     }
@@ -201,7 +201,7 @@ class CalibrationReverser {
         const chunkSize = 1000;
 
         // Track modal values
-        let currentA = 0;
+        let currentC = 0;
         let currentB = 0;
         let currentX = 0;
         let currentY = 0;
@@ -212,13 +212,13 @@ class CalibrationReverser {
             const processedChunk = chunk.map(command => {
                 // Handle G92 reset commands
                 if (command.type === 'reset') {
-                    if (command.a !== null) currentA = command.a;
+                    if (command.c !== null) currentC = command.c;
                     return command;
                 }
 
                 if (command.hasMovement) {
                     // Update modal values
-                    if (command.a !== null) currentA = command.a;
+                    if (command.c !== null) currentC = command.c;
                     if (command.b !== null) currentB = command.b;
                     if (command.x !== null) currentX = command.x;
                     if (command.y !== null) currentY = command.y;
@@ -226,7 +226,7 @@ class CalibrationReverser {
 
                     const reversed = this.reverseCalibration(
                         currentX, currentY, currentZ,
-                        currentA, currentB
+                        currentC, currentB
                     );
 
                     return {
@@ -268,9 +268,9 @@ class CalibrationReverser {
 
         return {
             enabled: true,
-            aHarmonics: this.aHarmonics,
+            cHarmonics: this.cHarmonics,
             bHarmonics: this.bHarmonics,
-            hasACoeffs: !!(this.aCoeffs.x && this.aCoeffs.y && this.aCoeffs.z),
+            hasCCoeffs: !!(this.cCoeffs.x && this.cCoeffs.y && this.cCoeffs.z),
             hasBCoeffs: !!(this.bCoeffs.x && this.bCoeffs.y && this.bCoeffs.z)
         };
     }

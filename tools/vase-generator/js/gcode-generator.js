@@ -16,7 +16,7 @@ class GcodeGenerator {
         }
 
         const { layerHeight, speed, nozzleDiameter, nozzleTemp, bedTemp, bedWidth, bedDepth } = printSettings;
-        const { enableKinematics, laParam, lbParam, enableAAxisOptimization, enableCalibration, calibrationCorrector, startGcode, endGcode } = advancedSettings;
+        const { enableCAxisOptimization, startGcode, endGcode } = advancedSettings;
 
         const gcode = [];
         const totalHeight = shape.getTotalHeight(shapeParams);
@@ -41,36 +41,11 @@ class GcodeGenerator {
         gcode.push(`; Generated on: ${new Date().toISOString()}`);
         gcode.push('');
 
-        // 5-axis and IK parameters
+        // 5-axis parameters
         gcode.push('; === Rep5x Parameters ===');
-        gcode.push(`; Inverse Kinematics: ${enableKinematics ? 'enabled' : 'disabled'}`);
-        if (enableKinematics) {
-            gcode.push(`; LA Parameter: ${laParam}`);
-            gcode.push(`; LB Parameter: ${lbParam}`);
-            gcode.push('; IK Formulas:');
-            gcode.push("; X = X' + sin(A') × LA + cos(A') × sin(B') × LB");
-            gcode.push("; Y = Y' - LA + cos(A') × LA - sin(A') × sin(B') × LB");
-            gcode.push("; Z = Z' + cos(B') × LB - LB");
-        }
-        gcode.push(`; A-axis Optimization: ${enableAAxisOptimization ? 'enabled' : 'disabled'}`);
-
-        // Calibration correction info
-        if (enableCalibration && calibrationCorrector?.loaded) {
-            gcode.push('; Calibration Correction: enabled');
-            const coeffs = calibrationCorrector.getCoefficients();
-            if (coeffs.a) {
-                gcode.push(`; Calibration A-axis coefficients (Fourier, ${coeffs.aHarmonics} harmonics):`);
-                gcode.push(`; CalibAX: ${coeffs.a.x.map(c => c.toFixed(6)).join(',')}`);
-                gcode.push(`; CalibAY: ${coeffs.a.y.map(c => c.toFixed(6)).join(',')}`);
-                gcode.push(`; CalibAZ: ${coeffs.a.z.map(c => c.toFixed(6)).join(',')}`);
-            }
-            if (coeffs.b) {
-                gcode.push(`; Calibration B-axis coefficients (Harmonic, ${coeffs.bHarmonics} harmonics):`);
-                gcode.push(`; CalibBX: ${coeffs.b.x.map(c => c.toFixed(6)).join(',')}`);
-                gcode.push(`; CalibBY: ${coeffs.b.y.map(c => c.toFixed(6)).join(',')}`);
-                gcode.push(`; CalibBZ: ${coeffs.b.z.map(c => c.toFixed(6)).join(',')}`);
-            }
-        }
+        gcode.push('; Inverse Kinematics: firmware-side (G43.4)');
+        gcode.push('; Calibration Correction: firmware-side (M667)');
+        gcode.push(`; C-axis Optimization: ${enableCAxisOptimization ? 'enabled' : 'disabled'}`);
         gcode.push('');
 
         // Start sequence
@@ -99,83 +74,16 @@ class GcodeGenerator {
 
         let gcodeString = gcode.join('\n');
 
-        // Apply inverse kinematics if enabled
-        if (enableKinematics) {
-            gcodeString = processInverseKinematics(gcodeString, enableKinematics, laParam, lbParam);
-        }
-
-        // Apply calibration correction if enabled
-        if (enableCalibration && calibrationCorrector?.loaded) {
-            gcodeString = this.applyCalibrationCorrection(gcodeString, calibrationCorrector);
-        }
-
-        // Apply A-axis optimization if enabled
-        if (enableAAxisOptimization) {
-            gcodeString = optimizeAAxisRotation(gcodeString, enableAAxisOptimization);
-            gcodeString = addAAxisOptimizationComment(gcodeString);
+        // Apply C-axis optimization if enabled
+        if (enableCAxisOptimization) {
+            gcodeString = optimizeCAxisRotation(gcodeString, enableCAxisOptimization);
+            gcodeString = addCAxisOptimizationComment(gcodeString);
         }
 
         return {
             gcode: gcodeString,
             filename: shape.getFilename(shapeParams)
         };
-    }
-
-    applyCalibrationCorrection(gcodeString, corrector) {
-        const lines = gcodeString.split('\n');
-        const processedLines = [];
-
-        // Track modal state
-        let modalA = 0;
-        let modalB = 0;
-
-        for (const line of lines) {
-            const trimmed = line.trim();
-
-            // Pass through comments and non-movement commands
-            if (!trimmed || trimmed.startsWith(';') || !trimmed.match(/^G[01]\s/i)) {
-                processedLines.push(line);
-                continue;
-            }
-
-            // Update modal A/B values
-            const aMatch = trimmed.match(/A([-+]?\d*\.?\d+)/i);
-            const bMatch = trimmed.match(/B([-+]?\d*\.?\d+)/i);
-            if (aMatch) modalA = parseFloat(aMatch[1]);
-            if (bMatch) modalB = parseFloat(bMatch[1]);
-
-            // Get calibration correction
-            const correction = corrector.getCorrection(modalA, modalB);
-
-            // Only process if there are XYZ coordinates
-            const xMatch = trimmed.match(/X([-+]?\d*\.?\d+)/i);
-            const yMatch = trimmed.match(/Y([-+]?\d*\.?\d+)/i);
-            const zMatch = trimmed.match(/Z([-+]?\d*\.?\d+)/i);
-
-            if (!xMatch && !yMatch && !zMatch) {
-                processedLines.push(line);
-                continue;
-            }
-
-            // Apply correction (SUBTRACT error to compensate)
-            let newLine = trimmed;
-            if (xMatch) {
-                const correctedX = parseFloat(xMatch[1]) - correction.x;
-                newLine = newLine.replace(/X[-+]?\d*\.?\d+/i, `X${correctedX.toFixed(3)}`);
-            }
-            if (yMatch) {
-                const correctedY = parseFloat(yMatch[1]) - correction.y;
-                newLine = newLine.replace(/Y[-+]?\d*\.?\d+/i, `Y${correctedY.toFixed(3)}`);
-            }
-            if (zMatch) {
-                const correctedZ = parseFloat(zMatch[1]) - correction.z;
-                newLine = newLine.replace(/Z[-+]?\d*\.?\d+/i, `Z${correctedZ.toFixed(3)}`);
-            }
-
-            processedLines.push(newLine);
-        }
-
-        return processedLines.join('\n');
     }
 
     processTemplatePlaceholders(template, values) {
@@ -217,6 +125,8 @@ class GcodeGenerator {
     }
 
     addDefaultStartGcode(gcode) {
+        gcode.push('G49 ; Disable IK during homing');
+        gcode.push('M667 S0 ; Disable calibration during homing');
         gcode.push('G28 ; Home all axes');
         gcode.push('G1 Z5 F300 ; Lift Z');
         gcode.push('M104 S210 ; Set hotend temp');
@@ -228,11 +138,15 @@ class GcodeGenerator {
         gcode.push('G92 E0 ; Reset extruder');
         gcode.push('G21 ; Set units to millimeters');
         gcode.push('G90 ; Use absolute coordinates');
+        gcode.push('G43.4 ; Enable IK');
+        gcode.push('M667 S1 ; Enable calibration');
     }
 
     addDefaultEndGcode(gcode, totalHeight) {
         gcode.push('G1 E-2 F1800 ; Retract filament');
         gcode.push(`G1 Z${totalHeight + 10} F300 ; Lift Z`);
+        gcode.push('G49 ; Disable IK before homing');
+        gcode.push('M667 S0 ; Disable calibration');
         gcode.push('G28 X Y ; Home X Y');
         gcode.push('M104 S0 ; Turn off hotend');
         gcode.push('M140 S0 ; Turn off bed');

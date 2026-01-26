@@ -23,7 +23,7 @@ For G-code generated without calibration:
 
 ### 2. Add software IK to raw files
 For G-code with tool-tip coordinates only:
-1. Enter your LA and LB parameters
+1. Enter your LC and LB parameters
 2. Upload G-code file
 3. Enable "Apply inverse kinematics"
 4. Process and download with IK applied
@@ -42,7 +42,7 @@ For G-code already processed with firmware IK:
 2. **Load calibration** (optional): Click "Load calibration data" and select your `.json` file from the [calibrator tool](https://tools.rep5x.com/calibrator/)
 3. **Upload G-code**: Drag and drop or click to select your G-code file
 4. **Configure options**:
-   - Check "Apply inverse kinematics" if your file needs IK (enter LA/LB values)
+   - Check "Apply inverse kinematics" if your file needs IK (enter LC/LB values)
    - Check "Apply calibration corrections" if you loaded calibration data
 5. **Process**: Click "Process G-code"
 6. **Download**: Click "Download corrected G-code"
@@ -69,8 +69,8 @@ The corrector supports three processing modes:
 ## Understanding the visualisation
 
 The 3D preview shows nozzle error patterns with two colored spheres:
-- **Red sphere/trail**: A sweep errors (A rotating 0-360° at B=0)
-- **Orange sphere/trail**: B sweep errors (B tilting -90 to +90° at A=0)
+- **Red sphere/trail**: C sweep errors (C rotating 0-360° at B=0)
+- **Orange sphere/trail**: B sweep errors (B tilting -90 to +90° at C=0)
 
 **Mode toggle** (above the visualizer):
 - **Uncalibrated**: Shows full error pattern without calibration applied
@@ -78,7 +78,7 @@ The 3D preview shows nozzle error patterns with two colored spheres:
 
 **What good calibration looks like**: In calibrated mode, both spheres should barely move from the white center marker. If the movement looks similar in both modes, your calibration isn't working well.
 
-**Preview controls** (below the visualizer): The sweep mode buttons (Both, A only, B only, Combined) only change what you see in the animation. Downloaded demo G-code always tests both A and B axes.
+**Preview controls** (below the visualizer): The sweep mode buttons (Both, C only, B only, Combined) only change what you see in the animation. Downloaded demo G-code always tests both C and B axes.
 
 ## Demo G-code generation
 
@@ -115,7 +115,7 @@ gcode-corrector/
 
 The corrector automatically detects Rep5x G-code headers to determine:
 - Whether IK is already applied (software or firmware)
-- LA and LB parameters used
+- LC and LB parameters used
 - Whether calibration corrections are present
 - Which tool generated the file
 

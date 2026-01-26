@@ -64,6 +64,8 @@ class StepZAxis {
                 document.getElementById('confirmZPosition').disabled = true;
                 document.getElementById('confirmZPosition').textContent = 'Homing Z...';
                 await this.app.printer.sendCommandAndWait('G28 Z', 60000);
+                // Ensure IK is disabled after homing
+                await this.app.printer.sendCommandAndWait('G49', 3000);
 
                 document.getElementById('confirmZPosition').textContent = 'Moving down...';
                 await this.app.printer.sendCommandAndWait('G91', 5000); // Relative mode

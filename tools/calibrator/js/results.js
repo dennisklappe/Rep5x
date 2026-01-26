@@ -6,10 +6,12 @@
 class StepResults {
     constructor(app) {
         this.app = app;
-        this.graphRendererA = null;  // Graph for A sweep (shows A angles at B=0)
-        this.graphRendererB = null;  // Graph for B sweep (shows B angles at A=0)
+        this.graphRendererC = null;  // Graph for C sweep (shows C angles at B=0)
+        this.graphRendererB = null;  // Graph for B sweep (shows B angles at C=0)
         this.visualizer = null;      // 3D Nozzle position visualizer
         this.corrector = null;       // CalibrationCorrector for visualizer
+        this.existingCoeffs = null;  // Existing M667 coefficients from printer
+        this.refineMode = false;     // If true, add new offsets to existing
     }
 
     /**
@@ -26,18 +28,16 @@ class StepResults {
             this.downloadFile('calibration-data.json', json, 'application/json');
         });
 
-        document.getElementById('save-results-btn').addEventListener('click', () => {
-            const data = this.app.engine.exportJSON();
-            StorageManager.saveCalibrationData(data);
-            alert('Calibration data saved!');
+        document.getElementById('export-firmware-btn').addEventListener('click', () => {
+            this.exportToFirmware();
         });
 
         // Initialise both graphs
-        const graphACanvas = document.getElementById('results-graph-a');
+        const graphACanvas = document.getElementById('results-graph-c');
         const graphBCanvas = document.getElementById('results-graph-b');
 
         if (graphACanvas) {
-            this.graphRendererA = new GraphRenderer(graphACanvas);
+            this.graphRendererC = new GraphRenderer(graphACanvas);
         }
         if (graphBCanvas) {
             this.graphRendererB = new GraphRenderer(graphBCanvas);
@@ -70,7 +70,7 @@ class StepResults {
 
             // Sweep mode buttons
             const sweepBtns = {
-                'results-viz-sweep-a': 'a',
+                'results-viz-sweep-c': 'c',
                 'results-viz-sweep-b': 'b',
                 'results-viz-sweep-both': 'both',
                 'results-viz-sweep-combined': 'combined'
@@ -147,22 +147,35 @@ class StepResults {
     /**
      * Called when entering this step
      */
-    enter() {
+    async enter() {
+        // Re-enable IK now that calibration is complete
+        if (this.app.printer && this.app.printer.isConnected()) {
+            try {
+                await this.app.printer.sendCommandAndWait('G43.4', 5000);
+            } catch (e) {
+                console.warn('Could not re-enable IK:', e);
+            }
+        }
+
+        // Get refine mode from app (set during calibration start modal)
+        this.refineMode = this.app.refineMode || false;
+        console.log('[Results] Refine mode:', this.refineMode ? 'ON' : 'OFF');
+
         // Hide next button on results page
         document.getElementById('nextBtn').style.display = 'none';
 
         // Update both graphs - show all axes in results view
-        if (this.graphRendererA) {
-            this.graphRendererA.calibrationPhase = 'full';
-            this.graphRendererA.setDataFromEngine(this.app.engine);
-            this.graphRendererA.setViewMode('b', 0);  // Show A angles for B=0
-            this.graphRendererA.render();
+        if (this.graphRendererC) {
+            this.graphRendererC.calibrationPhase = 'full';
+            this.graphRendererC.setDataFromEngine(this.app.engine);
+            this.graphRendererC.setViewMode('b', 0);  // Show C angles for B=0
+            this.graphRendererC.render();
         }
 
         if (this.graphRendererB) {
             this.graphRendererB.calibrationPhase = 'full';
             this.graphRendererB.setDataFromEngine(this.app.engine);
-            this.graphRendererB.setViewMode('a', 0);  // Show B angles for A=0
+            this.graphRendererB.setViewMode('c', 0);  // Show B angles for C=0
             this.graphRendererB.render();
         }
 
@@ -178,7 +191,7 @@ class StepResults {
             this.visualizer.setSweepMode('both');
 
             // Update sweep mode button styles to show "both" as active
-            const sweepBtnIds = ['results-viz-sweep-a', 'results-viz-sweep-b', 'results-viz-sweep-both', 'results-viz-sweep-combined'];
+            const sweepBtnIds = ['results-viz-sweep-c', 'results-viz-sweep-b', 'results-viz-sweep-both', 'results-viz-sweep-combined'];
             sweepBtnIds.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) {
@@ -202,6 +215,11 @@ class StepResults {
             document.getElementById('result-z-max').textContent = `Max: ${stats.z.absMax.toFixed(3)} mm`;
             document.getElementById('result-z-avg').textContent = `Avg: ${stats.z.absAvg.toFixed(3)} mm`;
         }
+
+        // Auto-save calibration to firmware
+        if (this.app.printer && this.app.printer.isConnected()) {
+            await this.exportToFirmware();
+        }
     }
 
     downloadFile(filename, content, mimeType) {
@@ -212,5 +230,179 @@ class StepResults {
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Export calibration data to firmware M667 commands
+     * Uses Fourier fitting to convert measurement points to coefficients
+     * If refine mode is enabled, adds new offsets to existing calibration
+     */
+    async exportToFirmware() {
+        try {
+            // Get measurement data from engine
+            const cSweepData = this.app.engine.getMeasurementsByB(0);  // C sweep at B=0
+            const bSweepData = this.app.engine.getMeasurementsByC(0);  // B sweep at C=0
+
+            if (cSweepData.length === 0 && bSweepData.length === 0) {
+                alert('No calibration data to export. Please complete calibration first.');
+                return;
+            }
+
+            // If refine mode, first read existing coefficients from printer
+            if (this.refineMode && this.app.printer && this.app.printer.isConnected()) {
+                console.log('[Results] Refine mode: reading existing coefficients...');
+                this.existingCoeffs = await this.readExistingCoefficients();
+                console.log('[Results] Existing coefficients:', this.existingCoeffs);
+
+                // Validate that we got actual coefficients (not all nulls)
+                const hasValidCoeffs = this.existingCoeffs &&
+                    (this.existingCoeffs.cSweep?.x || this.existingCoeffs.cSweep?.y ||
+                     this.existingCoeffs.bSweep?.x || this.existingCoeffs.bSweep?.y);
+                if (!hasValidCoeffs) {
+                    console.error('[Results] WARNING: Could not read existing coefficients from printer!');
+                    console.error('[Results] Refine mode will NOT combine - using new measurements only');
+                    this.existingCoeffs = null;  // Force non-combine path
+                }
+            }
+
+            // Check if Z calibration was completed or skipped
+            const zCalibrationCompleted = this.app.zCalibrationCompleted !== false;
+            console.log('[Results] Z calibration completed:', zCalibrationCompleted);
+
+            // Convert to format for Fourier fitting
+            // If Z calibration was skipped, set Z errors to 0 so they don't affect the fit
+            const cSweepPoints = cSweepData.map(m => ({
+                c: m.c,
+                errorX: m.error?.x || 0,
+                errorY: m.error?.y || 0,
+                errorZ: zCalibrationCompleted ? (m.error?.z || 0) : 0
+            }));
+
+            const bSweepPoints = bSweepData.map(m => ({
+                b: m.b,
+                errorX: m.error?.x || 0,
+                errorY: m.error?.y || 0,
+                errorZ: zCalibrationCompleted ? (m.error?.z || 0) : 0
+            }));
+
+            console.log('C sweep points for fitting:', cSweepPoints);
+            console.log('B sweep points for fitting:', bSweepPoints);
+
+            // Fit Fourier series
+            // C sweep: 3 harmonics (7 coefficients per axis) - periodic 0-360
+            // B sweep: 2 harmonics (5 coefficients per axis) - not periodic
+            const cSweepCoeffs = FourierFitter.fitSweep(cSweepPoints, 'c', 3);
+            const bSweepCoeffs = FourierFitter.fitSweep(bSweepPoints, 'b', 2);
+
+            console.log('New C sweep coefficients:', cSweepCoeffs);
+            console.log('New B sweep coefficients:', bSweepCoeffs);
+
+            // Structure for combining
+            let finalCoeffs = {
+                cSweep: { x: cSweepCoeffs.x, y: cSweepCoeffs.y, z: cSweepCoeffs.z },
+                bSweep: { x: bSweepCoeffs.x, y: bSweepCoeffs.y, z: bSweepCoeffs.z }
+            };
+
+            // If refine mode, combine with existing
+            if (this.refineMode && this.existingCoeffs) {
+                console.log('[Results] Combining new offsets with existing calibration...');
+                finalCoeffs = FourierFitter.combineCoefficients(this.existingCoeffs, finalCoeffs);
+                console.log('[Results] Combined coefficients:', finalCoeffs);
+
+                // If Z was skipped, use existing Z coefficients unchanged
+                if (!zCalibrationCompleted) {
+                    console.log('[Results] Z skipped - preserving existing Z coefficients');
+                    finalCoeffs.cSweep.z = this.existingCoeffs.cSweep?.z || [0, 0, 0, 0, 0, 0, 0];
+                    finalCoeffs.bSweep.z = this.existingCoeffs.bSweep?.z || [0, 0, 0, 0, 0];
+                }
+            }
+
+            // Generate M667 commands
+            const commands = FourierFitter.generateM667FromCoeffs(finalCoeffs);
+
+            // Send directly to printer if connected
+            await this.sendCalibrationToFirmware(commands);
+
+        } catch (error) {
+            console.error('Error exporting to firmware:', error);
+            alert('Error exporting to firmware: ' + error.message);
+        }
+    }
+
+    /**
+     * Read existing calibration coefficients from printer
+     */
+    async readExistingCoefficients() {
+        if (!this.app.printer || !this.app.printer.isConnected()) {
+            return null;
+        }
+
+        try {
+            // Send M667 with no parameters to get current state
+            const response = await this.app.printer.sendCommandAndCapture('M667', 5000);
+            console.log('[Results] M667 raw response:');
+            console.log(response);
+            console.log('[Results] Response lines:');
+            response.split('\n').forEach((line, i) => console.log(`  ${i}: "${line}"`));
+
+            // Parse the response
+            const parsed = FourierFitter.parseM667Response(response);
+            console.log('[Results] Parsed coefficients:', JSON.stringify(parsed, null, 2));
+            return parsed;
+        } catch (error) {
+            console.warn('[Results] Could not read existing coefficients:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Send calibration commands directly to the printer
+     */
+    async sendCalibrationToFirmware(commands) {
+        // Check if printer is connected
+        if (!this.app.printer || !this.app.printer.isConnected()) {
+            alert('Printer not connected. Please reconnect to send calibration data.');
+            return;
+        }
+
+        const btn = document.getElementById('export-firmware-btn');
+        const originalText = btn?.textContent || 'Export to Firmware';
+
+        try {
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Sending...';
+            }
+
+            // Parse commands and send only the M667 lines (skip comments)
+            const lines = commands.split('\n').filter(line => {
+                const trimmed = line.trim();
+                return trimmed.startsWith('M667') || trimmed.startsWith('M500');
+            });
+
+            console.log('[Results] Sending calibration commands:', lines);
+
+            for (const line of lines) {
+                console.log('[Results] Sending:', line);
+                await this.app.printer.sendCommandAndWait(line, 5000);
+            }
+
+            // Save to EEPROM
+            await this.app.printer.sendCommandAndWait('M500', 5000);
+            console.log('[Results] Calibration saved to EEPROM');
+
+            if (btn) {
+                btn.textContent = 'Saved to EEPROM ✓';
+                btn.disabled = false;
+            }
+
+        } catch (error) {
+            console.error('[Results] Error sending calibration:', error);
+            alert('Error sending calibration: ' + error.message);
+            if (btn) {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
     }
 }

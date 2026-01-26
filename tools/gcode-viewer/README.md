@@ -6,7 +6,7 @@ Visualise and animate 5-axis G-code files with real-time printhead orientation d
 
 ## Features
 
-- **5-axis visualisation**: Full support for A-axis (yaw) and B-axis (pitch) movements
+- **5-axis visualisation**: Full support for C-axis (yaw) and B-axis (pitch) movements
 - **Inverse kinematics**: Automatically detects and reverses IK corrections to show original path
 - **Animation controls**: Play, pause, speed control, and progress scrubbing
 - **Collision detection**: Warns when printhead would collide with printed path or bed

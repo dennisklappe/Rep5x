@@ -4,11 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rep5x Printer Setup</title>
-    <meta name="description" content="Calibrate Z height, A and B axis positions and steps/degree for your Rep5x 5-axis printer">
+    <meta name="description" content="Calibrate Z height, C and B axis positions and steps/degree for your Rep5x 5-axis printer">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="../shared/styles.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
     <style>
+        /* Step indicators - matching firmware-builder */
+        .step-indicator {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: white;
+            border: 2px solid var(--color-border);
+            color: var(--color-text-muted);
+        }
+
+        .step-indicator.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+            box-shadow: 0 0 0 4px rgba(50, 215, 75, 0.2);
+        }
+
+        .step-indicator.completed {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        .step-connector {
+            width: 24px;
+            height: 2px;
+            background: var(--color-border);
+            transition: background 0.3s;
+        }
+
+        .step-connector.completed {
+            background: var(--color-primary);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            background: var(--color-border);
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: var(--color-primary);
+            height: 100%;
+            transition: width 0.4s ease;
+        }
+
         /* Tool-specific: wider jog buttons for this tool */
         .jog-btn {
             width: 56px;
@@ -27,165 +81,185 @@
             overflow-x: auto;
             font-size: 14px;
         }
+
+        /* Fade in animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.4s ease forwards;
+        }
     </style>
 </head>
-<body class="min-h-screen" data-tool-name="Printer Setup">
+<body class="bg-gray-50 min-h-screen" data-tool-name="Printer Setup">
     <!-- Header -->
     <div id="shared-header"></div>
 
     <!-- Main Content -->
     <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Progress Bar -->
-        <div id="progressBar" class="flex items-center justify-center mb-2 px-4">
-            <div class="flex flex-col items-center">
-                <div class="progress-step active" data-step="0">1</div>
-                <span class="text-xs text-gray-500 mt-2">Connect</span>
+        <!-- Progress Section - Matching Firmware Builder -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Printer setup wizard</h2>
+                <span id="stepCounter" class="text-sm text-gray-500">Step 1 of 7</span>
             </div>
-            <div class="progress-connector" data-connector="0"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="1">2</div>
-                <span class="text-xs text-gray-500 mt-2">Prepare</span>
+
+            <!-- Step Indicators -->
+            <div id="progressBar" class="flex items-center justify-center mb-4">
+                <div class="step-indicator active" data-step="0">1</div>
+                <div class="step-connector" data-connector="0"></div>
+                <div class="step-indicator" data-step="1">2</div>
+                <div class="step-connector" data-connector="1"></div>
+                <div class="step-indicator" data-step="2">3</div>
+                <div class="step-connector" data-connector="2"></div>
+                <div class="step-indicator" data-step="3">4</div>
+                <div class="step-connector" data-connector="3"></div>
+                <div class="step-indicator" data-step="4">5</div>
+                <div class="step-connector" data-connector="4"></div>
+                <div class="step-indicator" data-step="5">6</div>
+                <div class="step-connector" data-connector="5"></div>
+                <div class="step-indicator" data-step="6">7</div>
             </div>
-            <div class="progress-connector" data-connector="1"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="2">3</div>
-                <span class="text-xs text-gray-500 mt-2">Direction</span>
+
+            <!-- Progress Bar -->
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 14.3%"></div>
             </div>
-            <div class="progress-connector" data-connector="2"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="3">4</div>
-                <span class="text-xs text-gray-500 mt-2">A-axis</span>
-            </div>
-            <div class="progress-connector" data-connector="3"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="4">5</div>
-                <span class="text-xs text-gray-500 mt-2">B-axis</span>
-            </div>
-            <div class="progress-connector" data-connector="4"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="5">6</div>
-                <span class="text-xs text-gray-500 mt-2">Z-axis</span>
-            </div>
-            <div class="progress-connector" data-connector="5"></div>
-            <div class="flex flex-col items-center">
-                <div class="progress-step" data-step="6">7</div>
-                <span class="text-xs text-gray-500 mt-2">Apply</span>
+
+            <!-- Step Labels -->
+            <div class="flex justify-between mt-3 text-xs text-gray-500">
+                <span class="w-12 text-center">Connect</span>
+                <span class="w-12 text-center">Prepare</span>
+                <span class="w-12 text-center">Direction</span>
+                <span class="w-12 text-center">C-axis</span>
+                <span class="w-12 text-center">B-axis</span>
+                <span class="w-12 text-center">Z-axis</span>
+                <span class="w-12 text-center">Apply</span>
             </div>
         </div>
-        <div class="mb-8"></div>
 
         <!-- Wizard Container -->
         <div id="wizardContainer">
             <!-- Step 0: Connect -->
-            <div id="step-0" class="wizard-step active">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Printer setup</h2>
-                    <p class="text-gray-600 max-w-2xl mx-auto">
-                        Calibrate Z height, axis directions, zero positions and steps/degree.
-                        Run this once after building, then again if calibration drifts.
-                    </p>
-                </div>
-
-                <!-- Info Banner -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-3 text-sm text-blue-700">
-                            <p><strong>Run this before kinematic calibration.</strong></p>
-                            <p class="mt-1">Accurate Z height and axis positions are required for LA/LB measurement to work correctly.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Connection Panel -->
-                <div class="max-w-md mx-auto">
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">Connect to printer</h3>
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center">
-                                <span class="status-dot disconnected" id="serialStatus"></span>
-                                <span class="ml-2 text-sm" id="serialStatusText">Not connected</span>
-                            </div>
-                            <button id="connectBtn" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">
-                                Connect
-                            </button>
-                        </div>
-                        <p class="text-xs text-gray-500">
-                            Connect via USB serial to control and configure your printer.
+            <div id="step-0" class="wizard-step active animate-in">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Printer setup</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            Calibrate Z height, axis directions, zero positions and steps/degree.
+                            Run this once after building, then again if calibration drifts.
                         </p>
                     </div>
 
-                    <!-- Test Mode Toggle -->
-                    <div class="flex items-center justify-center">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="testModeToggle" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary">
-                            <span class="ml-2 text-sm text-gray-600">Test mode (simulate without hardware)</span>
-                        </label>
+                    <!-- Info Banner -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
+                        <div class="flex gap-3">
+                            <svg class="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div class="text-sm text-blue-700">
+                                <p><strong>Run this before kinematic calibration.</strong></p>
+                                <p class="mt-1">Accurate Z height and axis positions are required for LC/LB measurement to work correctly.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connection Panel -->
+                    <div class="max-w-md mx-auto">
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Connect to printer</h4>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="status-dot disconnected" id="serialStatus"></span>
+                                    <span class="ml-2 text-sm" id="serialStatusText">Not connected</span>
+                                </div>
+                                <button id="connectBtn" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">
+                                    Connect
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                Connect via USB serial to control and configure your printer.
+                            </p>
+                        </div>
+
+                        <!-- Test Mode Toggle -->
+                        <div class="flex items-center justify-center">
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="testModeToggle" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary">
+                                <span class="text-sm text-gray-600">Test mode (simulate without hardware)</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Step 1: Prepare -->
             <div id="step-1" class="wizard-step">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Prepare printer</h2>
-                    <p class="text-gray-600 max-w-2xl mx-auto">
-                        Home all axes and move to starting position for calibration.
-                    </p>
-                </div>
-
-                <div class="max-w-md mx-auto">
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">Preparation steps</h3>
-
-                        <div class="space-y-3 mb-6">
-                            <div id="prep-stepper" class="flex items-center text-gray-400">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                <span>Disable stepper timeout</span>
-                            </div>
-                            <div id="prep-endstops" class="flex items-center text-gray-400">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                <span>Disable software endstops</span>
-                            </div>
-                            <div id="prep-homing" class="flex items-center text-gray-400">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                <span>Home all axes (G28)</span>
-                            </div>
-                            <div id="prep-position" class="flex items-center text-gray-400">
-                                <svg class="w-5 h-5 mr-3 prep-icon opacity-0" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                <span>Move to starting position (X100 Y100 A0 B0, Z-50)</span>
-                            </div>
-                        </div>
-
-                        <div class="flex gap-3">
-                            <button id="prepareBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
-                                Start preparation
-                            </button>
-                            <button id="skipPrepareBtn" class="btn-secondary py-3 px-6 rounded-lg font-medium">
-                                Skip
-                            </button>
-                        </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Prepare printer</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            Home all axes and move to starting position for calibration.
+                        </p>
                     </div>
 
-                    <!-- Success message -->
-                    <div id="prepareStatus" class="status-success border rounded-lg p-4 hidden">
-                        <div class="flex items-center">
-                            <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="font-medium">Printer ready for calibration</span>
+                    <div class="max-w-md mx-auto">
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Preparation steps</h4>
+
+                            <div class="space-y-3 mb-6">
+                                <div id="prep-stepper" class="flex items-center text-gray-400">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>Disable stepper timeout</span>
+                                </div>
+                                <div id="prep-endstops" class="flex items-center text-gray-400">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>Disable software endstops</span>
+                                </div>
+                                <div id="prep-homing" class="flex items-center text-gray-400">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>Home all axes (G28)</span>
+                                </div>
+                                <div id="prep-position" class="flex items-center text-gray-400">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>Move to starting position (X100 Y100 C0 B0, Z-50)</span>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button id="prepareBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
+                                    Start preparation
+                                </button>
+                                <button id="skipPrepareBtn" class="btn-secondary py-3 px-6 rounded-lg font-medium">
+                                    Skip
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Success message -->
+                        <div id="prepareStatus" class="status-success border rounded-lg p-4 hidden">
+                            <div class="flex items-center">
+                                <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="font-medium">Printer ready for calibration</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -193,191 +267,408 @@
 
             <!-- Step 2: Direction Check -->
             <div id="step-2" class="wizard-step">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Direction check</h2>
-                    <p class="text-gray-600 max-w-2xl mx-auto">
-                        Verify A and B axis motors rotate in the correct direction.
-                        Only needed once after initial build or motor changes.
-                    </p>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Direction check</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            Verify C and B axis motors rotate in the correct direction.
+                            Only needed once after initial build or motor changes.
+                        </p>
+                    </div>
+
+                    <div class="max-w-xl mx-auto">
+                        <!-- C-axis direction check -->
+                        <div id="cDirectionSection" class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="font-semibold text-gray-900">C-axis (rotation)</h4>
+                                <span id="cCheckStatus" class="text-gray-400 text-lg">○</span>
+                            </div>
+
+                            <!-- Prompt -->
+                            <div id="cDirectionPrompt">
+                                <p class="text-gray-600 text-sm mb-4">
+                                    Test if the build plate rotates clockwise when viewed from above.
+                                </p>
+                                <div class="flex gap-3">
+                                    <button id="cDirectionStart" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
+                                        Test C direction
+                                    </button>
+                                    <button id="cDirectionSkip" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm">
+                                        Skip (already correct)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Test in progress -->
+                            <div id="cDirectionTest" class="hidden">
+                                <div class="visual-guide mb-4">
+                                    <svg class="w-32 h-32 mx-auto" viewBox="0 0 140 140">
+                                        <!-- Build plate circle -->
+                                        <circle cx="70" cy="75" r="40" fill="none" stroke="#ddd" stroke-width="3"/>
+                                        <!-- Clockwise arrow -->
+                                        <path d="M 70 35 A 40 40 0 1 1 30 75" fill="none" stroke="#32D74B" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowCCheck)"/>
+                                        <defs>
+                                            <marker id="arrowCCheck" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                                                <polygon points="0 0, 6 3, 0 6" fill="#32D74B"/>
+                                            </marker>
+                                        </defs>
+                                        <!-- Reference marker -->
+                                        <line x1="70" y1="75" x2="70" y2="45" stroke="#32D74B" stroke-width="2"/>
+                                        <circle cx="70" cy="42" r="3" fill="#EF4444"/>
+                                        <circle cx="70" cy="75" r="3" fill="#666"/>
+                                        <text x="70" y="15" font-size="10" fill="#666" text-anchor="middle">View from above</text>
+                                    </svg>
+                                    <p class="text-center font-medium" id="cDirectionStatus">Testing...</p>
+                                </div>
+                                <div id="cDirectionButtons" class="flex gap-3">
+                                    <button id="cDirectionCorrect" class="flex-1 btn-success py-2 rounded-lg font-medium text-sm" disabled>
+                                        Correct ✓
+                                    </button>
+                                    <button id="cDirectionWrong" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
+                                        Wrong direction
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Fix instructions -->
+                            <div id="cDirectionFix" class="hidden">
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                    <h4 class="font-medium text-yellow-800 mb-2">C-axis direction is inverted</h4>
+                                    <p class="text-sm text-yellow-700 mb-3">Fix with one of these options:</p>
+                                    <div class="bg-white rounded p-3 text-sm space-y-3">
+                                        <div>
+                                            <p class="font-medium">Option 1: Change firmware</p>
+                                            <p class="text-gray-600">In Configuration.h, change <code class="bg-gray-100 px-1 rounded">INVERT_I_DIR</code> from <code class="bg-gray-100 px-1 rounded">false</code> to <code class="bg-gray-100 px-1 rounded">true</code> (or vice versa), then recompile and upload.</p>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Option 2: Swap motor wires</p>
+                                            <p class="text-gray-600">Power off, then swap the two wires within one coil pair on the C-axis motor connector (e.g., swap pins 1&amp;2 or pins 3&amp;4).</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-yellow-600 mt-3">After fixing, restart the setup wizard to test again.</p>
+                                </div>
+                                <button id="cDirectionRetry" class="w-full btn-primary py-2 rounded-lg font-medium text-sm">
+                                    Restart setup
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- B-axis direction check -->
+                        <div id="bDirectionSection" class="border border-gray-200 rounded-xl p-6 mb-6 hidden">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="font-semibold text-gray-900">B-axis (tilt)</h4>
+                                <span id="bCheckStatus" class="text-gray-400 text-lg">○</span>
+                            </div>
+
+                            <!-- Prompt -->
+                            <div id="bDirectionPrompt">
+                                <p class="text-gray-600 text-sm mb-4">
+                                    Test if the nozzle tilts to the left when B increases.
+                                </p>
+                                <div class="flex gap-3">
+                                    <button id="bDirectionStart" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
+                                        Test B direction
+                                    </button>
+                                    <button id="bDirectionSkip" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm">
+                                        Skip (already correct)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Test in progress -->
+                            <div id="bDirectionTest" class="hidden">
+                                <div class="visual-guide mb-4">
+                                    <svg class="w-48 h-24 mx-auto" viewBox="0 0 200 100">
+                                        <!-- Side view: B0 to B90 -->
+                                        <circle cx="100" cy="50" r="3" fill="#666"/>
+                                        <!-- B0: down (dashed) -->
+                                        <line x1="100" y1="50" x2="100" y2="85" stroke="#999" stroke-width="2" stroke-dasharray="4,2"/>
+                                        <text x="108" y="82" font-size="9" fill="#999">B0</text>
+                                        <!-- B90: left (solid) -->
+                                        <line x1="100" y1="50" x2="65" y2="50" stroke="#32D74B" stroke-width="2"/>
+                                        <polygon points="58,50 68,45 68,55" fill="#32D74B"/>
+                                        <text x="50" y="42" font-size="9" fill="#32D74B">B90</text>
+                                        <!-- Arrow showing rotation -->
+                                        <path d="M 105 75 A 30 30 0 0 1 70 53" fill="none" stroke="#32D74B" stroke-width="2" marker-end="url(#arrowBCheck)"/>
+                                        <defs>
+                                            <marker id="arrowBCheck" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                                                <polygon points="0 0, 6 3, 0 6" fill="#32D74B"/>
+                                            </marker>
+                                        </defs>
+                                        <text x="100" y="15" font-size="9" fill="#666" text-anchor="middle">View from front</text>
+                                    </svg>
+                                    <p class="text-center font-medium" id="bDirectionStatus">Testing...</p>
+                                </div>
+                                <div id="bDirectionButtons" class="flex gap-3">
+                                    <button id="bDirectionCorrect" class="flex-1 btn-success py-2 rounded-lg font-medium text-sm" disabled>
+                                        Correct ✓
+                                    </button>
+                                    <button id="bDirectionWrong" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
+                                        Wrong direction
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Fix instructions -->
+                            <div id="bDirectionFix" class="hidden">
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                    <h4 class="font-medium text-yellow-800 mb-2">B-axis direction is inverted</h4>
+                                    <p class="text-sm text-yellow-700 mb-3">Fix with one of these options:</p>
+                                    <div class="bg-white rounded p-3 text-sm space-y-3">
+                                        <div>
+                                            <p class="font-medium">Option 1: Change firmware</p>
+                                            <p class="text-gray-600">In Configuration.h, change <code class="bg-gray-100 px-1 rounded">INVERT_J_DIR</code> from <code class="bg-gray-100 px-1 rounded">false</code> to <code class="bg-gray-100 px-1 rounded">true</code> (or vice versa), then recompile and upload.</p>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Option 2: Swap motor wires</p>
+                                            <p class="text-gray-600">Power off, then swap the two wires within one coil pair on the B-axis motor connector (e.g., swap pins 1&amp;2 or pins 3&amp;4).</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-yellow-600 mt-3">After fixing, restart the setup wizard to test again.</p>
+                                </div>
+                                <button id="bDirectionRetry" class="w-full btn-primary py-2 rounded-lg font-medium text-sm">
+                                    Restart setup
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Skip all button -->
+                        <div class="text-center">
+                            <button id="skipDirectionCheck" class="text-sm text-gray-500 hover:text-gray-700 underline">
+                                Skip all direction checks
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: C-axis Calibration -->
+            <div id="step-3" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">C-axis calibration</h3>
+                        <p class="text-gray-600">Calibrate rotation axis offset and steps/degree</p>
+                    </div>
                 </div>
 
-                <div class="max-w-xl mx-auto">
-                    <!-- A-axis direction check -->
-                    <div id="aDirectionSection" class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-semibold text-gray-900">A-axis (rotation)</h3>
-                            <span id="aCheckStatus" class="text-gray-400 text-lg">○</span>
-                        </div>
-
-                        <!-- Prompt -->
-                        <div id="aDirectionPrompt">
-                            <p class="text-gray-600 text-sm mb-4">
-                                Test if the build plate rotates clockwise when viewed from above.
-                            </p>
-                            <div class="flex gap-3">
-                                <button id="aDirectionStart" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
-                                    Test A direction
-                                </button>
-                                <button id="aDirectionSkip" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm">
-                                    Skip (already correct)
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Test in progress -->
-                        <div id="aDirectionTest" class="hidden">
+                <!-- Calibration UI -->
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <!-- Left: Instructions and Progress -->
+                    <div class="space-y-6">
+                        <!-- Current Target -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h4 class="font-semibold text-gray-900 mb-3">Current target</h4>
                             <div class="visual-guide mb-4">
-                                <svg class="w-32 h-32 mx-auto" viewBox="0 0 140 140">
-                                    <!-- Build plate circle -->
-                                    <circle cx="70" cy="75" r="40" fill="none" stroke="#ddd" stroke-width="3"/>
-                                    <!-- Clockwise arrow -->
-                                    <path d="M 70 35 A 40 40 0 1 1 30 75" fill="none" stroke="#32D74B" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowACheck)"/>
-                                    <defs>
-                                        <marker id="arrowACheck" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                                            <polygon points="0 0, 6 3, 0 6" fill="#32D74B"/>
-                                        </marker>
-                                    </defs>
-                                    <!-- Reference marker -->
-                                    <line x1="70" y1="75" x2="70" y2="45" stroke="#32D74B" stroke-width="2"/>
-                                    <circle cx="70" cy="42" r="3" fill="#EF4444"/>
-                                    <circle cx="70" cy="75" r="3" fill="#666"/>
-                                    <text x="70" y="15" font-size="10" fill="#666" text-anchor="middle">View from above</text>
-                                </svg>
-                                <p class="text-center font-medium" id="aDirectionStatus">Testing...</p>
+                                <div class="mb-3" id="cVisualGuide">
+                                    <svg class="w-24 h-24 mx-auto" viewBox="0 0 100 100">
+                                        <!-- Top-down view with reference mark -->
+                                        <circle cx="50" cy="50" r="35" fill="none" stroke="#ddd" stroke-width="2"/>
+                                        <line x1="50" y1="50" x2="50" y2="15" stroke="#32D74B" stroke-width="4" stroke-linecap="round"/>
+                                        <circle cx="50" cy="12" r="4" fill="#EF4444"/>
+                                        <circle cx="50" cy="50" r="6" fill="#32D74B"/>
+                                    </svg>
+                                </div>
+                                <p class="text-lg font-semibold" id="cTargetDescription">Nozzle facing forwards</p>
+                                <p class="text-sm text-gray-500" id="cTargetAngle">Target: C = 0&deg;</p>
                             </div>
-                            <div id="aDirectionButtons" class="flex gap-3">
-                                <button id="aDirectionCorrect" class="flex-1 btn-success py-2 rounded-lg font-medium text-sm" disabled>
-                                    Correct ✓
+                            <div class="flex gap-3">
+                                <button id="confirmCPosition" class="flex-1 btn-primary py-3 rounded-lg font-medium">
+                                    Confirm position
                                 </button>
-                                <button id="aDirectionWrong" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
-                                    Wrong direction
+                                <button id="skipCAxis" class="btn-secondary py-3 px-6 rounded-lg font-medium">
+                                    Skip
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Fix instructions -->
-                        <div id="aDirectionFix" class="hidden">
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                                <h4 class="font-medium text-yellow-800 mb-2">A-axis direction is inverted</h4>
-                                <p class="text-sm text-yellow-700 mb-3">Fix with one of these options:</p>
-                                <div class="bg-white rounded p-3 text-sm space-y-3">
-                                    <div>
-                                        <p class="font-medium">Option 1: Change firmware</p>
-                                        <p class="text-gray-600">In Configuration.h, change <code class="bg-gray-100 px-1 rounded">INVERT_I_DIR</code> from <code class="bg-gray-100 px-1 rounded">false</code> to <code class="bg-gray-100 px-1 rounded">true</code> (or vice versa), then recompile and upload.</p>
-                                    </div>
-                                    <div>
-                                        <p class="font-medium">Option 2: Swap motor wires</p>
-                                        <p class="text-gray-600">Power off, then swap the two wires within one coil pair on the A-axis motor connector (e.g., swap pins 1&amp;2 or pins 3&amp;4).</p>
+                        <!-- Measurement Progress -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h4 class="font-semibold text-gray-900 mb-3">Measurements</h4>
+                            <div id="cMeasurements">
+                                <div class="measurement-item current" data-target="0">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium">C = 0&deg; (nozzle forwards)</span>
+                                        <span class="text-sm text-gray-500" id="c-recorded-0">--</span>
                                     </div>
                                 </div>
-                                <p class="text-xs text-yellow-600 mt-3">After fixing, restart the setup wizard to test again.</p>
+                                <div class="measurement-item" data-target="360">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium">C = 360&deg; (full rotation)</span>
+                                        <span class="text-sm text-gray-500" id="c-recorded-360">--</span>
+                                    </div>
+                                </div>
                             </div>
-                            <button id="aDirectionRetry" class="w-full btn-primary py-2 rounded-lg font-medium text-sm">
-                                Restart setup
-                            </button>
                         </div>
                     </div>
 
-                    <!-- B-axis direction check -->
-                    <div id="bDirectionSection" class="bg-white rounded-xl shadow-sm p-6 mb-6 hidden">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-semibold text-gray-900">B-axis (tilt)</h3>
-                            <span id="bCheckStatus" class="text-gray-400 text-lg">○</span>
+                    <!-- Right: Controls -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h4 class="font-semibold text-gray-900 mb-4">C-axis control</h4>
+
+                        <!-- Current Angle Display -->
+                        <div class="text-center mb-6">
+                            <div class="angle-display" id="cAxisDisplay">0.0</div>
+                            <div class="angle-unit">degrees (firmware)</div>
                         </div>
 
-                        <!-- Prompt -->
-                        <div id="bDirectionPrompt">
-                            <p class="text-gray-600 text-sm mb-4">
-                                Test if the nozzle tilts to the left when B increases.
-                            </p>
-                            <div class="flex gap-3">
-                                <button id="bDirectionStart" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
-                                    Test B direction
-                                </button>
-                                <button id="bDirectionSkip" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm">
-                                    Skip (already correct)
-                                </button>
+                        <!-- Jog Buttons -->
+                        <div class="flex justify-center gap-2 mb-4 flex-wrap">
+                            <button class="jog-btn" data-axis="C" data-amount="-10">-10&deg;</button>
+                            <button class="jog-btn" data-axis="C" data-amount="-1">-1&deg;</button>
+                            <button class="jog-btn" data-axis="C" data-amount="-0.1">-0.1&deg;</button>
+                            <button class="jog-btn" data-axis="C" data-amount="0.1">+0.1&deg;</button>
+                            <button class="jog-btn" data-axis="C" data-amount="1">+1&deg;</button>
+                            <button class="jog-btn" data-axis="C" data-amount="10">+10&deg;</button>
+                        </div>
+
+                        <!-- Tips -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700 mb-4">
+                            <strong>Tips:</strong>
+                            <ul class="list-disc list-inside mt-1 space-y-1">
+                                <li>At C0: hotend assembly should point towards you</li>
+                                <li>At C360: hotend assembly should point towards you again</li>
+                            </ul>
+                        </div>
+
+                        <!-- Keyboard hints -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <strong>Keyboard controls:</strong>
+                                    <ul class="list-disc list-inside mt-1 space-y-1">
+                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">←</kbd> C- <kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">→</kbd> C+ (rotate)</li>
+                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">1</kbd>-<kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">3</kbd> Select step size</li>
+                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Enter</kbd> Confirm position</li>
+                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Space</kbd> Emergency stop</li>
+                                    </ul>
+                                </div>
+                                <div id="cStepIndicator" class="text-right font-mono text-primary font-medium">Step: 1°</div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
 
-                        <!-- Test in progress -->
-                        <div id="bDirectionTest" class="hidden">
+            <!-- Step 4: B-axis Calibration -->
+            <div id="step-4" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">B-axis calibration</h3>
+                        <p class="text-gray-600">Calibrate tilt axis offset and steps/degree</p>
+                    </div>
+                </div>
+
+                <!-- Calibration UI -->
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <!-- Left: Instructions and Progress -->
+                    <div class="space-y-6">
+                        <!-- Current Target -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h4 class="font-semibold text-gray-900 mb-3">Current target</h4>
                             <div class="visual-guide mb-4">
-                                <svg class="w-48 h-24 mx-auto" viewBox="0 0 200 100">
-                                    <!-- Side view: B0 to B90 -->
-                                    <circle cx="100" cy="50" r="3" fill="#666"/>
-                                    <!-- B0: down (dashed) -->
-                                    <line x1="100" y1="50" x2="100" y2="85" stroke="#999" stroke-width="2" stroke-dasharray="4,2"/>
-                                    <text x="108" y="82" font-size="9" fill="#999">B0</text>
-                                    <!-- B90: left (solid) -->
-                                    <line x1="100" y1="50" x2="65" y2="50" stroke="#32D74B" stroke-width="2"/>
-                                    <polygon points="58,50 68,45 68,55" fill="#32D74B"/>
-                                    <text x="50" y="42" font-size="9" fill="#32D74B">B90</text>
-                                    <!-- Arrow showing rotation -->
-                                    <path d="M 105 75 A 30 30 0 0 1 70 53" fill="none" stroke="#32D74B" stroke-width="2" marker-end="url(#arrowBCheck)"/>
-                                    <defs>
-                                        <marker id="arrowBCheck" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                                            <polygon points="0 0, 6 3, 0 6" fill="#32D74B"/>
-                                        </marker>
-                                    </defs>
-                                    <text x="100" y="15" font-size="9" fill="#666" text-anchor="middle">View from front</text>
-                                </svg>
-                                <p class="text-center font-medium" id="bDirectionStatus">Testing...</p>
+                                <div class="mb-3" id="bVisualGuide">
+                                    <svg class="w-24 h-24 mx-auto" viewBox="0 0 100 100">
+                                        <!-- Nozzle pointing down (B0) -->
+                                        <line x1="50" y1="20" x2="50" y2="70" stroke="#32D74B" stroke-width="4" stroke-linecap="round"/>
+                                        <polygon points="50,80 42,65 58,65" fill="#32D74B"/>
+                                        <line x1="20" y1="90" x2="80" y2="90" stroke="#666" stroke-width="2"/>
+                                    </svg>
+                                </div>
+                                <p class="text-lg font-semibold" id="bTargetDescription">Nozzle pointing straight down</p>
+                                <p class="text-sm text-gray-500" id="bTargetAngle">Target: B = 0&deg;</p>
                             </div>
-                            <div id="bDirectionButtons" class="flex gap-3">
-                                <button id="bDirectionCorrect" class="flex-1 btn-success py-2 rounded-lg font-medium text-sm" disabled>
-                                    Correct ✓
+                            <div class="flex gap-3">
+                                <button id="confirmBPosition" class="flex-1 btn-primary py-3 rounded-lg font-medium">
+                                    Confirm position
                                 </button>
-                                <button id="bDirectionWrong" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
-                                    Wrong direction
+                                <button id="skipBAxis" class="btn-secondary py-3 px-6 rounded-lg font-medium">
+                                    Skip
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Fix instructions -->
-                        <div id="bDirectionFix" class="hidden">
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                                <h4 class="font-medium text-yellow-800 mb-2">B-axis direction is inverted</h4>
-                                <p class="text-sm text-yellow-700 mb-3">Fix with one of these options:</p>
-                                <div class="bg-white rounded p-3 text-sm space-y-3">
-                                    <div>
-                                        <p class="font-medium">Option 1: Change firmware</p>
-                                        <p class="text-gray-600">In Configuration.h, change <code class="bg-gray-100 px-1 rounded">INVERT_J_DIR</code> from <code class="bg-gray-100 px-1 rounded">false</code> to <code class="bg-gray-100 px-1 rounded">true</code> (or vice versa), then recompile and upload.</p>
-                                    </div>
-                                    <div>
-                                        <p class="font-medium">Option 2: Swap motor wires</p>
-                                        <p class="text-gray-600">Power off, then swap the two wires within one coil pair on the B-axis motor connector (e.g., swap pins 1&amp;2 or pins 3&amp;4).</p>
+                        <!-- Measurement Progress -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h4 class="font-semibold text-gray-900 mb-3">Measurements</h4>
+                            <div id="bMeasurements">
+                                <div class="measurement-item current" data-target="0">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium">B = 0&deg; (straight down)</span>
+                                        <span class="text-sm text-gray-500" id="b-recorded-0">--</span>
                                     </div>
                                 </div>
-                                <p class="text-xs text-yellow-600 mt-3">After fixing, restart the setup wizard to test again.</p>
+                                <div class="measurement-item" data-target="90">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium">B = 90&deg; (horizontal left)</span>
+                                        <span class="text-sm text-gray-500" id="b-recorded-90">--</span>
+                                    </div>
+                                </div>
                             </div>
-                            <button id="bDirectionRetry" class="w-full btn-primary py-2 rounded-lg font-medium text-sm">
-                                Restart setup
-                            </button>
                         </div>
                     </div>
 
-                    <!-- Skip all button -->
-                    <div class="text-center">
-                        <button id="skipDirectionCheck" class="text-sm text-gray-500 hover:text-gray-700 underline">
-                            Skip all direction checks
-                        </button>
+                    <!-- Right: Controls -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h4 class="font-semibold text-gray-900 mb-4">B-axis control</h4>
+
+                        <!-- Current Angle Display -->
+                        <div class="text-center mb-6">
+                            <div class="angle-display" id="bAxisDisplay">0.0</div>
+                            <div class="angle-unit">degrees (firmware)</div>
+                        </div>
+
+                        <!-- Jog Buttons (B+ moves left, B- moves right) -->
+                        <div class="flex justify-center gap-2 mb-6 flex-wrap">
+                            <button class="jog-btn" data-axis="B" data-amount="10">+10&deg;</button>
+                            <button class="jog-btn" data-axis="B" data-amount="1">+1&deg;</button>
+                            <button class="jog-btn" data-axis="B" data-amount="0.1">+0.1&deg;</button>
+                            <button class="jog-btn" data-axis="B" data-amount="-0.1">-0.1&deg;</button>
+                            <button class="jog-btn" data-axis="B" data-amount="-1">-1&deg;</button>
+                            <button class="jog-btn" data-axis="B" data-amount="-10">-10&deg;</button>
+                        </div>
+
+                        <!-- Tips -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700 mb-4">
+                            <strong>Tips:</strong>
+                            <ul class="list-disc list-inside mt-1 space-y-1">
+                                <li>For B0: Use a square or look from the side</li>
+                                <li>For B&plusmn;90: Nozzle should be parallel to bed</li>
+                            </ul>
+                        </div>
+
+                        <!-- Keyboard hints -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <strong>Keyboard controls:</strong>
+                                    <ul class="list-disc list-inside mt-1 space-y-1">
+                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">←</kbd> B+ <kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">→</kbd> B- (tilt left/right)</li>
+                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">1</kbd>-<kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">3</kbd> Select step size</li>
+                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Enter</kbd> Confirm position</li>
+                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Space</kbd> Emergency stop</li>
+                                    </ul>
+                                </div>
+                                <div id="rotationStepIndicator" class="text-right font-mono text-primary font-medium">Step: 1°</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Step 5: Z-axis Calibration -->
             <div id="step-5" class="wizard-step">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Z-axis calibration</h2>
-                    <p class="text-gray-600">Set the Z=0 position (nozzle touching bed) using the paper test method</p>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Z-axis calibration</h3>
+                        <p class="text-gray-600">Set the Z=0 position (nozzle touching bed) using the paper test method</p>
+                    </div>
                 </div>
 
                 <div class="grid lg:grid-cols-2 gap-6">
                     <!-- Left: Instructions -->
-                    <div>
-                        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                            <h3 class="font-semibold text-gray-900 mb-3">Paper test method</h3>
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h4 class="font-semibold text-gray-900 mb-3">Paper test method</h4>
                             <div class="visual-guide mb-4">
                                 <div class="mb-3">
                                     <svg class="w-32 h-24 mx-auto" viewBox="0 0 140 100">
@@ -423,8 +714,8 @@
                     </div>
 
                     <!-- Right: Controls -->
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">Z-axis control</h3>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h4 class="font-semibold text-gray-900 mb-4">Z-axis control</h4>
 
                         <!-- Current Height Display -->
                         <div class="text-center mb-6">
@@ -481,334 +772,148 @@
                 </div>
             </div>
 
-            <!-- Step 4: B-axis Calibration -->
-            <div id="step-4" class="wizard-step">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">B-axis calibration</h2>
-                    <p class="text-gray-600">Calibrate tilt axis offset and steps/degree</p>
-                </div>
-
-                <!-- Calibration UI -->
-                <div class="grid lg:grid-cols-2 gap-6">
-                    <!-- Left: Instructions and Progress -->
-                    <div>
-                        <!-- Current Target -->
-                        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                            <h3 class="font-semibold text-gray-900 mb-3">Current target</h3>
-                            <div class="visual-guide mb-4">
-                                <div class="mb-3" id="bVisualGuide">
-                                    <svg class="w-24 h-24 mx-auto" viewBox="0 0 100 100">
-                                        <!-- Nozzle pointing down (B0) -->
-                                        <line x1="50" y1="20" x2="50" y2="70" stroke="#32D74B" stroke-width="4" stroke-linecap="round"/>
-                                        <polygon points="50,80 42,65 58,65" fill="#32D74B"/>
-                                        <line x1="20" y1="90" x2="80" y2="90" stroke="#666" stroke-width="2"/>
-                                    </svg>
-                                </div>
-                                <p class="text-lg font-semibold" id="bTargetDescription">Nozzle pointing straight down</p>
-                                <p class="text-sm text-gray-500" id="bTargetAngle">Target: B = 0&deg;</p>
-                            </div>
-                            <div class="flex gap-3">
-                                <button id="confirmBPosition" class="flex-1 btn-primary py-3 rounded-lg font-medium">
-                                    Confirm position
-                                </button>
-                                <button id="skipBAxis" class="btn-secondary py-3 px-6 rounded-lg font-medium">
-                                    Skip
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Measurement Progress -->
-                        <div class="bg-white rounded-xl shadow-sm p-6">
-                            <h3 class="font-semibold text-gray-900 mb-3">Measurements</h3>
-                            <div id="bMeasurements">
-                                <div class="measurement-item current" data-target="0">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-medium">B = 0&deg; (straight down)</span>
-                                        <span class="text-sm text-gray-500" id="b-recorded-0">--</span>
-                                    </div>
-                                </div>
-                                <div class="measurement-item" data-target="90">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-medium">B = 90&deg; (horizontal left)</span>
-                                        <span class="text-sm text-gray-500" id="b-recorded-90">--</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Controls -->
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">B-axis control</h3>
-
-                        <!-- Current Angle Display -->
-                        <div class="text-center mb-6">
-                            <div class="angle-display" id="bAxisDisplay">0.0</div>
-                            <div class="angle-unit">degrees (firmware)</div>
-                        </div>
-
-                        <!-- Jog Buttons (B+ moves left, B- moves right) -->
-                        <div class="flex justify-center gap-2 mb-6 flex-wrap">
-                            <button class="jog-btn" data-axis="B" data-amount="10">+10&deg;</button>
-                            <button class="jog-btn" data-axis="B" data-amount="1">+1&deg;</button>
-                            <button class="jog-btn" data-axis="B" data-amount="0.1">+0.1&deg;</button>
-                            <button class="jog-btn" data-axis="B" data-amount="-0.1">-0.1&deg;</button>
-                            <button class="jog-btn" data-axis="B" data-amount="-1">-1&deg;</button>
-                            <button class="jog-btn" data-axis="B" data-amount="-10">-10&deg;</button>
-                        </div>
-
-                        <!-- Tips -->
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700 mb-4">
-                            <strong>Tips:</strong>
-                            <ul class="list-disc list-inside mt-1 space-y-1">
-                                <li>For B0: Use a square or look from the side</li>
-                                <li>For B&plusmn;90: Nozzle should be parallel to bed</li>
-                            </ul>
-                        </div>
-
-                        <!-- Keyboard hints -->
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <strong>Keyboard controls:</strong>
-                                    <ul class="list-disc list-inside mt-1 space-y-1">
-                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">←</kbd> B+ <kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">→</kbd> B- (tilt left/right)</li>
-                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">1</kbd>-<kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">3</kbd> Select step size</li>
-                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Enter</kbd> Confirm position</li>
-                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Space</kbd> Emergency stop</li>
-                                    </ul>
-                                </div>
-                                <div id="rotationStepIndicator" class="text-right font-mono text-primary font-medium">Step: 1°</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 3: A-axis Calibration -->
-            <div id="step-3" class="wizard-step">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">A-axis calibration</h2>
-                    <p class="text-gray-600">Calibrate rotation axis offset and steps/degree</p>
-                </div>
-
-                <!-- Calibration UI -->
-                <div class="grid lg:grid-cols-2 gap-6">
-                    <!-- Left: Instructions and Progress -->
-                    <div>
-                        <!-- Current Target -->
-                        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                            <h3 class="font-semibold text-gray-900 mb-3">Current target</h3>
-                            <div class="visual-guide mb-4">
-                                <div class="mb-3" id="aVisualGuide">
-                                    <svg class="w-24 h-24 mx-auto" viewBox="0 0 100 100">
-                                        <!-- Top-down view with reference mark -->
-                                        <circle cx="50" cy="50" r="35" fill="none" stroke="#ddd" stroke-width="2"/>
-                                        <line x1="50" y1="50" x2="50" y2="15" stroke="#32D74B" stroke-width="4" stroke-linecap="round"/>
-                                        <circle cx="50" cy="12" r="4" fill="#EF4444"/>
-                                        <circle cx="50" cy="50" r="6" fill="#32D74B"/>
-                                    </svg>
-                                </div>
-                                <p class="text-lg font-semibold" id="aTargetDescription">Nozzle facing forwards</p>
-                                <p class="text-sm text-gray-500" id="aTargetAngle">Target: A = 0&deg;</p>
-                            </div>
-                            <div class="flex gap-3">
-                                <button id="confirmAPosition" class="flex-1 btn-primary py-3 rounded-lg font-medium">
-                                    Confirm position
-                                </button>
-                                <button id="skipAAxis" class="btn-secondary py-3 px-6 rounded-lg font-medium">
-                                    Skip
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Measurement Progress -->
-                        <div class="bg-white rounded-xl shadow-sm p-6">
-                            <h3 class="font-semibold text-gray-900 mb-3">Measurements</h3>
-                            <div id="aMeasurements">
-                                <div class="measurement-item current" data-target="0">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-medium">A = 0&deg; (nozzle forwards)</span>
-                                        <span class="text-sm text-gray-500" id="a-recorded-0">--</span>
-                                    </div>
-                                </div>
-                                <div class="measurement-item" data-target="360">
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-medium">A = 360&deg; (full rotation)</span>
-                                        <span class="text-sm text-gray-500" id="a-recorded-360">--</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Controls -->
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">A-axis control</h3>
-
-                        <!-- Current Angle Display -->
-                        <div class="text-center mb-6">
-                            <div class="angle-display" id="aAxisDisplay">0.0</div>
-                            <div class="angle-unit">degrees (firmware)</div>
-                        </div>
-
-                        <!-- Jog Buttons -->
-                        <div class="flex justify-center gap-2 mb-4 flex-wrap">
-                            <button class="jog-btn" data-axis="A" data-amount="-10">-10&deg;</button>
-                            <button class="jog-btn" data-axis="A" data-amount="-1">-1&deg;</button>
-                            <button class="jog-btn" data-axis="A" data-amount="-0.1">-0.1&deg;</button>
-                            <button class="jog-btn" data-axis="A" data-amount="0.1">+0.1&deg;</button>
-                            <button class="jog-btn" data-axis="A" data-amount="1">+1&deg;</button>
-                            <button class="jog-btn" data-axis="A" data-amount="10">+10&deg;</button>
-                        </div>
-
-                        <!-- Tips -->
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700 mb-4">
-                            <strong>Tips:</strong>
-                            <ul class="list-disc list-inside mt-1 space-y-1">
-                                <li>At A0: hotend assembly should point towards you</li>
-                                <li>At A360: hotend assembly should point towards you again</li>
-                            </ul>
-                        </div>
-
-                        <!-- Keyboard hints -->
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-600">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <strong>Keyboard controls:</strong>
-                                    <ul class="list-disc list-inside mt-1 space-y-1">
-                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">←</kbd> A- <kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">→</kbd> A+ (rotate)</li>
-                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">1</kbd>-<kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">3</kbd> Select step size</li>
-                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Enter</kbd> Confirm position</li>
-                                        <li><kbd class="px-1 py-0.5 bg-gray-200 rounded text-xs">Space</kbd> Emergency stop</li>
-                                    </ul>
-                                </div>
-                                <div id="aStepIndicator" class="text-right font-mono text-primary font-medium">Step: 1°</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Step 6: Apply Settings -->
             <div id="step-6" class="wizard-step">
-                <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Apply settings</h2>
-                    <p class="text-gray-600">Review calculations and save to printer</p>
-                </div>
-
-                <div class="max-w-3xl mx-auto">
-                    <!-- Calculations Summary -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">Calculated corrections</h3>
-
-                        <div class="grid md:grid-cols-3 gap-6">
-                            <!-- Z-axis -->
-                            <div class="border rounded-lg p-4">
-                                <h4 class="font-medium text-gray-900 mb-3">Z-axis</h4>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Home offset (M206 Z):</span>
-                                        <span class="font-mono font-medium" id="calcZMax">--</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- B-axis -->
-                            <div class="border rounded-lg p-4">
-                                <h4 class="font-medium text-gray-900 mb-3">B-axis</h4>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Home offset (M206 B):</span>
-                                        <span class="font-mono font-medium" id="calcBOffset">0.0&deg;</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Steps/degree correction:</span>
-                                        <span class="font-mono font-medium" id="calcBSteps">none needed</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- A-axis -->
-                            <div class="border rounded-lg p-4">
-                                <h4 class="font-medium text-gray-900 mb-3">A-axis</h4>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Home offset (M206 A):</span>
-                                        <span class="font-mono font-medium" id="calcAOffset">0.0&deg;</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Steps/degree correction:</span>
-                                        <span class="font-mono font-medium" id="calcASteps">none needed</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- G-code Commands -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                        <h3 class="font-semibold text-gray-900 mb-4">G-code commands</h3>
-                        <p class="text-sm text-gray-600 mb-3">
-                            These commands will configure your axis offsets and steps/degree:
-                        </p>
-                        <div class="gcode-output" id="gcodeOutput">; Calculating...</div>
-                        <div class="flex gap-3 mt-4">
-                            <button id="sendGcode" class="flex-1 btn-success py-3 rounded-lg font-medium">
-                                Send to printer
-                            </button>
-                            <button id="copyGcode" class="flex-1 btn-secondary py-3 rounded-lg font-medium">
-                                Copy to clipboard
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Status -->
-                    <div id="applyStatus" class="status-success border rounded-lg p-4 hidden">
-                        <div class="flex items-center mb-4">
-                            <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="font-medium">Settings saved to printer EEPROM!</span>
                         </div>
-                        <p class="text-sm mb-3">Want to fine-tune? Restart calibration:</p>
-                        <div class="flex gap-3">
-                            <button id="restartAAxis" class="flex-1 btn-secondary py-2 rounded-lg text-sm font-medium">
-                                Restart A-axis
-                            </button>
-                            <button id="restartBAxis" class="flex-1 btn-secondary py-2 rounded-lg text-sm font-medium">
-                                Restart B-axis
-                            </button>
-                            <button id="restartZAxis" class="flex-1 btn-secondary py-2 rounded-lg text-sm font-medium">
-                                Restart Z-axis
-                            </button>
-                        </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Apply settings</h3>
+                        <p class="text-gray-600">Review calculations and save to printer</p>
                     </div>
 
-                    <!-- Next Steps -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                        <h4 class="font-medium text-blue-800 mb-2">Next steps</h4>
-                        <p class="text-sm text-blue-700">
-                            Your axes are now calibrated. Continue to the
-                            <a href="../la-lb-measure/" class="underline font-medium">LA/LB Measure</a>
-                            to determine your LA and LB parameters.
-                        </p>
+                    <div class="max-w-3xl mx-auto">
+                        <!-- Calculations Summary -->
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Calculated corrections</h4>
+
+                            <div class="grid md:grid-cols-3 gap-6">
+                                <!-- Z-axis -->
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h5 class="font-medium text-gray-900 mb-3">Z-axis</h5>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Home offset (M206 Z):</span>
+                                            <span class="font-mono font-medium" id="calcZMax">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- B-axis -->
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h5 class="font-medium text-gray-900 mb-3">B-axis</h5>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Home offset (M206 B):</span>
+                                            <span class="font-mono font-medium" id="calcBOffset">0.0&deg;</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Steps/degree correction:</span>
+                                            <span class="font-mono font-medium" id="calcBSteps">none needed</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- C-axis -->
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h5 class="font-medium text-gray-900 mb-3">C-axis</h5>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Home offset (M206 C):</span>
+                                            <span class="font-mono font-medium" id="calcCOffset">0.0&deg;</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Steps/degree correction:</span>
+                                            <span class="font-mono font-medium" id="calcCSteps">none needed</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- G-code Commands -->
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">G-code commands</h4>
+                            <p class="text-sm text-gray-600 mb-3">
+                                These commands will configure your axis offsets and steps/degree:
+                            </p>
+                            <div class="gcode-output" id="gcodeOutput">; Calculating...</div>
+                            <div class="flex gap-3 mt-4">
+                                <button id="sendGcode" class="flex-1 btn-primary py-3 rounded-lg font-medium flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                    </svg>
+                                    Send to printer
+                                </button>
+                                <button id="copyGcode" class="flex-1 btn-secondary py-3 rounded-lg font-medium">
+                                    Copy to clipboard
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div id="applyStatus" class="status-success border rounded-lg p-4 hidden">
+                            <div class="flex items-center mb-4">
+                                <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="font-medium">Settings saved to printer EEPROM!</span>
+                            </div>
+                            <p class="text-sm mb-3">Want to fine-tune? Restart calibration:</p>
+                            <div class="flex gap-3">
+                                <button id="restartCAxis" class="flex-1 btn-secondary py-2 rounded-lg text-sm font-medium">
+                                    Restart C-axis
+                                </button>
+                                <button id="restartBAxis" class="flex-1 btn-secondary py-2 rounded-lg text-sm font-medium">
+                                    Restart B-axis
+                                </button>
+                                <button id="restartZAxis" class="flex-1 btn-secondary py-2 rounded-lg text-sm font-medium">
+                                    Restart Z-axis
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Next Steps -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                            <div class="flex gap-3">
+                                <svg class="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div class="text-sm text-blue-700">
+                                    <p class="font-medium">Next steps</p>
+                                    <p class="mt-1">
+                                        Your axes are now calibrated. Continue to the
+                                        <a href="../lc-lb-measure/" class="underline font-medium">LC/LB Measure</a>
+                                        to determine your LC and LB parameters.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Navigation Buttons -->
-        <div class="flex justify-between mt-8 max-w-2xl mx-auto">
-            <button id="prevBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium" style="visibility: hidden;">
-                &larr; Previous
+        <div class="flex justify-between mt-6">
+            <button id="prevBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium flex items-center gap-2" style="visibility: hidden;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Previous
             </button>
             <div class="flex gap-3">
                 <button id="skipToEndBtn" class="btn-secondary px-4 py-3 rounded-lg font-medium text-sm hidden">
-                    Skip to end &raquo;
+                    Skip to end
                 </button>
-                <button id="nextBtn" class="btn-primary px-6 py-3 rounded-lg font-medium" disabled>
-                    Next &rarr;
+                <button id="nextBtn" class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center gap-2" disabled>
+                    Next
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
                 </button>
             </div>
         </div>
@@ -827,7 +932,7 @@
     <script src="js/connect.js"></script>
     <script src="js/prepare.js"></script>
     <script src="js/direction-check.js"></script>
-    <script src="js/a-axis.js"></script>
+    <script src="js/c-axis.js"></script>
     <script src="js/b-axis.js"></script>
     <script src="js/z-axis.js"></script>
     <script src="js/apply.js"></script>

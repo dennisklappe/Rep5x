@@ -48,7 +48,7 @@ Currently supported printers:
 ## Features
 
 ### Current capabilities
-- **Continuous A-axis rotation** (unlimited yaw movement)
+- **Continuous C-axis rotation** (unlimited yaw movement)
 - **>90° B-axis tilt** for complex geometries
 - **Slip ring integration** prevents cable tangling
 - **Modular design** for different printer platforms

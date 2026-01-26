@@ -74,7 +74,7 @@ class CollisionDetector {
         this.collisionPoints = [];
         this.spatialGrid.clear();
         let pathPointCount = 0;
-        let position = { x: 0, y: 0, z: 0, a: 0, b: 0 };
+        let position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
         let lastCollisionStep = -100;
 
         for (let i = 0; i < commands.length; i++) {
@@ -84,7 +84,7 @@ class CollisionDetector {
             if (command.x !== null) position.x = command.x;
             if (command.y !== null) position.y = command.y;
             if (command.z !== null) position.z = command.z;
-            if (command.a !== null) position.a = command.a;
+            if (command.c !== null) position.c = command.c;
             if (command.b !== null) position.b = command.b;
 
             // Check for collisions using spatial grid (much faster than O(n²))
@@ -121,12 +121,12 @@ class CollisionDetector {
             -position.y
         );
 
-        const aRad = -position.a * Math.PI / 180;
+        const cRad = -position.c * Math.PI / 180;
         const bRad = -position.b * Math.PI / 180;
 
         // Build rotation matrix matching printhead orientation
         const matrix = new THREE.Matrix4();
-        matrix.makeRotationY(aRad);
+        matrix.makeRotationY(cRad);
         const matrixZ = new THREE.Matrix4();
         matrixZ.makeRotationZ(bRad);
         matrix.multiply(matrixZ);
