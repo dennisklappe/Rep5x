@@ -2,8 +2,18 @@
 // Creates build platform, axes, and schematic printhead
 
 class SceneObjects {
-    static createBuildPlatform(scene) {
-        const platformGeometry = new THREE.PlaneGeometry(220, 220);
+    static BED_SIZE_X = 200;  // Default bed X size in mm
+    static BED_SIZE_Y = 200;  // Default bed Y size in mm
+
+    static createBuildPlatform(scene, bedSizeX = 200, bedSizeY = 200) {
+        const sizeX = bedSizeX || SceneObjects.BED_SIZE_X;
+        const sizeY = bedSizeY || SceneObjects.BED_SIZE_Y;
+        const halfX = sizeX / 2;
+        const halfY = sizeY / 2;
+
+        // Platform positioned so origin (0,0) is at corner
+        // Note: G-code Y maps to Three.js -Z, so offset is (halfX, 0, -halfY)
+        const platformGeometry = new THREE.PlaneGeometry(sizeX, sizeY);
         const platformMaterial = new THREE.MeshLambertMaterial({
             color: 0xe2e8f0,
             transparent: true,
@@ -11,15 +21,20 @@ class SceneObjects {
         });
         const platform = new THREE.Mesh(platformGeometry, platformMaterial);
         platform.rotation.x = -Math.PI / 2;
-        platform.position.y = 0;
+        platform.position.set(halfX, 0, -halfY);
         platform.receiveShadow = true;
+        platform.name = 'buildPlatform';
         scene.add(platform);
 
-        const gridHelper = new THREE.GridHelper(220, 22, 0x94a3b8, 0xd1d5db);
-        gridHelper.position.y = 0;
+        // Grid - use the larger dimension for grid size, centered on bed
+        const gridSize = Math.max(sizeX, sizeY);
+        const gridDivisions = Math.round(gridSize / 10);
+        const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x94a3b8, 0xd1d5db);
+        gridHelper.position.set(halfX, 0.1, -halfY);
+        gridHelper.name = 'buildGrid';
         scene.add(gridHelper);
 
-        return platform;
+        return { platform, grid: gridHelper, sizeX, sizeY };
     }
 
     static createSchematicPrinthead() {
@@ -86,7 +101,7 @@ class SceneObjects {
         xGroup.add(xHead);
         axesGroup.add(xGroup);
 
-        // Y-axis (green)
+        // Y-axis (green) - points in -Z direction (which is +Y in G-code coords)
         const yGroup = new THREE.Group();
         const yShaft = new THREE.Mesh(
             new THREE.CylinderGeometry(axisRadius * 0.5, axisRadius * 0.5, axisLength * 0.8),
@@ -97,9 +112,9 @@ class SceneObjects {
             new THREE.MeshBasicMaterial({ color: 0x00ff00 })
         );
         yShaft.rotation.x = Math.PI / 2;
-        yShaft.position.z = axisLength * 0.35;
-        yHead.rotation.x = Math.PI / 2;
-        yHead.position.z = axisLength * 0.8;
+        yShaft.position.z = -axisLength * 0.35;  // Negative Z = positive Y in G-code
+        yHead.rotation.x = -Math.PI / 2;         // Point cone tip towards -Z
+        yHead.position.z = -axisLength * 0.8;    // Negative Z = positive Y in G-code
         yGroup.add(yShaft);
         yGroup.add(yHead);
         axesGroup.add(yGroup);

@@ -27,6 +27,10 @@ class AnimationEngine {
 
         this.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
 
+        // Bed size (can be changed via settings)
+        this.bedSizeX = 200;
+        this.bedSizeY = 200;
+
         this.initThreeJS();
     }
 
@@ -35,8 +39,6 @@ class AnimationEngine {
         this.scene.background = new THREE.Color(0xf8fafc);
 
         this.camera = new THREE.PerspectiveCamera(45, this.canvas.offsetWidth / this.canvas.offsetHeight, 0.1, 1000);
-        this.camera.position.set(120, 80, 120);
-        this.camera.lookAt(0, 40, 0);
 
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
         this.renderer.setSize(this.canvas.offsetWidth, this.canvas.offsetHeight);
@@ -45,14 +47,51 @@ class AnimationEngine {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         SceneObjects.createLighting(this.scene);
-        SceneObjects.createBuildPlatform(this.scene);
+        SceneObjects.createBuildPlatform(this.scene, this.bedSizeX, this.bedSizeY);
         this.printhead = SceneObjects.createSchematicPrinthead();
         this.scene.add(this.printhead);
         this.scene.add(SceneObjects.createAxes());
 
         this.setPrinthead(this.currentPrintheadId);
-        this.cameraControls = new CameraControls(this.camera, this.canvas);
+
+        // Position camera based on bed size
+        this.updateCameraForBedSize();
         this.animate();
+    }
+
+    updateCameraForBedSize() {
+        const centerX = this.bedSizeX / 2;
+        const centerY = this.bedSizeY / 2;
+        const maxSize = Math.max(this.bedSizeX, this.bedSizeY);
+
+        // Position camera to view bed from corner
+        this.camera.position.set(maxSize * 1.3, maxSize * 0.8, maxSize * 0.4);
+        this.camera.lookAt(centerX, 20, -centerY);
+
+        // Update camera controls target
+        const target = new THREE.Vector3(centerX, 20, -centerY);
+        if (this.cameraControls) {
+            this.cameraControls.target = target;
+        } else {
+            this.cameraControls = new CameraControls(this.camera, this.canvas, target);
+        }
+    }
+
+    setBedSize(sizeX, sizeY) {
+        this.bedSizeX = sizeX;
+        this.bedSizeY = sizeY;
+
+        // Remove old platform and grid
+        const oldPlatform = this.scene.getObjectByName('buildPlatform');
+        const oldGrid = this.scene.getObjectByName('buildGrid');
+        if (oldPlatform) this.scene.remove(oldPlatform);
+        if (oldGrid) this.scene.remove(oldGrid);
+
+        // Create new platform
+        SceneObjects.createBuildPlatform(this.scene, sizeX, sizeY);
+
+        // Update camera
+        this.updateCameraForBedSize();
     }
 
     // Convert G-code position to Three.js coordinates

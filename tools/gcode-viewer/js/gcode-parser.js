@@ -16,9 +16,10 @@ class GcodeParser {
             lcParameter: 0,
             lbParameter: 46,
             cAxisOptimization: false,
+            usesAAxis: false,  // Track if file uses A instead of C for yaw
             ikFormulas: {
                 x: "X' + sin(C') × LC + cos(C') × sin(B') × LB",
-                y: "Y' - LC + cos(C') × LC - sin(C') × sin(B') × LB", 
+                y: "Y' - LC + cos(C') × LC - sin(C') × sin(B') × LB",
                 z: "Z' + cos(B') × LB - LB"
             }
         };
@@ -229,6 +230,15 @@ class GcodeParser {
                     coords.hasMovement = true;
                 }
             }
+        }
+
+        // Check for A axis (legacy - treat as C axis for yaw)
+        // Some older 5-axis setups use A for yaw, Rep5x uses C
+        const aMatch = line.match(/A([-+]?\d*\.?\d+)/i);
+        if (aMatch && coords.c === null) {
+            coords.c = parseFloat(aMatch[1]);
+            coords.hasMovement = true;
+            this.metadata.usesAAxis = true;
         }
 
         // Only return if there's actual movement

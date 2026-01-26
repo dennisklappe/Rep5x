@@ -171,10 +171,29 @@ class UIController {
 
     // Display methods
     showFileSelected(fileName, fileSize) {
-        this.elements.dropContent.classList.add('hidden');
-        this.elements.fileSelected.classList.remove('hidden');
-        this.elements.fileName.textContent = fileName;
-        this.elements.fileSize.textContent = fileSize;
+        // Update file zone text for new horizontal toolbar layout
+        const fileZoneText = document.getElementById('fileZoneText');
+        const fileZone = document.getElementById('dropZone');
+        if (fileZoneText) {
+            fileZoneText.textContent = fileName.length > 20 ? fileName.substring(0, 17) + '...' : fileName;
+        }
+        if (fileZone) {
+            fileZone.classList.add('has-file');
+        }
+
+        // Also update hidden elements for compatibility
+        if (this.elements.dropContent) {
+            this.elements.dropContent.classList.add('hidden');
+        }
+        if (this.elements.fileSelected) {
+            this.elements.fileSelected.classList.remove('hidden');
+        }
+        if (this.elements.fileName) {
+            this.elements.fileName.textContent = fileName;
+        }
+        if (this.elements.fileSize) {
+            this.elements.fileSize.textContent = fileSize;
+        }
     }
 
     showLoading(message = 'Loading...') {
@@ -188,6 +207,14 @@ class UIController {
 
     displayFileInfo(metadata, statistics) {
         let html = '<div class="space-y-1">';
+
+        // Show notice if file uses A axis instead of C
+        if (metadata.usesAAxis) {
+            html += `<div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded mb-3 text-sm">
+                <strong>Note:</strong> This G-code uses the A axis for yaw rotation.
+                Rep5x firmware uses the <strong>C axis</strong> for yaw. The viewer has automatically converted A→C for display.
+            </div>`;
+        }
 
         if (metadata.shape) html += `<div><strong>Shape:</strong> ${metadata.shape}</div>`;
         if (metadata.diameter) html += `<div><strong>Diameter:</strong> ${metadata.diameter}mm</div>`;
@@ -386,5 +413,35 @@ class UIController {
 
     getSelectedPrintheadId() {
         return this.elements.printheadSelect.value;
+    }
+
+    // Show a toast notification
+    showToast(message, type = 'info', duration = 5000) {
+        // Remove existing toast
+        const existing = document.getElementById('viewerToast');
+        if (existing) existing.remove();
+
+        const colors = {
+            info: 'bg-blue-100 border-blue-400 text-blue-800',
+            warning: 'bg-yellow-100 border-yellow-400 text-yellow-800',
+            error: 'bg-red-100 border-red-400 text-red-800',
+            success: 'bg-green-100 border-green-400 text-green-800'
+        };
+
+        const toast = document.createElement('div');
+        toast.id = 'viewerToast';
+        toast.className = `fixed top-20 left-1/2 transform -translate-x-1/2 px-4 py-3 rounded border ${colors[type] || colors.info} shadow-lg z-50 max-w-lg text-sm`;
+        toast.innerHTML = `
+            <div class="flex items-start gap-2">
+                <div class="flex-1">${message}</div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-current opacity-70 hover:opacity-100 font-bold">×</button>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+
+        if (duration > 0) {
+            setTimeout(() => toast.remove(), duration);
+        }
     }
 }

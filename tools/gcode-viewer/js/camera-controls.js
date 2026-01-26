@@ -17,6 +17,10 @@ class CameraControls {
 
     setupEventListeners() {
         // Left click: orbit, Right click: pan
+        const defaultCursor = 'default';
+        const activeCursor = 'move';
+        const panCursor = 'all-scroll';
+
         this.canvas.addEventListener('mousedown', (e) => {
             this.isMouseDown = true;
             this.mouseButton = e.button;
@@ -24,9 +28,9 @@ class CameraControls {
             this.mouseY = e.clientY;
 
             if (e.button === 0) {
-                this.canvas.style.cursor = 'grabbing';
+                this.canvas.style.cursor = activeCursor;
             } else if (e.button === 2) {
-                this.canvas.style.cursor = 'move';
+                this.canvas.style.cursor = panCursor;
             }
             e.preventDefault();
         });
@@ -34,7 +38,7 @@ class CameraControls {
         document.addEventListener('mouseup', () => {
             this.isMouseDown = false;
             this.mouseButton = null;
-            this.canvas.style.cursor = 'grab';
+            this.canvas.style.cursor = defaultCursor;
         });
 
         document.addEventListener('mousemove', (e) => {
@@ -62,7 +66,7 @@ class CameraControls {
             this.zoom(e.deltaY);
         });
 
-        this.canvas.style.cursor = 'grab';
+        this.canvas.style.cursor = defaultCursor;
     }
 
     orbit(deltaX, deltaY) {
