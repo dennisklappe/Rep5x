@@ -40,3 +40,6 @@ yarn-error.log*
 *.temp
 temp/
 website/temp/
+
+# Thesis build artifacts
+thesis/build/

@@ -1,0 +1,134 @@
+\documentclass[12pt,a4paper,twoside,openright]{book}
+
+% Encoding and language
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[british]{babel}
+
+% Page geometry
+\usepackage[
+    top=2.5cm,
+    bottom=2.5cm,
+    left=3cm,
+    right=2.5cm,
+    bindingoffset=0.5cm,
+    headheight=15pt
+]{geometry}
+
+% Typography
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+
+% Graphics and figures
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{float}
+\usepackage{subcaption}
+
+% Tables
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tabularx}
+
+% Mathematics
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% Colours and links
+\usepackage[table,xcdraw]{xcolor}
+\usepackage[
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=blue!50!black,
+    urlcolor=blue!50!black
+]{hyperref}
+
+% Bibliography (APA style)
+\usepackage{csquotes}
+\usepackage[style=apa,backend=biber,sorting=nyt]{biblatex}
+\addbibresource{references.bib}
+
+% Headers and footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[RE]{\leftmark}
+\fancyhead[LO]{\rightmark}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Chapter styling
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+    {\normalfont\huge\bfseries}
+    {\chaptertitlename\ \thechapter}
+    {20pt}
+    {\Huge}
+
+% Captions
+\usepackage[font=small,labelfont=bf]{caption}
+
+% Lists
+\usepackage{enumitem}
+
+% Code listings (if needed)
+\usepackage{listings}
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny
+}
+
+% Glossary/abbreviations (optional, uncomment if needed)
+% \usepackage[acronym,toc]{glossaries}
+% \makeglossaries
+
+% Custom commands
+\newcommand{\figref}[1]{Figure~\ref{#1}}
+\newcommand{\tabref}[1]{Table~\ref{#1}}
+\newcommand{\chapref}[1]{Chapter~\ref{#1}}
+\newcommand{\secref}[1]{Section~\ref{#1}}
+
+\includeonly{chapters/01-introduction}
+
+%----------------------------------------------------------------------
+% Document
+%----------------------------------------------------------------------
+\begin{document}
+
+% \frontmatter
+% \pagenumbering{roman}
+% \include{front-matter/title-page}
+% \include{front-matter/abstract}
+% \include{front-matter/acknowledgements}
+% \tableofcontents
+% \listoffigures
+% \listoftables
+
+\mainmatter
+\pagenumbering{arabic}
+
+\include{chapters/01-introduction}
+\include{chapters/02-literature-review}
+\include{chapters/03-methodology}
+\include{chapters/04-analysis-requirements}
+\include{chapters/05-design-development}
+\include{chapters/06-documentation-community}
+\include{chapters/07-evaluation}
+\include{chapters/08-discussion}
+\include{chapters/09-conclusion}
+
+%----------------------------------------------------------------------
+% Back matter
+%----------------------------------------------------------------------
+\backmatter
+
+\printbibliography[heading=bibintoc,title={References}]
+
+\end{document}
