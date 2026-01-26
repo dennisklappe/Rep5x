@@ -253,21 +253,36 @@ class StepResults {
                 console.log('[Results] Refine mode: reading existing coefficients...');
                 this.existingCoeffs = await this.readExistingCoefficients();
                 console.log('[Results] Existing coefficients:', this.existingCoeffs);
+
+                // Validate that we got actual coefficients (not all nulls)
+                const hasValidCoeffs = this.existingCoeffs &&
+                    (this.existingCoeffs.cSweep?.x || this.existingCoeffs.cSweep?.y ||
+                     this.existingCoeffs.bSweep?.x || this.existingCoeffs.bSweep?.y);
+                if (!hasValidCoeffs) {
+                    console.error('[Results] WARNING: Could not read existing coefficients from printer!');
+                    console.error('[Results] Refine mode will NOT combine - using new measurements only');
+                    this.existingCoeffs = null;  // Force non-combine path
+                }
             }
 
+            // Check if Z calibration was completed or skipped
+            const zCalibrationCompleted = this.app.zCalibrationCompleted !== false;
+            console.log('[Results] Z calibration completed:', zCalibrationCompleted);
+
             // Convert to format for Fourier fitting
+            // If Z calibration was skipped, set Z errors to 0 so they don't affect the fit
             const cSweepPoints = cSweepData.map(m => ({
                 c: m.c,
                 errorX: m.error?.x || 0,
                 errorY: m.error?.y || 0,
-                errorZ: m.error?.z || 0
+                errorZ: zCalibrationCompleted ? (m.error?.z || 0) : 0
             }));
 
             const bSweepPoints = bSweepData.map(m => ({
                 b: m.b,
                 errorX: m.error?.x || 0,
                 errorY: m.error?.y || 0,
-                errorZ: m.error?.z || 0
+                errorZ: zCalibrationCompleted ? (m.error?.z || 0) : 0
             }));
 
             console.log('C sweep points for fitting:', cSweepPoints);
@@ -293,6 +308,13 @@ class StepResults {
                 console.log('[Results] Combining new offsets with existing calibration...');
                 finalCoeffs = FourierFitter.combineCoefficients(this.existingCoeffs, finalCoeffs);
                 console.log('[Results] Combined coefficients:', finalCoeffs);
+
+                // If Z was skipped, use existing Z coefficients unchanged
+                if (!zCalibrationCompleted) {
+                    console.log('[Results] Z skipped - preserving existing Z coefficients');
+                    finalCoeffs.cSweep.z = this.existingCoeffs.cSweep?.z || [0, 0, 0, 0, 0, 0, 0];
+                    finalCoeffs.bSweep.z = this.existingCoeffs.bSweep?.z || [0, 0, 0, 0, 0];
+                }
             }
 
             // Generate M667 commands
@@ -318,10 +340,15 @@ class StepResults {
         try {
             // Send M667 with no parameters to get current state
             const response = await this.app.printer.sendCommandAndCapture('M667', 5000);
-            console.log('[Results] M667 response:', response);
+            console.log('[Results] M667 raw response:');
+            console.log(response);
+            console.log('[Results] Response lines:');
+            response.split('\n').forEach((line, i) => console.log(`  ${i}: "${line}"`));
 
             // Parse the response
-            return FourierFitter.parseM667Response(response);
+            const parsed = FourierFitter.parseM667Response(response);
+            console.log('[Results] Parsed coefficients:', JSON.stringify(parsed, null, 2));
+            return parsed;
         } catch (error) {
             console.warn('[Results] Could not read existing coefficients:', error);
             return null;

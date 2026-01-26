@@ -28,6 +28,9 @@ class PrinterInterface {
         // Configuration
         this.logResponses = options.logResponses !== false; // Default to true
 
+        // Command queue to prevent concurrent writes (WritableStream can only have one writer)
+        this.sendQueue = Promise.resolve();
+
         // Test mode for development without hardware
         this.testMode = {
             enabled: false,
@@ -253,6 +256,7 @@ class PrinterInterface {
     handleResponseLine(line) {
         // If capturing, send line to capture callback
         if (this.pendingCaptureResolve) {
+            console.log('[PrinterInterface] Capture receiving line:', line);
             this.pendingCaptureResolve(line);
         }
 
@@ -367,16 +371,25 @@ class PrinterInterface {
             throw new Error('Not connected to printer');
         }
 
-        try {
-            const encoder = new TextEncoder();
-            const writer = this.port.writable.getWriter();
-            await writer.write(encoder.encode(command + '\n'));
-            writer.releaseLock();
-            this.log(`> ${command}`);
-        } catch (error) {
-            this.log(`Send error: ${error.message}`);
-            throw error;
-        }
+        // Queue this command to prevent concurrent writes
+        // (WritableStream can only have one active writer at a time)
+        const sendPromise = this.sendQueue.then(async () => {
+            try {
+                const encoder = new TextEncoder();
+                const writer = this.port.writable.getWriter();
+                await writer.write(encoder.encode(command + '\n'));
+                writer.releaseLock();
+                this.log(`> ${command}`);
+            } catch (error) {
+                this.log(`Send error: ${error.message}`);
+                throw error;
+            }
+        });
+
+        // Update queue to wait for this command (don't propagate errors to queue)
+        this.sendQueue = sendPromise.catch(() => {});
+
+        return sendPromise;
     }
 
     /**
@@ -402,17 +415,28 @@ class PrinterInterface {
             throw new Error('Not connected to printer');
         }
 
-        return new Promise(async (resolve, reject) => {
+        // Chain onto queue - the entire operation (send + wait for ok) happens in sequence
+        // This prevents the next command from starting until this one receives its "ok"
+        const queuedCommand = this.sendQueue.then(async () => {
+            // Set up ok handler and send command
+            let resolveOk, rejectOk;
+            const okPromise = new Promise((resolve, reject) => {
+                resolveOk = resolve;
+                rejectOk = reject;
+            });
+
             const timeoutId = setTimeout(() => {
                 this.pendingOkResolve = null;
-                reject(new Error(`Command timeout: ${command}`));
+                rejectOk(new Error(`Command timeout: ${command}`));
             }, timeout);
 
             this.pendingOkResolve = () => {
                 clearTimeout(timeoutId);
-                resolve();
+                console.log('[PrinterInterface] sendCommandAndWait ok received for:', command);
+                resolveOk();
             };
 
+            // Send the command (with proper await)
             try {
                 const encoder = new TextEncoder();
                 const writer = this.port.writable.getWriter();
@@ -422,10 +446,17 @@ class PrinterInterface {
             } catch (error) {
                 clearTimeout(timeoutId);
                 this.pendingOkResolve = null;
-                this.log(`Send error: ${error.message}`);
-                reject(error);
+                throw error;
             }
+
+            // Wait for ok
+            return okPromise;
         });
+
+        // Hold the queue until ok is received
+        this.sendQueue = queuedCommand.catch(() => {});
+
+        return queuedCommand;
     }
 
     /**
@@ -443,23 +474,36 @@ class PrinterInterface {
             throw new Error('Not connected to printer');
         }
 
-        return new Promise(async (resolve, reject) => {
+        // Chain onto queue - the entire capture (send + wait for response) happens in sequence
+        const queuedCapture = this.sendQueue.then(async () => {
             const capturedLines = [];
+            let resolveCapture, rejectCapture;
+
+            const capturePromise = new Promise((resolve, reject) => {
+                resolveCapture = resolve;
+                rejectCapture = reject;
+            });
+
             const timeoutId = setTimeout(() => {
                 this.pendingCaptureResolve = null;
-                reject(new Error(`Command timeout: ${command}`));
+                rejectCapture(new Error(`Command timeout: ${command}`));
             }, timeout);
 
+            // Set up capture callback BEFORE sending command
+            console.log('[PrinterInterface] Setting up capture for:', command);
             this.pendingCaptureResolve = (line) => {
                 capturedLines.push(line);
+                console.log('[PrinterInterface] Captured line #' + capturedLines.length + ':', line);
                 // Check if this is the final "ok" line
                 if (line.toLowerCase().trim() === 'ok') {
                     clearTimeout(timeoutId);
                     this.pendingCaptureResolve = null;
-                    resolve(capturedLines.join('\n'));
+                    console.log('[PrinterInterface] Capture complete, total lines:', capturedLines.length);
+                    resolveCapture(capturedLines.join('\n'));
                 }
             };
 
+            // Now send the command
             try {
                 const encoder = new TextEncoder();
                 const writer = this.port.writable.getWriter();
@@ -470,9 +514,16 @@ class PrinterInterface {
                 clearTimeout(timeoutId);
                 this.pendingCaptureResolve = null;
                 this.log(`Send error: ${error.message}`);
-                reject(error);
+                rejectCapture(error);
             }
+
+            return capturePromise;
         });
+
+        // Hold the queue until capture completes
+        this.sendQueue = queuedCapture.catch(() => {});
+
+        return queuedCapture;
     }
 
     /**
