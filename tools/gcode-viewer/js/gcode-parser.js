@@ -31,9 +31,28 @@ class GcodeParser {
 
     async parse(gcodeText) {
         this.commands = [];
-        // Reset coordinate tracking for new file
+        // Reset ALL state for new file
         this.coordinateOffset = { x: 0, y: 0, z: 0 };
         this.currentPosition = { x: 0, y: 0, z: 0 };
+        this.metadata = {
+            shape: null,
+            diameter: null,
+            height: null,
+            layerHeight: null,
+            printSpeed: null,
+            wallThickness: null,
+            generatedOn: null,
+            inverseKinematics: false,
+            lcParameter: 0,
+            lbParameter: 46,
+            cAxisOptimization: false,
+            usesAAxis: false,
+            ikFormulas: {
+                x: "X' + sin(C') × LC + cos(C') × sin(B') × LB",
+                y: "Y' - LC + cos(C') × LC - sin(C') × sin(B') × LB",
+                z: "Z' + cos(B') × LB - LB"
+            }
+        };
         
         
         // Manual line splitting to avoid regex stack overflow on large files
