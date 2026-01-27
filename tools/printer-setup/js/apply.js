@@ -39,6 +39,19 @@ class StepApply {
         // Hide the success status
         document.getElementById('applyStatus').classList.add('hidden');
 
+        // Re-query current M206/M92 values from printer to ensure we have the latest
+        // This is important after settings have been saved
+        try {
+            this.currentM92 = await this.app.printer.queryM92();
+        } catch (e) {
+            console.warn('Could not query M92 during restart:', e);
+        }
+        try {
+            this.currentM206 = await this.app.printer.queryM206();
+        } catch (e) {
+            console.warn('Could not query M206 during restart:', e);
+        }
+
         // Clear previous measurements based on axis
         if (axis === 'z') {
             this.app.stepZAxis.zAtBed = null;
@@ -311,6 +324,24 @@ class StepApply {
 
             if (hasChanges) {
                 await this.app.printer.sendCommandAndWait('M500', 5000);
+
+                // Update stored values to reflect what was just sent
+                // This prevents double-applying offsets if user restarts calibration
+                if (this.results.zOffset !== null) {
+                    this.currentM206.z = this.results.zOffset;
+                }
+                if (this.results.bOffset !== null) {
+                    this.currentM206.b = this.results.bOffset;
+                }
+                if (this.results.cOffset !== null) {
+                    this.currentM206.c = this.results.cOffset;
+                }
+                if (this.results.bNewSteps) {
+                    this.currentM92.b = this.results.bNewSteps;
+                }
+                if (this.results.cNewSteps) {
+                    this.currentM92.c = this.results.cNewSteps;
+                }
             }
 
             document.getElementById('applyStatus').classList.remove('hidden');

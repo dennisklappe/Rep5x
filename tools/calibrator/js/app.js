@@ -391,6 +391,16 @@ class CalibratorApp {
     }
 
     /**
+     * Navigate to a specific step
+     */
+    goToStep(stepIndex) {
+        if (stepIndex >= 0 && stepIndex < this.totalSteps) {
+            this.currentStep = stepIndex;
+            this.showStep(this.currentStep);
+        }
+    }
+
+    /**
      * Show specific wizard step
      */
     showStep(stepIndex) {
