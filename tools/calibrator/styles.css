@@ -5,87 +5,10 @@
     --color-axis-x: #E53935;
     --color-axis-y: #43A047;
     --color-axis-z: #1E88E5;
+    --camera-video-scale: 2;
 }
 
-/* Step indicators - matching firmware-builder */
-.step-indicator {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.3s;
-    background: white;
-    border: 2px solid var(--color-border);
-    color: var(--color-text-muted);
-}
-
-.step-indicator.active {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    color: white;
-    box-shadow: 0 0 0 4px rgba(50, 215, 75, 0.2);
-}
-
-.step-indicator.completed {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    color: white;
-}
-
-.step-connector {
-    width: 40px;
-    height: 2px;
-    background: var(--color-border);
-    transition: background 0.3s;
-}
-
-.step-connector.completed {
-    background: var(--color-primary);
-}
-
-/* Progress bar */
-.progress-bar {
-    background: var(--color-border);
-    height: 4px;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    background: var(--color-primary);
-    height: 100%;
-    transition: width 0.4s ease;
-}
-
-/* Tool-specific: step size button styling */
-.step-size-btn {
-    background-color: white;
-    color: var(--color-text);
-    border-color: var(--color-border);
-    transition: all 0.15s;
-}
-
-.step-size-btn:hover {
-    border-color: var(--color-primary);
-}
-
-.step-size-btn.active {
-    background-color: var(--color-primary) !important;
-    color: white !important;
-    border-color: var(--color-primary) !important;
-}
-
-/* Tool-specific: graph and grid */
-.graph-container {
-    background: #1a1a2e;
-    border-radius: 8px;
-    padding: 16px;
-}
-
+/* Tool-specific: graph styling */
 .graph-canvas {
     width: 100%;
     height: 250px;
@@ -126,42 +49,7 @@
     background: var(--color-axis-z);
 }
 
-/* Method card styling */
-.method-card {
-    border: 2px solid var(--color-border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: white;
-}
-
-.method-card:hover {
-    border-color: var(--color-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-}
-
-.method-card.selected {
-    border-color: var(--color-primary);
-    background: var(--color-light);
-}
-
-/* Camera container */
-.camera-container {
-    position: relative;
-    background: #1f2937;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.camera-container video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scale(2);
-}
-
+/* Tool-specific: offset value display */
 .offset-value {
     font-family: 'Consolas', 'Monaco', monospace;
     font-size: 1.25rem;
@@ -178,22 +66,6 @@
 
 .offset-value.z {
     color: var(--color-axis-z);
-}
-
-/* Fade in animation */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-in {
-    animation: fadeInUp 0.4s ease forwards;
 }
 
 /* Graph axis selector buttons */

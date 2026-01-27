@@ -525,9 +525,7 @@ body {
     animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+/* Animation uses shared @keyframes spin from shared/styles.css */
 
 .loading-text {
     margin-top: 1rem;
