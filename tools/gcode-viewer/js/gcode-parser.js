@@ -23,10 +23,17 @@ class GcodeParser {
                 z: "Z' + cos(B') × LB - LB"
             }
         };
+        // Track coordinate offsets from G92 commands
+        this.coordinateOffset = { x: 0, y: 0, z: 0 };
+        // Track current position for G92 offset calculation
+        this.currentPosition = { x: 0, y: 0, z: 0 };
     }
 
     async parse(gcodeText) {
         this.commands = [];
+        // Reset coordinate tracking for new file
+        this.coordinateOffset = { x: 0, y: 0, z: 0 };
+        this.currentPosition = { x: 0, y: 0, z: 0 };
         
         
         // Manual line splitting to avoid regex stack overflow on large files
@@ -126,14 +133,42 @@ class GcodeParser {
 
     parseG92Command(line, lineNumber) {
         // Parse G92 coordinate reset commands
+        // G92 sets the current position to the specified value
+        // This creates an offset between machine coordinates and logical coordinates
+
         const coords = {
             lineNumber: lineNumber,
-            type: 'reset',  // Coordinate system reset
+            type: 'reset',
             c: null,
             hasReset: false
         };
 
-        // Extract C value (main use case for C-axis optimizer)
+        // Extract X value - G92 X0 means "current position is now X0"
+        // So offset = currentPosition - newValue
+        const xMatch = line.match(/X([-+]?\d*\.?\d+)/i);
+        if (xMatch) {
+            const newX = parseFloat(xMatch[1]);
+            this.coordinateOffset.x = this.currentPosition.x - newX;
+            coords.hasReset = true;
+        }
+
+        // Extract Y value
+        const yMatch = line.match(/Y([-+]?\d*\.?\d+)/i);
+        if (yMatch) {
+            const newY = parseFloat(yMatch[1]);
+            this.coordinateOffset.y = this.currentPosition.y - newY;
+            coords.hasReset = true;
+        }
+
+        // Extract Z value
+        const zMatch = line.match(/Z([-+]?\d*\.?\d+)/i);
+        if (zMatch) {
+            const newZ = parseFloat(zMatch[1]);
+            this.coordinateOffset.z = this.currentPosition.z - newZ;
+            coords.hasReset = true;
+        }
+
+        // Extract C value (for C-axis optimizer)
         const cMatch = line.match(/C([-+]?\d*\.?\d+)/i);
         if (cMatch) {
             coords.c = parseFloat(cMatch[1]);
@@ -239,6 +274,21 @@ class GcodeParser {
             coords.c = parseFloat(aMatch[1]);
             coords.hasMovement = true;
             this.metadata.usesAAxis = true;
+        }
+
+        // Apply coordinate offsets from G92 commands
+        // This converts logical coordinates back to machine coordinates for display
+        if (coords.x !== null) {
+            coords.x += this.coordinateOffset.x;
+            this.currentPosition.x = coords.x;
+        }
+        if (coords.y !== null) {
+            coords.y += this.coordinateOffset.y;
+            this.currentPosition.y = coords.y;
+        }
+        if (coords.z !== null) {
+            coords.z += this.coordinateOffset.z;
+            this.currentPosition.z = coords.z;
         }
 
         // Only return if there's actual movement
