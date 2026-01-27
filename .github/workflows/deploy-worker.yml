@@ -6,9 +6,10 @@ name: Deploy Worker
 on:
   push:
     branches:
-      - firmware/ik-calculations  # TODO: Change to main after merge
+      - main
     paths:
       - 'tools/firmware-builder/worker/**'
+  workflow_dispatch:
 
 jobs:
   deploy:
