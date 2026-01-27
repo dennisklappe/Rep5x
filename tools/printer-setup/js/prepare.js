@@ -60,11 +60,15 @@ class StepPrepare {
             this.setItemActive('homing');
             btn.textContent = 'Homing all axes...';
             await this.app.printer.sendCommandAndWait('G28', 120000); // 2 min timeout for homing
-            // Ensure IK is disabled after homing (before B movement)
-            await this.app.printer.sendCommandAndWait('G49', 3000);
             this.setItemComplete('homing');
 
-            // Step 4: Move to starting position
+            // Step 4: Disable IK (so rotations don't move XYZ)
+            this.setItemActive('ik');
+            btn.textContent = 'Disabling IK...';
+            await this.app.printer.sendCommandAndWait('G49', 3000);
+            this.setItemComplete('ik');
+
+            // Step 5: Move to starting position
             // Move X/Y/A/B to absolute positions, but Z moves down 50mm relative (safer since Z max varies)
             this.setItemActive('position');
             btn.textContent = 'Moving to starting position...';
@@ -119,7 +123,7 @@ class StepPrepare {
      * Reset all items to initial state
      */
     resetAllItems() {
-        ['stepper', 'endstops', 'homing', 'position'].forEach(id => {
+        ['stepper', 'endstops', 'homing', 'ik', 'position'].forEach(id => {
             const el = document.getElementById(`prep-${id}`);
             if (!el) return;
             el.classList.remove('text-primary', 'font-medium');

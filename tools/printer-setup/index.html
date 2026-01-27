@@ -234,6 +234,12 @@
                                     </svg>
                                     <span>Home all axes (G28)</span>
                                 </div>
+                                <div id="prep-ik" class="flex items-center text-gray-400">
+                                    <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>Disable IK (G49)</span>
+                                </div>
                                 <div id="prep-position" class="flex items-center text-gray-400">
                                     <svg class="w-5 h-5 mr-3 prep-icon opacity-0 text-primary" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
@@ -287,7 +293,7 @@
                             <!-- Prompt -->
                             <div id="cDirectionPrompt">
                                 <p class="text-gray-600 text-sm mb-4">
-                                    Test if the build plate rotates clockwise when viewed from above.
+                                    Test if the build plate rotates counter-clockwise when viewed from above.
                                 </p>
                                 <div class="flex gap-3">
                                     <button id="cDirectionStart" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
@@ -305,8 +311,8 @@
                                     <svg class="w-32 h-32 mx-auto" viewBox="0 0 140 140">
                                         <!-- Build plate circle -->
                                         <circle cx="70" cy="75" r="40" fill="none" stroke="#ddd" stroke-width="3"/>
-                                        <!-- Clockwise arrow -->
-                                        <path d="M 70 35 A 40 40 0 1 1 30 75" fill="none" stroke="#32D74B" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowCCheck)"/>
+                                        <!-- Counter-clockwise arrow -->
+                                        <path d="M 70 35 A 40 40 0 1 0 110 75" fill="none" stroke="#32D74B" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowCCheck)"/>
                                         <defs>
                                             <marker id="arrowCCheck" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
                                                 <polygon points="0 0, 6 3, 0 6" fill="#32D74B"/>

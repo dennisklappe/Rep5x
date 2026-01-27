@@ -44,7 +44,15 @@ class StepCalibrateXY {
 
     enter() {
         document.getElementById('nextBtn').style.display = 'none';
-        this.showImportModal();
+
+        // If refine mode is already set (from results page "Refine calibration" button),
+        // skip the modal and start calibration directly
+        if (this.app.refineMode === true) {
+            console.log('[XY Calibration] Refine mode pre-set, skipping modal');
+            this.startCalibration(false);  // Don't disable calibration correction
+        } else {
+            this.showImportModal();
+        }
     }
 
     showImportModal() {
@@ -306,8 +314,7 @@ class StepCalibrateXY {
             });
             if (this.currentSweep === 'c' && this.app.engine.currentIndex >= cAnglesCount) {
                 // Transition from C sweep to B sweep
-                this.movementInProgress = false;
-                this.setControlsLocked(false);
+                // Keep controls locked during transition to prevent race conditions
                 await this.transitionToBSweep(point);
                 return;  // Will continue after transition
             }
@@ -446,37 +453,35 @@ class StepCalibrateXY {
 
         const ref = this.app.referencePosition;
 
+        // Use sendCommandAndWait to ensure proper sequencing and prevent race conditions
         // Temporarily disable IK for rotation/reset (avoids IK interference)
-        await this.app.printer.sendCommand('G49');
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait('G49', 5000);
 
         // 1. Complete C rotation using relative move (avoids C360 limit issues)
         // We're at C315, need to complete to 360° = 0°
         console.log('Completing C rotation (+45° relative to reach 360)');
-        await this.app.printer.sendCommand('G91');
-        await this.app.printer.sendCommand('G0 C45 F1800');
-        await this.app.printer.sendCommand('M400');
-        await this.app.printer.sendCommand('G90');
+        await this.app.printer.sendCommandAndWait('G91', 5000);
+        await this.app.printer.sendCommandAndWait('G0 C45 F1800', 30000);
+        await this.app.printer.sendCommandAndWait('M400', 60000);
+        await this.app.printer.sendCommandAndWait('G90', 5000);
 
         // Reset C to 0 (we're now physically at 360° = 0°)
-        await this.app.printer.sendCommand('G92 C0');
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait('G92 C0', 5000);
 
         // Explicit move to C0 to confirm reset
-        await this.app.printer.sendCommand('G0 C0 F1800');
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait('G0 C0 F1800', 30000);
+        await this.app.printer.sendCommandAndWait('M400', 60000);
 
         // Re-enable IK
-        await this.app.printer.sendCommand('G43.4');
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait('G43.4', 5000);
 
         // 2. Move to C0B0 reference position - firmware IK handles everything
         console.log('Moving to C0B0 reference position with firmware IK');
-        await this.app.printer.sendCommand(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${ref.z.toFixed(2)} C0 B0 F1800`);
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${ref.z.toFixed(2)} C0 B0 F1800`, 30000);
+        await this.app.printer.sendCommandAndWait('M400', 60000);
 
         // Wait for position to settle
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 300));
 
         // Request position update (wrapped in try-catch to prevent breaking flow)
         try {
@@ -485,6 +490,10 @@ class StepCalibrateXY {
         } catch (e) {
             console.warn('Position request failed during transition:', e.message);
         }
+
+        // Reset movementInProgress so moveToCurrentPoint can proceed
+        // Controls stay locked - moveToCurrentPoint will unlock when ready
+        this.movementInProgress = false;
 
         // Continue to first B sweep point (C0B0 - user will confirm to reset reference)
         await this.moveToCurrentPoint();
@@ -866,20 +875,22 @@ class StepCalibrateZ {
     async setupReferenceCamera() {
         // Move nozzle to center X for Z reference setup (if reference is set)
         // Keep Y at reference, move X to center (100), C=0, B=0
+        // Use higher Z (100mm) for Z calibration to give more room for camera setup
         if (this.app.referencePosition) {
             const refPos = this.app.referencePosition;
             const centerX = 100;  // Center of bed
-            const safeZ = refPos.z + 20;  // Safety offset
+            const zCalibrationHeight = 80;  // Higher Z for Z calibration (vs 50 for XY)
+            const safeZ = zCalibrationHeight + 20;  // Safety offset
 
             console.log('Moving to center X for Z reference setup');
             await this.app.printer.sendCommand('G90');
-            await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(2)} F3000`);  // Lift first
+            await this.app.printer.sendCommand(`G0 Z${safeZ.toFixed(0)} F3000`);  // Lift first
             await this.app.printer.sendCommand('M400');
             await this.app.printer.sendCommand('G0 C0 B0 F1800');  // Ensure C/B at 0
             await this.app.printer.sendCommand('M400');
             await this.app.printer.sendCommand(`G0 X${centerX} Y${refPos.y.toFixed(2)} F3000`);  // Move to center X
             await this.app.printer.sendCommand('M400');
-            await this.app.printer.sendCommand(`G0 Z${refPos.z.toFixed(2)} F1500`);  // Lower to reference Z
+            await this.app.printer.sendCommand(`G0 Z${zCalibrationHeight} F1500`);  // Lower to Z calibration height
             await this.app.printer.sendCommand('M400');
         } else {
             console.log('No reference position set - skipping movement, setting up camera only');
@@ -899,11 +910,11 @@ class StepCalibrateZ {
             }
         }
 
-        // Flip video for upside-down camera (always do this)
+        // Flip and zoom video for upside-down camera (always do this)
         const video = document.getElementById('z-ref-video');
         if (video) {
-            video.style.transform = 'rotate(180deg)';
-            console.log('Z reference camera flipped 180°');
+            video.style.transform = 'scale(4) rotate(180deg)';
+            console.log('Z reference camera flipped 180° and zoomed 4x');
         }
 
         // Request position and update Z display
@@ -1082,8 +1093,8 @@ class StepCalibrateZ {
             const cAnglesCount = this.app.engine.cAngles.length;
             if (this.currentSweep === 'c' && this.app.engine.currentIndex >= cAnglesCount) {
                 // Transition from C sweep to B sweep
+                // Keep controls locked during transition to prevent race conditions
                 console.log('Z calibration: Transitioning from C sweep to B sweep at index', this.app.engine.currentIndex);
-                this.setControlsLocked(false);
                 await this.transitionToBSweepZ(point);
                 return;  // Will continue after transition
             }
@@ -1220,40 +1231,44 @@ class StepCalibrateZ {
         const ref = this.app.referencePosition;
         const refZ = this.zReferencePosition || ref.z;
 
+        // Use sendCommandAndWait to ensure proper sequencing and prevent race conditions
         // Temporarily disable IK for rotation/reset (avoids IK interference)
-        await this.app.printer.sendCommand('G49');
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait('G49', 5000);
 
         // 1. Complete rotation using relative move (avoids C360 limit issues)
         console.log('Completing C rotation (+45° relative)');
-        await this.app.printer.sendCommand('G91');
-        await this.app.printer.sendCommand('G0 C45 F1800');
-        await this.app.printer.sendCommand('M400');
-        await this.app.printer.sendCommand('G90');
+        await this.app.printer.sendCommandAndWait('G91', 5000);
+        await this.app.printer.sendCommandAndWait('G0 C45 F1800', 30000);
+        await this.app.printer.sendCommandAndWait('M400', 60000);
+        await this.app.printer.sendCommandAndWait('G90', 5000);
 
         // Reset C to 0
-        await this.app.printer.sendCommand('G92 C0');
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait('G92 C0', 5000);
 
         // Explicit move to C0 to confirm reset
-        await this.app.printer.sendCommand('G0 C0 F1800');
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait('G0 C0 F1800', 30000);
+        await this.app.printer.sendCommandAndWait('M400', 60000);
 
         // Re-enable IK
-        await this.app.printer.sendCommand('G43.4');
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait('G43.4', 5000);
 
         // 2. Move to C0B0 reference position - firmware IK handles everything
         console.log('Moving to C0B0 reference position with firmware IK');
-        await this.app.printer.sendCommand(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${refZ.toFixed(2)} C0 B0 F1800`);
-        await this.app.printer.sendCommand('M400');
+        await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${refZ.toFixed(2)} C0 B0 F1800`, 30000);
+        await this.app.printer.sendCommandAndWait('M400', 60000);
+
+        // Wait for position to settle
+        await new Promise(r => setTimeout(r, 300));
 
         // Request position update (wrapped in try-catch to prevent breaking flow)
         try {
             await this.app.printer.requestPosition();
+            await new Promise(r => setTimeout(r, 200));
         } catch (e) {
             console.warn('Position request failed during Z transition:', e.message);
         }
+
+        // Controls stay locked - moveToCurrentPoint will unlock when ready
 
         // Continue to first B sweep point (C0B0 - user will confirm to reset Z reference)
         await this.moveToCurrentPoint();

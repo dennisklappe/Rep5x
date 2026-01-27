@@ -32,6 +32,10 @@ class StepResults {
             this.exportToFirmware();
         });
 
+        document.getElementById('refine-calibration-btn')?.addEventListener('click', () => {
+            this.startRefineCalibration();
+        });
+
         // Initialise both graphs
         const graphACanvas = document.getElementById('results-graph-c');
         const graphBCanvas = document.getElementById('results-graph-b');
@@ -396,6 +400,12 @@ class StepResults {
                 btn.disabled = false;
             }
 
+            // Show refine option
+            const refineSection = document.getElementById('refine-section');
+            if (refineSection) {
+                refineSection.classList.remove('hidden');
+            }
+
         } catch (error) {
             console.error('[Results] Error sending calibration:', error);
             alert('Error sending calibration: ' + error.message);
@@ -404,5 +414,36 @@ class StepResults {
                 btn.disabled = false;
             }
         }
+    }
+
+    /**
+     * Start a new calibration pass in refine mode
+     * This will add corrections on top of existing calibration
+     */
+    startRefineCalibration() {
+        // Clear measurements but keep refine mode enabled
+        this.app.engine.measurements.clear();
+        this.app.engine.currentIndex = 0;
+
+        // Set refine mode so new calibration adds to existing
+        // IMPORTANT: Use this.app.refineMode (not this.app.calibration.refineMode)
+        this.app.refineMode = true;
+
+        // Hide refine section
+        const refineSection = document.getElementById('refine-section');
+        if (refineSection) {
+            refineSection.classList.add('hidden');
+        }
+
+        // Reset the save button
+        const btn = document.getElementById('export-firmware-btn');
+        if (btn) {
+            btn.textContent = 'Save to Firmware';
+            btn.disabled = false;
+        }
+
+        // Go directly to XY calibration step (step 3)
+        // Printer is already connected and prepared for refine mode
+        this.app.goToStep(3);
     }
 }
