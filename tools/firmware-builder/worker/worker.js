@@ -346,7 +346,7 @@ async function triggerGitHubWorkflow(env, buildId, buildData) {
           'User-Agent': 'Rep5x-Firmware-Builder'
         },
         body: JSON.stringify({
-          ref: 'tools/firmware-builder',
+          ref: 'main',
           inputs: {
             build_id: buildId,
             board: buildData.board,
