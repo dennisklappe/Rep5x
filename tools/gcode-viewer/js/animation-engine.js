@@ -12,14 +12,19 @@ class AnimationEngine {
         this.isPlaying = false;
         this.currentStep = 0;
         this.commands = [];
-        this.speed = 1.0;
+        this.speed = 10.0;
         this.lastFeedrate = 1800;
 
         this.printhead = null;
         this.realisticHead = null;
         this.currentPrintheadId = 'ender3-v3-se';
         this.printPath = null;
-        this.printedPath = [];
+        this.printedPath = [];  // Array of segments, each segment is array of points
+        this.currentSegment = [];  // Current segment being built during playback
+        this.lastExtrusionPos = null;  // Track last extrusion position for travel moves
+        this.travelPath = null;
+        this.travelMoves = [];  // Array of {from, to} travel moves
+        this.showTravelMoves = false;
 
         this.collisionPoints = [];
         this.collisionMarkers = null;
@@ -108,6 +113,16 @@ class AnimationEngine {
         if (cmd.b !== null) pos.b = cmd.b;
     }
 
+    // Convert hex color to normalized RGB (0-1 range)
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16) / 255,
+            g: parseInt(result[2], 16) / 255,
+            b: parseInt(result[3], 16) / 255
+        } : { r: 0.196, g: 0.843, b: 0.294 };
+    }
+
     // Printhead management
     setPrinthead(printheadId) {
         const ph = PrintheadRegistry.get(printheadId);
@@ -134,11 +149,25 @@ class AnimationEngine {
     // Command loading
     loadCommands(commands) {
         this.commands = commands.filter(cmd => cmd?.hasMovement);
-        if (this.printPath) this.scene.remove(this.printPath);
 
+        // Clear all existing paths
+        if (this.printPath) this.scene.remove(this.printPath);
+        if (this.travelPath) this.scene.remove(this.travelPath);
+        this.printPath = null;
+        this.travelPath = null;
+
+        // Reset all path data
+        this.printedPath = [];
+        this.currentSegment = [];
+        this.lastExtrusionPos = null;
+        this.travelMoves = [];
+
+        // Reset position
+        this.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
+
+        // Build the path
         this.currentStep = this.commands.length;
         this.rebuildPrintPath();
-        this.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
         this.updatePrinthead();
     }
 
@@ -147,9 +176,16 @@ class AnimationEngine {
         if (this.currentStep >= this.commands.length) {
             this.currentStep = 0;
             this.printedPath = [];
+            this.currentSegment = [];
+            this.lastExtrusionPos = null;
+            this.travelMoves = [];
             if (this.printPath) {
                 this.scene.remove(this.printPath);
                 this.printPath = null;
+            }
+            if (this.travelPath) {
+                this.scene.remove(this.travelPath);
+                this.travelPath = null;
             }
             this.updateProgressCallback(0);
         }
@@ -163,9 +199,16 @@ class AnimationEngine {
         this.pause();
         this.currentStep = 0;
         this.printedPath = [];
+        this.currentSegment = [];
+        this.lastExtrusionPos = null;
+        this.travelMoves = [];
         if (this.printPath) {
             this.scene.remove(this.printPath);
             this.printPath = null;
+        }
+        if (this.travelPath) {
+            this.scene.remove(this.travelPath);
+            this.travelPath = null;
         }
         this.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
         this.updatePrinthead();
@@ -187,6 +230,12 @@ class AnimationEngine {
     playAnimation() {
         if (!this.isPlaying || this.currentStep >= this.commands.length) {
             this.isPlaying = false;
+            // Save final segment if any
+            if (this.currentSegment.length > 0) {
+                this.printedPath.push(this.currentSegment);
+                this.currentSegment = [];
+                this.updatePrintPath();
+            }
             return;
         }
 
@@ -211,7 +260,38 @@ class AnimationEngine {
         if (cmd?.f) this.lastFeedrate = cmd.f;
 
         if (cmd?.e > 0) {
-            this.printedPath.push(this.toThreePos(this.position));
+            // Starting a new segment - add the start point first
+            if (this.currentSegment.length === 0) {
+                this.currentSegment.push({
+                    point: this.toThreePos(prevPos),
+                    b: Math.abs(prevPos.b),
+                    z: prevPos.z
+                });
+            }
+            // Add end point of this extrusion move
+            this.currentSegment.push({
+                point: this.toThreePos(this.position),
+                b: Math.abs(this.position.b),
+                z: this.position.z
+            });
+            this.lastExtrusionPos = { ...this.position };
+
+            // Update path with current segment included
+            const allSegments = [...this.printedPath, this.currentSegment];
+            this.updatePrintPathWithSegments(allSegments);
+        } else if (this.currentSegment.length > 0) {
+            // Travel move after extrusion - save segment and record travel
+            this.printedPath.push(this.currentSegment);
+
+            if (this.lastExtrusionPos) {
+                this.travelMoves.push({
+                    from: this.toThreePos(this.lastExtrusionPos),
+                    to: this.toThreePos(this.position)
+                });
+                this.updateTravelPath();
+            }
+
+            this.currentSegment = [];
             this.updatePrintPath();
         }
 
@@ -225,16 +305,62 @@ class AnimationEngine {
     }
 
     rebuildPrintPath() {
-        this.printedPath = [];
+        this.printedPath = [];  // Array of segments
+        this.travelMoves = [];  // Array of travel moves
         const pos = { x: 0, y: 0, z: 0, c: 0, b: 0 };
+        let currentSegment = [];
+        let lastExtrusionPos = null;
+        let wasExtruding = false;
 
         for (let i = 0; i < this.currentStep; i++) {
             const cmd = this.commands[i];
             if (!cmd || cmd.type === 'reset') continue;
+
+            const prevPos = { ...pos };
             this.applyCommand(cmd, pos);
-            if (cmd.e > 0) this.printedPath.push(this.toThreePos(pos));
+
+            if (cmd.e > 0) {
+                // Starting a new segment - add the start point first
+                if (!wasExtruding) {
+                    currentSegment.push({
+                        point: this.toThreePos(prevPos),
+                        b: Math.abs(prevPos.b),
+                        z: prevPos.z
+                    });
+                }
+                // Add end point of this extrusion move
+                currentSegment.push({
+                    point: this.toThreePos(pos),
+                    b: Math.abs(pos.b),
+                    z: pos.z
+                });
+                lastExtrusionPos = { ...pos };
+                wasExtruding = true;
+            } else {
+                if (currentSegment.length > 0) {
+                    // Travel move after extrusion - save segment and record travel
+                    this.printedPath.push(currentSegment);
+
+                    // Record travel from last extrusion point to current position
+                    if (lastExtrusionPos) {
+                        this.travelMoves.push({
+                            from: this.toThreePos(lastExtrusionPos),
+                            to: this.toThreePos(pos)
+                        });
+                    }
+                    currentSegment = [];
+                }
+                wasExtruding = false;
+            }
         }
+
+        // Add final segment if any
+        if (currentSegment.length > 0) {
+            this.printedPath.push(currentSegment);
+        }
+
         this.updatePrintPath();
+        this.updateTravelPath();
     }
 
     syncPosition() {
@@ -251,13 +377,133 @@ class AnimationEngine {
     }
 
     updatePrintPath() {
-        if (this.printedPath.length < 2) return;
         if (this.printPath) this.scene.remove(this.printPath);
 
-        const geometry = new THREE.BufferGeometry().setFromPoints(this.printedPath);
-        const material = new THREE.LineBasicMaterial({ color: 0x32D74B, linewidth: 3 });
-        this.printPath = new THREE.Line(geometry, material);
+        // Flatten all segments to find global Z range
+        const allPoints = this.printedPath.flat();
+        if (allPoints.length < 2) return;
+
+        const zValues = allPoints.map(p => p.z);
+        const minZ = Math.min(...zValues);
+        const maxZ = Math.max(...zValues);
+        const zRange = maxZ - minZ || 1;
+
+        const primaryHex = getTheme()?.colors?.primary || '#32D74B';
+        const baseColor = this.hexToRgb(primaryHex);
+        const tiltColor = { r: 0.0, g: 0.686, b: 0.894 }; // Cyan for tilted sections
+
+        // Create a group to hold all segment lines
+        const group = new THREE.Group();
+
+        for (const segment of this.printedPath) {
+            if (segment.length < 2) continue;
+
+            const points = segment.map(p => p.point);
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+            // Create vertex colors for this segment
+            const colors = [];
+            for (const p of segment) {
+                const bNormalized = Math.min(p.b / 45, 1);
+                const zNormalized = (p.z - minZ) / zRange;
+                const brightness = 0.5 + zNormalized * 0.5;
+
+                const r = (baseColor.r * (1 - bNormalized) + tiltColor.r * bNormalized) * brightness;
+                const g = (baseColor.g * (1 - bNormalized) + tiltColor.g * bNormalized) * brightness;
+                const b = (baseColor.b * (1 - bNormalized) + tiltColor.b * bNormalized) * brightness;
+
+                colors.push(r, g, b);
+            }
+
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            const material = new THREE.LineBasicMaterial({ vertexColors: true, linewidth: 3 });
+            const line = new THREE.Line(geometry, material);
+            group.add(line);
+        }
+
+        this.printPath = group;
         this.scene.add(this.printPath);
+    }
+
+    // Used during playback to include current segment
+    updatePrintPathWithSegments(segments) {
+        if (this.printPath) this.scene.remove(this.printPath);
+
+        const allPoints = segments.flat();
+        if (allPoints.length < 2) return;
+
+        const zValues = allPoints.map(p => p.z);
+        const minZ = Math.min(...zValues);
+        const maxZ = Math.max(...zValues);
+        const zRange = maxZ - minZ || 1;
+
+        const primaryHex = getTheme()?.colors?.primary || '#32D74B';
+        const baseColor = this.hexToRgb(primaryHex);
+        const tiltColor = { r: 0.0, g: 0.686, b: 0.894 };
+
+        const group = new THREE.Group();
+
+        for (const segment of segments) {
+            if (segment.length < 2) continue;
+
+            const points = segment.map(p => p.point);
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+            const colors = [];
+            for (const p of segment) {
+                const bNormalized = Math.min(p.b / 45, 1);
+                const zNormalized = (p.z - minZ) / zRange;
+                const brightness = 0.5 + zNormalized * 0.5;
+
+                const r = (baseColor.r * (1 - bNormalized) + tiltColor.r * bNormalized) * brightness;
+                const g = (baseColor.g * (1 - bNormalized) + tiltColor.g * bNormalized) * brightness;
+                const b = (baseColor.b * (1 - bNormalized) + tiltColor.b * bNormalized) * brightness;
+
+                colors.push(r, g, b);
+            }
+
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            const material = new THREE.LineBasicMaterial({ vertexColors: true, linewidth: 3 });
+            const line = new THREE.Line(geometry, material);
+            group.add(line);
+        }
+
+        this.printPath = group;
+        this.scene.add(this.printPath);
+    }
+
+    updateTravelPath() {
+        if (this.travelPath) this.scene.remove(this.travelPath);
+        if (!this.showTravelMoves || this.travelMoves.length === 0) {
+            console.log('Travel path: showTravelMoves =', this.showTravelMoves, ', travelMoves.length =', this.travelMoves.length);
+            return;
+        }
+
+        console.log('Drawing', this.travelMoves.length, 'travel moves');
+
+        const group = new THREE.Group();
+        const material = new THREE.LineDashedMaterial({
+            color: 0xff6600,  // Orange for visibility
+            transparent: true,
+            opacity: 0.8,
+            dashSize: 3,
+            gapSize: 2
+        });
+
+        for (const travel of this.travelMoves) {
+            const geometry = new THREE.BufferGeometry().setFromPoints([travel.from, travel.to]);
+            const line = new THREE.Line(geometry, material);
+            line.computeLineDistances();  // Required for dashed lines
+            group.add(line);
+        }
+
+        this.travelPath = group;
+        this.scene.add(this.travelPath);
+    }
+
+    setShowTravelMoves(show) {
+        this.showTravelMoves = show;
+        this.updateTravelPath();
     }
 
     updatePrinthead() {
