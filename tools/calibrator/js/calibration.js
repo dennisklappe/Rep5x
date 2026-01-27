@@ -672,8 +672,7 @@ class StepCalibrateXY {
             this.app.zCalibrationCompleted = false;
             console.log('[XY Calibration] Skipping Z - Z coefficients will not be updated');
             // Skip to results
-            this.app.currentStep = 5;  // Results step
-            this.app.showStep(5);
+            this.app.goToStep(5);
         });
     }
 

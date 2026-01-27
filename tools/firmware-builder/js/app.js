@@ -40,10 +40,11 @@ const rep5xOffsets = {
     z: 100   // mm reduction for Z
 };
 
+// Wizard framework instance
+let wizard = null;
+
 // Wizard state
 const wizardState = {
-    currentStep: 1,
-    totalSteps: 6,
     applyRep5xOffsets: true,  // Whether to apply automatic Rep5x volume reduction
     config: {
         // Step 1: Printer
@@ -119,6 +120,24 @@ const neopixelColors = {
  * Initialize the wizard
  */
 function initWizard() {
+    // Initialise wizard framework
+    wizard = new WizardFramework({
+        totalSteps: 6,
+        stepIdPrefix: 'step',
+        zeroIndexed: false,
+        getNextButtonText: () => 'Next',
+        onStepChange: (newStep) => {
+            // If on review step (step 6), generate summary
+            if (newStep + 1 === 6) {
+                generateConfigSummary();
+                generateConfigPreview();
+            }
+            // Scroll to top of wizard
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+    wizard.init();
+
     // Try to load saved IK values from storage
     if (typeof StorageManager !== 'undefined') {
         const savedResults = StorageManager.loadCalibrationResults();
@@ -142,10 +161,6 @@ function initWizard() {
 
     // Set up input change listeners
     setupInputListeners();
-
-    // Update UI
-    updateProgressUI();
-    updateNavigationButtons();
 }
 
 /**
@@ -444,114 +459,33 @@ function selectNeopixelColor(element) {
 }
 
 /**
- * Navigate to next step
+ * Navigate to next step (delegates to wizard framework)
  */
 function nextStep() {
-    if (wizardState.currentStep < wizardState.totalSteps) {
-        // Hide current step
-        const currentStepEl = document.getElementById(`step${wizardState.currentStep}`);
-        currentStepEl.classList.remove('active');
-
-        // Move to next step
-        wizardState.currentStep++;
-
-        // Show next step
-        const nextStepEl = document.getElementById(`step${wizardState.currentStep}`);
-        nextStepEl.classList.add('active', 'animate-in');
-
-        // If on review step, generate summary
-        if (wizardState.currentStep === wizardState.totalSteps) {
-            generateConfigSummary();
-            generateConfigPreview();
-        }
-
-        // Update UI
-        updateProgressUI();
-        updateNavigationButtons();
-
-        // Scroll to top of wizard
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    wizard.nextStep();
 }
 
 /**
- * Navigate to previous step
+ * Navigate to previous step (delegates to wizard framework)
  */
 function previousStep() {
-    if (wizardState.currentStep > 1) {
-        // Hide current step
-        const currentStepEl = document.getElementById(`step${wizardState.currentStep}`);
-        currentStepEl.classList.remove('active');
-
-        // Move to previous step
-        wizardState.currentStep--;
-
-        // Show previous step
-        const prevStepEl = document.getElementById(`step${wizardState.currentStep}`);
-        prevStepEl.classList.add('active', 'animate-in');
-
-        // Update UI
-        updateProgressUI();
-        updateNavigationButtons();
-
-        // Scroll to top of wizard
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    wizard.prevStep();
 }
 
 /**
- * Update progress indicators
+ * Get current step (1-indexed for firmware builder)
+ * @returns {number} Current step (1-indexed)
  */
-function updateProgressUI() {
-    const step = wizardState.currentStep;
-    const total = wizardState.totalSteps;
-
-    // Update step counter
-    document.getElementById('stepCounter').textContent = `Step ${step} of ${total}`;
-
-    // Update progress bar
-    const progress = (step / total) * 100;
-    document.getElementById('progressFill').style.width = `${progress}%`;
-
-    // Update step indicators
-    for (let i = 1; i <= total; i++) {
-        const indicator = document.querySelector(`.step-indicator[data-step="${i}"]`);
-        const connector = document.querySelector(`.step-connector[data-step="${i}"]`);
-
-        if (indicator) {
-            indicator.classList.remove('active', 'completed');
-            if (i === step) {
-                indicator.classList.add('active');
-            } else if (i < step) {
-                indicator.classList.add('completed');
-                indicator.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
-            } else {
-                indicator.textContent = i;
-            }
-        }
-
-        if (connector) {
-            connector.classList.toggle('completed', i < step);
-        }
-    }
+function getCurrentStep() {
+    return wizard.getCurrentStep() + 1;
 }
 
 /**
- * Update navigation button visibility
+ * Get total steps
+ * @returns {number} Total steps
  */
-function updateNavigationButtons() {
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-
-    // Show/hide previous button
-    prevBtn.style.visibility = wizardState.currentStep > 1 ? 'visible' : 'hidden';
-
-    // Update next button text on last step
-    if (wizardState.currentStep === wizardState.totalSteps) {
-        nextBtn.style.display = 'none';
-    } else {
-        nextBtn.style.display = 'flex';
-    }
+function getTotalSteps() {
+    return wizard.getTotalSteps();
 }
 
 /**

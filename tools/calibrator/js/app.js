@@ -8,8 +8,6 @@ class CalibratorApp {
     static MIN_SAFE_Z = 10; // mm
 
     constructor() {
-        this.currentStep = 0;
-        this.totalSteps = 6;
         this.selectedMethod = null; // 'camera' or 'cone'
         this.testMode = false;
 
@@ -44,6 +42,18 @@ class CalibratorApp {
             this.stepCalibrateZ,
             this.stepResults
         ];
+
+        // Wizard framework for step navigation
+        this.wizard = new WizardFramework({
+            totalSteps: 6,
+            stepIdPrefix: 'step-',
+            zeroIndexed: true,
+            getNextButtonText: (step, total) => step === total - 2 ? 'Finish →' : 'Next →',
+            onStepChange: (newStep) => {
+                this.syncStepSizeButtons(this.linearStepSize);
+                this.steps[newStep].enter();
+            }
+        });
     }
 
     /**
@@ -64,8 +74,8 @@ class CalibratorApp {
         // Load saved LC/LB values
         this.loadSavedLcLb();
 
-        // Show initial step
-        this.showStep(0);
+        // Initialise wizard (handles initial step display)
+        this.wizard.init();
     }
 
     /**
@@ -82,9 +92,7 @@ class CalibratorApp {
      * Set up shared event listeners
      */
     setupEventListeners() {
-        // Navigation buttons
-        document.getElementById('nextBtn').addEventListener('click', () => this.nextStep());
-        document.getElementById('prevBtn').addEventListener('click', () => this.previousStep());
+        // Note: Navigation buttons handled by WizardFramework
 
         // Jog buttons
         document.querySelectorAll('.jog-btn').forEach(btn => {
@@ -358,9 +366,10 @@ class CalibratorApp {
             if (el) el.textContent = displayText;
         });
 
-        if (this.currentStep === 3) {
+        const currentStep = this.wizard.getCurrentStep();
+        if (currentStep === 3) {
             this.stepCalibrateXY.updateOffsetDisplay();
-        } else if (this.currentStep === 4) {
+        } else if (currentStep === 4) {
             // Update Z reference display if not yet confirmed, otherwise update offset
             if (!this.stepCalibrateZ.zReferenceConfirmed) {
                 this.stepCalibrateZ.updateZRefDisplay();
@@ -371,109 +380,57 @@ class CalibratorApp {
     }
 
     /**
-     * Navigate to next step
+     * Get current step index (delegate to wizard)
+     * @returns {number} Current step index
+     */
+    get currentStep() {
+        return this.wizard.getCurrentStep();
+    }
+
+    /**
+     * Get total steps (delegate to wizard)
+     * @returns {number} Total steps
+     */
+    get totalSteps() {
+        return this.wizard.getTotalSteps();
+    }
+
+    /**
+     * Navigate to next step (delegate to wizard)
      */
     nextStep() {
-        if (this.currentStep < this.totalSteps - 1) {
-            this.currentStep++;
-            this.showStep(this.currentStep);
-        }
+        this.wizard.nextStep();
     }
 
     /**
-     * Navigate to previous step
+     * Navigate to previous step (delegate to wizard)
      */
     previousStep() {
-        if (this.currentStep > 0) {
-            this.currentStep--;
-            this.showStep(this.currentStep);
-        }
+        this.wizard.prevStep();
     }
 
     /**
-     * Navigate to a specific step
+     * Navigate to a specific step (delegate to wizard)
+     * @param {number} stepIndex - Target step index
      */
     goToStep(stepIndex) {
-        if (stepIndex >= 0 && stepIndex < this.totalSteps) {
-            this.currentStep = stepIndex;
-            this.showStep(this.currentStep);
-        }
+        this.wizard.goToStep(stepIndex);
     }
 
     /**
-     * Show specific wizard step
+     * Enable or disable the next button
+     * @param {boolean} enabled - Whether to enable the button
      */
-    showStep(stepIndex) {
-        // Hide all steps
-        document.querySelectorAll('.wizard-step').forEach(step => {
-            step.classList.remove('active');
-        });
-
-        // Show current step
-        const stepEl = document.getElementById(`step-${stepIndex}`);
-        if (stepEl) stepEl.classList.add('active');
-
-        // Update progress bar
-        this.updateProgressBar(stepIndex);
-
-        // Update navigation buttons
-        this.updateNavigationButtons(stepIndex);
-
-        // Sync step size buttons to match current linearStepSize
-        this.syncStepSizeButtons(this.linearStepSize);
-
-        // Call step's enter method
-        this.steps[stepIndex].enter();
+    setNextButtonEnabled(enabled) {
+        this.wizard.setNextButtonEnabled(enabled);
     }
 
     /**
-     * Update progress bar
+     * Show or hide the next button
+     * @param {boolean} visible - Whether to show the button
      */
-    updateProgressBar(stepIndex) {
-        // Update step indicators
-        document.querySelectorAll('.step-indicator').forEach((step, i) => {
-            step.classList.toggle('active', i === stepIndex);
-            step.classList.toggle('completed', i < stepIndex);
-        });
-
-        // Update step connectors
-        document.querySelectorAll('.step-connector').forEach((connector, i) => {
-            connector.classList.toggle('completed', i < stepIndex);
-        });
-
-        // Update progress fill bar
-        const progressFill = document.getElementById('progressFill');
-        if (progressFill) {
-            const progress = ((stepIndex + 1) / this.totalSteps) * 100;
-            progressFill.style.width = `${progress}%`;
-        }
-
-        // Update step counter
-        const stepCounter = document.getElementById('stepCounter');
-        if (stepCounter) {
-            stepCounter.textContent = `Step ${stepIndex + 1} of ${this.totalSteps}`;
-        }
-    }
-
-    /**
-     * Update navigation buttons
-     */
-    updateNavigationButtons(stepIndex) {
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-
-        prevBtn.style.visibility = stepIndex > 0 ? 'visible' : 'hidden';
-
-        // Show next button (individual steps may hide it)
-        nextBtn.style.display = 'block';
-
-        if (stepIndex === this.totalSteps - 1) {
-            nextBtn.style.display = 'none';
-        } else if (stepIndex === this.totalSteps - 2) {
-            nextBtn.textContent = 'Finish →';
-        } else {
-            nextBtn.textContent = 'Next →';
-        }
+    setNextButtonVisible(visible) {
+        this.wizard.setNextButtonVisible(visible);
     }
 }
 
