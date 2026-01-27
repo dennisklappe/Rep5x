@@ -28,8 +28,10 @@ class FileHandler {
     }
 
     async parseFileInChunks(file, onProgress) {
-        // Reset parser
+        // Reset parser state completely
         this.parser.commands = [];
+        this.parser.coordinateOffset = { x: 0, y: 0, z: 0 };
+        this.parser.currentPosition = { x: 0, y: 0, z: 0 };
         this.parser.metadata = {
             shape: null,
             diameter: null,
