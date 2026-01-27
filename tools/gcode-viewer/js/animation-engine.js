@@ -43,6 +43,9 @@ class AnimationEngine {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0xf8fafc);
 
+        // Add subtle fog for depth perception
+        this.scene.fog = new THREE.FogExp2(0xf8fafc, 0.0008);
+
         this.camera = new THREE.PerspectiveCamera(45, this.canvas.offsetWidth / this.canvas.offsetHeight, 0.1, 1000);
 
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
@@ -121,6 +124,68 @@ class AnimationEngine {
             g: parseInt(result[2], 16) / 255,
             b: parseInt(result[3], 16) / 255
         } : { r: 0.196, g: 0.843, b: 0.294 };
+    }
+
+    // Professional colormap inspired by Viridis - perceptually uniform, colorblind-friendly
+    // Returns RGB values 0-1 for a normalized input t (0-1)
+    viridisColor(t) {
+        // Attempt at customized Rep5x colors - deep teal to bright green
+        const stops = [
+            { t: 0.0, r: 0.15, g: 0.25, b: 0.35 },   // Dark steel blue
+            { t: 0.25, r: 0.10, g: 0.45, b: 0.50 },  // Teal
+            { t: 0.5, r: 0.12, g: 0.60, b: 0.45 },   // Sea green
+            { t: 0.75, r: 0.20, g: 0.75, b: 0.35 },  // Green
+            { t: 1.0, r: 0.45, g: 0.90, b: 0.40 }    // Bright lime green
+        ];
+
+        // Find the two stops to interpolate between
+        let lower = stops[0], upper = stops[stops.length - 1];
+        for (let i = 0; i < stops.length - 1; i++) {
+            if (t >= stops[i].t && t <= stops[i + 1].t) {
+                lower = stops[i];
+                upper = stops[i + 1];
+                break;
+            }
+        }
+
+        // Interpolate
+        const range = upper.t - lower.t || 1;
+        const f = (t - lower.t) / range;
+
+        return {
+            r: lower.r + (upper.r - lower.r) * f,
+            g: lower.g + (upper.g - lower.g) * f,
+            b: lower.b + (upper.b - lower.b) * f
+        };
+    }
+
+    // Calculate direction-based shading (simulates lighting)
+    // Returns a brightness multiplier based on segment direction
+    calculateDirectionalShading(prevPoint, currPoint) {
+        if (!prevPoint) return 1.0;
+
+        // Calculate direction vector
+        const dx = currPoint.x - prevPoint.x;
+        const dy = currPoint.y - prevPoint.y;
+        const dz = currPoint.z - prevPoint.z;
+        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (len < 0.001) return 1.0;
+
+        // Normalize
+        const nx = dx / len;
+        const ny = dy / len;
+        const nz = dz / len;
+
+        // Light direction (from top-right-front)
+        const lightX = 0.5, lightY = 0.3, lightZ = 0.8;
+        const lightLen = Math.sqrt(lightX * lightX + lightY * lightY + lightZ * lightZ);
+
+        // Dot product for diffuse lighting
+        const dot = (nx * lightX + ny * lightY + nz * lightZ) / lightLen;
+
+        // Map to brightness range (0.6 to 1.0 to avoid too dark areas)
+        return 0.6 + Math.abs(dot) * 0.4;
     }
 
     // Printhead management
@@ -388,10 +453,6 @@ class AnimationEngine {
         const maxZ = Math.max(...zValues);
         const zRange = maxZ - minZ || 1;
 
-        const primaryHex = getTheme()?.colors?.primary || '#32D74B';
-        const baseColor = this.hexToRgb(primaryHex);
-        const tiltColor = { r: 0.0, g: 0.686, b: 0.894 }; // Cyan for tilted sections
-
         // Create a group to hold all segment lines
         const group = new THREE.Group();
 
@@ -403,20 +464,36 @@ class AnimationEngine {
 
             // Create vertex colors for this segment
             const colors = [];
-            for (const p of segment) {
-                const bNormalized = Math.min(p.b / 45, 1);
-                const zNormalized = (p.z - minZ) / zRange;
-                const brightness = 0.5 + zNormalized * 0.5;
+            for (let i = 0; i < segment.length; i++) {
+                const p = segment[i];
+                const prevP = i > 0 ? segment[i - 1] : null;
 
-                const r = (baseColor.r * (1 - bNormalized) + tiltColor.r * bNormalized) * brightness;
-                const g = (baseColor.g * (1 - bNormalized) + tiltColor.g * bNormalized) * brightness;
-                const b = (baseColor.b * (1 - bNormalized) + tiltColor.b * bNormalized) * brightness;
+                // Height-based color from professional colormap
+                const zNormalized = (p.z - minZ) / zRange;
+                const baseColor = this.viridisColor(zNormalized);
+
+                // Direction-based shading for 3D depth
+                const prevPoint = prevP ? prevP.point : null;
+                const dirShading = this.calculateDirectionalShading(prevPoint, p.point);
+
+                // B-axis influence - subtle warmth shift for tilted sections
+                const bNormalized = Math.min(p.b / 45, 1);
+                const warmShift = bNormalized * 0.15; // Subtle warm tint when tilted
+
+                // Combine all factors
+                const r = Math.min(1, (baseColor.r + warmShift) * dirShading);
+                const g = Math.min(1, baseColor.g * dirShading);
+                const b = Math.min(1, (baseColor.b - warmShift * 0.5) * dirShading);
 
                 colors.push(r, g, b);
             }
 
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            const material = new THREE.LineBasicMaterial({ vertexColors: true, linewidth: 3 });
+            const material = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                linewidth: 3,
+                fog: true  // Enable fog effect
+            });
             const line = new THREE.Line(geometry, material);
             group.add(line);
         }
@@ -437,10 +514,6 @@ class AnimationEngine {
         const maxZ = Math.max(...zValues);
         const zRange = maxZ - minZ || 1;
 
-        const primaryHex = getTheme()?.colors?.primary || '#32D74B';
-        const baseColor = this.hexToRgb(primaryHex);
-        const tiltColor = { r: 0.0, g: 0.686, b: 0.894 };
-
         const group = new THREE.Group();
 
         for (const segment of segments) {
@@ -450,20 +523,36 @@ class AnimationEngine {
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
             const colors = [];
-            for (const p of segment) {
-                const bNormalized = Math.min(p.b / 45, 1);
-                const zNormalized = (p.z - minZ) / zRange;
-                const brightness = 0.5 + zNormalized * 0.5;
+            for (let i = 0; i < segment.length; i++) {
+                const p = segment[i];
+                const prevP = i > 0 ? segment[i - 1] : null;
 
-                const r = (baseColor.r * (1 - bNormalized) + tiltColor.r * bNormalized) * brightness;
-                const g = (baseColor.g * (1 - bNormalized) + tiltColor.g * bNormalized) * brightness;
-                const b = (baseColor.b * (1 - bNormalized) + tiltColor.b * bNormalized) * brightness;
+                // Height-based color from professional colormap
+                const zNormalized = (p.z - minZ) / zRange;
+                const baseColor = this.viridisColor(zNormalized);
+
+                // Direction-based shading for 3D depth
+                const prevPoint = prevP ? prevP.point : null;
+                const dirShading = this.calculateDirectionalShading(prevPoint, p.point);
+
+                // B-axis influence - subtle warmth shift for tilted sections
+                const bNormalized = Math.min(p.b / 45, 1);
+                const warmShift = bNormalized * 0.15;
+
+                // Combine all factors
+                const r = Math.min(1, (baseColor.r + warmShift) * dirShading);
+                const g = Math.min(1, baseColor.g * dirShading);
+                const b = Math.min(1, (baseColor.b - warmShift * 0.5) * dirShading);
 
                 colors.push(r, g, b);
             }
 
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            const material = new THREE.LineBasicMaterial({ vertexColors: true, linewidth: 3 });
+            const material = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                linewidth: 3,
+                fog: true
+            });
             const line = new THREE.Line(geometry, material);
             group.add(line);
         }
@@ -474,20 +563,16 @@ class AnimationEngine {
 
     updateTravelPath() {
         if (this.travelPath) this.scene.remove(this.travelPath);
-        if (!this.showTravelMoves || this.travelMoves.length === 0) {
-            console.log('Travel path: showTravelMoves =', this.showTravelMoves, ', travelMoves.length =', this.travelMoves.length);
-            return;
-        }
-
-        console.log('Drawing', this.travelMoves.length, 'travel moves');
+        if (!this.showTravelMoves || this.travelMoves.length === 0) return;
 
         const group = new THREE.Group();
         const material = new THREE.LineDashedMaterial({
             color: 0xff6600,  // Orange for visibility
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.6,
             dashSize: 3,
-            gapSize: 2
+            gapSize: 2,
+            fog: true
         });
 
         for (const travel of this.travelMoves) {
