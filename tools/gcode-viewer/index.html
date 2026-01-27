@@ -343,12 +343,17 @@
             font-size: 0.75rem;
             font-weight: 600;
             color: var(--text-primary);
-            min-width: 45px;
+            width: 55px;
             text-align: right;
+            display: inline-block;
         }
 
         .position-value.angle {
-            min-width: 35px;
+            width: 45px;
+        }
+
+        .position-value.layer-value {
+            width: 25px;
         }
 
         .position-unit {
@@ -650,29 +655,310 @@
             margin-top: 0;
         }
 
-        /* Responsive */
-        @media (max-width: 1200px) {
+        /* Responsive - Large screens */
+        @media (max-width: 1400px) {
             .position-display {
                 gap: 0.5rem;
             }
             .position-item {
-                padding: 0.25rem 0.5rem;
+                padding: 0.25rem 0.4rem;
+                min-width: auto;
             }
             .slider-control input[type="range"] {
                 width: 80px;
             }
         }
 
-        @media (max-width: 1024px) {
+        /* Responsive - Medium screens */
+        @media (max-width: 1200px) {
             .toolbar-row {
-                flex-wrap: wrap;
                 height: auto;
-                padding: 0.5rem 1rem;
+                min-height: 56px;
+                padding: 0.5rem 0.75rem;
+                flex-wrap: wrap;
                 gap: 0.5rem;
             }
+
+            .toolbar-row.secondary {
+                min-height: 44px;
+            }
+
             .toolbar-section {
                 border-right: none;
+                padding: 0.375rem 0.5rem;
+                flex-shrink: 0;
+            }
+
+            .toolbar-section.flex-1 {
+                flex: 1 1 200px;
+                min-width: 200px;
+                order: 10;
+                width: 100%;
+            }
+
+            .section-label {
+                display: none;
+            }
+
+            .file-zone {
+                min-width: 140px;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .position-display {
+                gap: 0.375rem;
+            }
+
+            .position-item {
+                padding: 0.25rem 0.375rem;
+            }
+
+            .position-unit {
+                display: none;
+            }
+
+            .view-toggle {
+                padding: 0.25rem 0.5rem;
+            }
+
+            .view-toggle-text {
+                font-size: 0.75rem;
+            }
+
+            .toolbar-select {
+                min-width: 120px;
+                padding: 0.375rem 0.5rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Responsive - Small/tablet screens */
+        @media (max-width: 900px) {
+            .toolbar-container {
+                position: relative;
+            }
+
+            .toolbar-row {
                 padding: 0.5rem;
+                gap: 0.375rem;
+            }
+
+            /* Hide position display on small screens - moved to settings or overlay */
+            .position-display {
+                display: none;
+            }
+
+            /* Compact file zone */
+            .file-zone {
+                min-width: 44px;
+                width: 44px;
+                padding: 0.5rem;
+                justify-content: center;
+            }
+
+            .file-zone-text {
+                display: none;
+            }
+
+            .file-zone.has-file {
+                width: auto;
+                min-width: 44px;
+                max-width: 120px;
+            }
+
+            .file-zone.has-file .file-zone-text {
+                display: block;
+            }
+
+            /* Compact playback controls */
+            .toolbar-btn.primary {
+                padding: 0 0.75rem;
+                font-size: 0.8125rem;
+            }
+
+            .toolbar-btn.primary span {
+                display: none;
+            }
+
+            .toolbar-btn.primary svg {
+                margin: 0;
+            }
+
+            .slider-control input[type="range"] {
+                width: 60px;
+            }
+
+            .slider-value {
+                min-width: 2.5rem;
+                font-size: 0.75rem;
+            }
+
+            /* Progress takes full width on its own row */
+            .toolbar-section.flex-1 {
+                flex: 1 1 100%;
+                min-width: 100%;
+                order: 20;
+                padding: 0.25rem 0.5rem;
+            }
+
+            .progress-bar-container {
+                gap: 0.5rem;
+            }
+
+            .progress-text {
+                min-width: 2.5rem;
+                font-size: 0.75rem;
+            }
+
+            /* Secondary toolbar - horizontal scroll */
+            .toolbar-row.secondary {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .toolbar-row.secondary::-webkit-scrollbar {
+                display: none;
+            }
+
+            .toolbar-row.secondary .toolbar-section {
+                flex-shrink: 0;
+            }
+
+            .view-toggle-text {
+                font-size: 0.6875rem;
+            }
+
+            /* Canvas hints - compact */
+            .canvas-hint {
+                padding: 0.5rem 0.75rem;
+                gap: 0.75rem;
+            }
+
+            .canvas-hint-item span {
+                display: none;
+            }
+        }
+
+        /* Responsive - Mobile screens */
+        @media (max-width: 600px) {
+            .toolbar-row {
+                padding: 0.375rem;
+                gap: 0.25rem;
+            }
+
+            .toolbar-section {
+                padding: 0.25rem 0.375rem;
+            }
+
+            .toolbar-btn {
+                width: 32px;
+                height: 32px;
+            }
+
+            .toolbar-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .toolbar-btn.primary {
+                height: 32px;
+                padding: 0 0.625rem;
+            }
+
+            .toolbar-divider {
+                display: none;
+            }
+
+            .slider-control input[type="range"] {
+                width: 50px;
+            }
+
+            .slider-value {
+                min-width: 2rem;
+                font-size: 0.6875rem;
+            }
+
+            /* Even more compact secondary toolbar */
+            .toolbar-row.secondary {
+                min-height: 36px;
+                padding: 0.25rem 0.375rem;
+            }
+
+            .view-toggle {
+                padding: 0.125rem 0.375rem;
+                gap: 0.375rem;
+            }
+
+            .view-toggle-indicator {
+                width: 14px;
+                height: 14px;
+            }
+
+            .view-toggle-indicator svg {
+                width: 8px;
+                height: 8px;
+            }
+
+            .view-toggle-text {
+                font-size: 0.625rem;
+            }
+
+            .toolbar-select {
+                min-width: 100px;
+                padding: 0.25rem 0.375rem;
+                font-size: 0.6875rem;
+            }
+
+            /* Progress bar adjustments */
+            .progress-bar {
+                height: 6px;
+            }
+
+            .progress-bar-thumb {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Hide canvas hints on mobile */
+            .canvas-hint {
+                display: none;
+            }
+
+            /* Settings panel full width */
+            .settings-panel {
+                width: 100%;
+            }
+        }
+
+        /* Touch-friendly adjustments */
+        @media (pointer: coarse) {
+            .toolbar-btn {
+                min-width: 44px;
+                min-height: 44px;
+            }
+
+            .view-toggle {
+                min-height: 44px;
+            }
+
+            .progress-bar {
+                height: 10px;
+            }
+
+            .progress-bar-thumb {
+                width: 20px;
+                height: 20px;
+            }
+
+            .slider-control input[type="range"] {
+                height: 8px;
+            }
+
+            .slider-control input[type="range"]::-webkit-slider-thumb {
+                width: 20px;
+                height: 20px;
             }
         }
     </style>
@@ -713,8 +999,8 @@
                 <div class="toolbar-divider"></div>
                 <div class="slider-control">
                     <span class="section-label">Speed</span>
-                    <input type="range" id="speed" min="1" max="20" step="1" value="1" />
-                    <span id="speedValue" class="slider-value">1.0x</span>
+                    <input type="range" id="speed" min="1" max="20" step="1" value="10" />
+                    <span id="speedValue" class="slider-value">10.0x</span>
                 </div>
             </div>
 
@@ -751,17 +1037,17 @@
                     </div>
                     <div class="position-item">
                         <span class="position-label c">C</span>
-                        <span class="position-value"><span id="posC">0.0</span></span>
+                        <span class="position-value angle"><span id="posC">0.0</span></span>
                         <span class="position-unit">°</span>
                     </div>
                     <div class="position-item">
                         <span class="position-label b">B</span>
-                        <span class="position-value"><span id="posB">0.0</span></span>
+                        <span class="position-value angle"><span id="posB">0.0</span></span>
                         <span class="position-unit">°</span>
                     </div>
                     <div class="position-item">
                         <span class="position-label layer">L</span>
-                        <span class="position-value"><span id="layer">1</span></span>
+                        <span class="position-value layer-value"><span id="layer">1</span></span>
                     </div>
                 </div>
             </div>
@@ -817,6 +1103,15 @@
                         </svg>
                     </span>
                     <span class="view-toggle-text">Collisions</span>
+                </label>
+                <label class="view-toggle">
+                    <input type="checkbox" id="showTravelMoves">
+                    <span class="view-toggle-indicator">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </span>
+                    <span class="view-toggle-text">Travel</span>
                 </label>
             </div>
 

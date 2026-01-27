@@ -27,6 +27,7 @@ class UIController {
             showAxisMarker: document.getElementById('showAxisMarker'),
             showRealisticHead: document.getElementById('showRealisticHead'),
             showCollisions: document.getElementById('showCollisions'),
+            showTravelMoves: document.getElementById('showTravelMoves'),
             collisionInfo: document.getElementById('collisionInfo'),
             collisionCount: document.getElementById('collisionCount'),
 
@@ -65,6 +66,7 @@ class UIController {
         this.onShowAxisMarkerChange = null;
         this.onShowRealisticHeadChange = null;
         this.onShowCollisionsChange = null;
+        this.onShowTravelMovesChange = null;
         this.onPrintheadChange = null;
         this.onManualModeChange = null;
         this.onApplyManual = null;
@@ -118,6 +120,12 @@ class UIController {
         this.elements.showCollisions.addEventListener('change', (e) => {
             if (this.onShowCollisionsChange) this.onShowCollisionsChange(e.target.checked);
         });
+
+        if (this.elements.showTravelMoves) {
+            this.elements.showTravelMoves.addEventListener('change', (e) => {
+                if (this.onShowTravelMovesChange) this.onShowTravelMovesChange(e.target.checked);
+            });
+        }
 
         // Manual override controls
         this.elements.manualMode.addEventListener('change', (e) => {

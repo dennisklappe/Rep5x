@@ -55,6 +55,7 @@ class GcodePreviewerApp {
         this.ui.onShowAxisMarkerChange = (show) => this.animationEngine.showAxisMarker(show);
         this.ui.onShowRealisticHeadChange = (show) => this.animationEngine.showRealisticPrinthead(show);
         this.ui.onShowCollisionsChange = (enabled) => this.handleCollisionToggle(enabled);
+        this.ui.onShowTravelMovesChange = (show) => this.animationEngine.setShowTravelMoves(show);
         this.ui.onPrintheadChange = (printheadId) => this.handlePrintheadChange(printheadId);
         this.ui.onManualModeChange = (enabled) => this.toggleManualMode(enabled);
         this.ui.onApplyManual = () => this.applyManualSettings();
@@ -104,10 +105,9 @@ class GcodePreviewerApp {
             // Process commands (with or without IK reversal)
             this.processCommands(parseResult);
 
-            // Set default speed based on file
-            const defaultSpeed = printSpeed ? printSpeed / 20 : 1.0;
-            this.ui.setSpeed(defaultSpeed);
-            this.animationEngine.setSpeed(defaultSpeed);
+            // Set default speed to 10x
+            this.ui.setSpeed(10.0);
+            this.animationEngine.setSpeed(10.0);
 
             this.ui.enableControls();
             this.ui.hideLoading();
