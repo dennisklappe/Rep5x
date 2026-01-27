@@ -5,8 +5,6 @@
 
 class PrinterSetupApp {
     constructor() {
-        this.currentStep = 0;
-        this.totalSteps = 7;
         this.testMode = false;
         this.position = { c: 0, b: 0, z: 0 };
 
@@ -30,13 +28,25 @@ class PrinterSetupApp {
 
         // Order: Connect -> Prepare -> Direction Check -> C-axis -> B-axis -> Z-axis -> Apply
         this.steps = [this.stepConnect, this.stepPrepare, this.stepDirectionCheck, this.stepCAxis, this.stepBAxis, this.stepZAxis, this.stepApply];
+
+        // Wizard framework for step navigation
+        this.wizard = new WizardFramework({
+            totalSteps: 7,
+            stepIdPrefix: 'step-',
+            zeroIndexed: true,
+            getNextButtonText: () => 'Next',
+            onStepChange: (newStep) => {
+                this.steps[newStep].enter();
+                this.updateStepSizeIndicator();
+                this.updateSkipToEndButton();
+            }
+        });
     }
 
     /**
      * Initialise the application
      */
     init() {
-
         // Set up printer callbacks
         this.printer.onPositionUpdate = (pos) => this.updatePositionDisplay(pos);
         this.printer.onConnectionChange = (connected) => this.stepConnect.updateConnectionStatus(connected);
@@ -48,17 +58,15 @@ class PrinterSetupApp {
         // Set up shared event listeners
         this.setupEventListeners();
 
-        // Show initial step
-        this.showStep(0);
+        // Initialise wizard (handles initial step display)
+        this.wizard.init();
     }
 
     /**
      * Set up shared event listeners
      */
     setupEventListeners() {
-        // Navigation buttons
-        document.getElementById('nextBtn').addEventListener('click', () => this.nextStep());
-        document.getElementById('prevBtn').addEventListener('click', () => this.previousStep());
+        // Note: Navigation buttons handled by WizardFramework
         document.getElementById('skipToEndBtn').addEventListener('click', () => this.skipToEnd());
 
         // Jog buttons (shared between B and C axis steps)
@@ -335,109 +343,67 @@ class PrinterSetupApp {
     }
 
     /**
-     * Navigate to next step
+     * Get current step index (delegate to wizard)
+     * @returns {number} Current step index
+     */
+    get currentStep() {
+        return this.wizard.getCurrentStep();
+    }
+
+    /**
+     * Get total steps (delegate to wizard)
+     * @returns {number} Total steps
+     */
+    get totalSteps() {
+        return this.wizard.getTotalSteps();
+    }
+
+    /**
+     * Navigate to next step (delegate to wizard)
      */
     nextStep() {
-        if (this.currentStep < this.totalSteps - 1) {
-            this.currentStep++;
-            this.showStep(this.currentStep);
-        }
+        this.wizard.nextStep();
     }
 
     /**
-     * Navigate to previous step
+     * Navigate to previous step (delegate to wizard)
      */
     previousStep() {
-        if (this.currentStep > 0) {
-            this.currentStep--;
-            this.showStep(this.currentStep);
-        }
+        this.wizard.prevStep();
     }
 
     /**
-     * Go directly to a specific step (for restarting calibration)
+     * Go directly to a specific step (delegate to wizard)
+     * @param {number} stepIndex - Target step index
      */
     goToStep(stepIndex) {
-        if (stepIndex >= 0 && stepIndex < this.totalSteps) {
-            this.currentStep = stepIndex;
-            this.showStep(stepIndex);
-        }
+        this.wizard.goToStep(stepIndex);
     }
 
     /**
-     * Show specific wizard step
+     * Enable or disable the next button
+     * @param {boolean} enabled - Whether to enable the button
      */
-    showStep(stepIndex) {
-        // Hide all steps
-        document.querySelectorAll('.wizard-step').forEach(step => {
-            step.classList.remove('active');
-        });
-
-        // Show current step
-        const stepEl = document.getElementById(`step-${stepIndex}`);
-        if (stepEl) stepEl.classList.add('active');
-
-        // Update progress bar
-        this.updateProgressBar(stepIndex);
-
-        // Update navigation buttons
-        this.updateNavigationButtons(stepIndex);
-
-        // Call step's enter method
-        this.steps[stepIndex].enter();
-
-        // Update step size indicator for calibration steps
-        this.updateStepSizeIndicator();
+    setNextButtonEnabled(enabled) {
+        this.wizard.setNextButtonEnabled(enabled);
     }
 
     /**
-     * Update progress bar
+     * Show or hide the next button
+     * @param {boolean} visible - Whether to show the button
      */
-    updateProgressBar(stepIndex) {
-        // Update step indicators
-        document.querySelectorAll('.step-indicator').forEach((step, i) => {
-            step.classList.toggle('active', i === stepIndex);
-            step.classList.toggle('completed', i < stepIndex);
-        });
-
-        // Update step connectors
-        document.querySelectorAll('.step-connector').forEach((connector, i) => {
-            connector.classList.toggle('completed', i < stepIndex);
-        });
-
-        // Update progress fill bar
-        const progressFill = document.getElementById('progressFill');
-        if (progressFill) {
-            const progress = ((stepIndex + 1) / this.totalSteps) * 100;
-            progressFill.style.width = `${progress}%`;
-        }
-
-        // Update step counter
-        const stepCounter = document.getElementById('stepCounter');
-        if (stepCounter) {
-            stepCounter.textContent = `Step ${stepIndex + 1} of ${this.totalSteps}`;
-        }
+    setNextButtonVisible(visible) {
+        this.wizard.setNextButtonVisible(visible);
     }
 
     /**
-     * Update navigation buttons
+     * Update skip to end button visibility (tool-specific)
      */
-    updateNavigationButtons(stepIndex) {
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
+    updateSkipToEndButton() {
         const skipToEndBtn = document.getElementById('skipToEndBtn');
-
-        prevBtn.style.visibility = stepIndex > 0 ? 'visible' : 'hidden';
-
-        if (stepIndex === this.totalSteps - 1) {
-            nextBtn.style.display = 'none';
-        } else {
-            nextBtn.style.display = 'flex';
-            nextBtn.innerHTML = `Next <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
-        }
-
+        const currentStep = this.wizard.getCurrentStep();
         // Show "Skip to end" button on C-axis, B-axis and Z-axis steps (3, 4, 5)
-        if (stepIndex >= 3 && stepIndex <= 5) {
+        if (currentStep >= 3 && currentStep <= 5) {
             skipToEndBtn.classList.remove('hidden');
         } else {
             skipToEndBtn.classList.add('hidden');

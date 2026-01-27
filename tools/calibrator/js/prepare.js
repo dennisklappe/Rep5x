@@ -31,8 +31,7 @@ class StepPrepare {
      */
     skipToZ() {
         // Skip steps 2 (prepare) and 3 (XY calibration), go to step 4 (Z calibration)
-        this.app.currentStep = 4;
-        this.app.showStep(4);
+        this.app.goToStep(4);
     }
 
     /**

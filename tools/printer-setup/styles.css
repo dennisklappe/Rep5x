@@ -1,0 +1,13 @@
+/* Rep5x Printer Setup Styles */
+
+/* Tool-specific: narrower step connectors */
+.step-connector {
+    width: 24px;
+}
+
+/* Tool-specific: wider jog buttons for this tool */
+.jog-btn {
+    width: 56px;
+    height: 48px;
+    font-size: 13px;
+}

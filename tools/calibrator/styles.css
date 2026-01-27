@@ -1,0 +1,76 @@
+/* Rep5x Calibrator Styles */
+
+/* Axis colours (standard 3D convention: X=red, Y=green, Z=blue) */
+:root {
+    --color-axis-x: #E53935;
+    --color-axis-y: #43A047;
+    --color-axis-z: #1E88E5;
+    --camera-video-scale: 2;
+}
+
+/* Tool-specific: graph styling */
+.graph-canvas {
+    width: 100%;
+    height: 250px;
+    background: #16162a;
+    border-radius: 4px;
+}
+
+.graph-legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 3px;
+    border-radius: 2px;
+}
+
+.legend-color.x {
+    background: var(--color-axis-x);
+}
+
+.legend-color.y {
+    background: var(--color-axis-y);
+}
+
+.legend-color.z {
+    background: var(--color-axis-z);
+}
+
+/* Tool-specific: offset value display */
+.offset-value {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.offset-value.x {
+    color: var(--color-axis-x);
+}
+
+.offset-value.y {
+    color: var(--color-axis-y);
+}
+
+.offset-value.z {
+    color: var(--color-axis-z);
+}
+
+/* Graph axis selector buttons */
+#graph-axis-selector button.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}

@@ -106,7 +106,8 @@ class VaseGeneratorApp {
                     advancedSettings
                 );
 
-                this.gcodeGenerator.downloadGcode(result.gcode, result.filename);
+                // Use shared utility
+                downloadGcode(result.gcode, result.filename);
 
             } catch (error) {
                 alert('Error generating G-code: ' + error.message);

@@ -5,8 +5,6 @@
 
 class LcLbMeasureApp {
     constructor() {
-        this.currentStep = 0;
-        this.totalSteps = 6;
         this.selectedMethod = null; // 'camera' or 'cone'
         this.testMode = false;
 
@@ -43,13 +41,24 @@ class LcLbMeasureApp {
             this.stepLb,
             this.stepResults
         ];
+
+        // Wizard framework for step navigation
+        this.wizard = new WizardFramework({
+            totalSteps: 6,
+            stepIdPrefix: 'step-',
+            zeroIndexed: true,
+            shouldSkipStep: (stepIndex) => this.shouldSkipStep(stepIndex),
+            getNextButtonText: (step, total) => step === total - 2 ? 'Finish' : 'Next',
+            onStepChange: (newStep) => {
+                this.steps[newStep].enter();
+            }
+        });
     }
 
     /**
      * Initialise the application
      */
     init() {
-
         // Set up printer callbacks
         this.printer.onPositionUpdate = (pos) => this.updatePositionDisplay(pos);
         this.printer.onConnectionChange = (connected) => this.stepConnect.updateConnectionStatus(connected);
@@ -64,17 +73,15 @@ class LcLbMeasureApp {
         // Load any saved results
         this.loadSavedResults();
 
-        // Show initial step
-        this.showStep(0);
+        // Initialise wizard (handles initial step display)
+        this.wizard.init();
     }
 
     /**
      * Set up shared event listeners
      */
     setupEventListeners() {
-        // Navigation buttons
-        document.getElementById('nextBtn').addEventListener('click', () => this.nextStep());
-        document.getElementById('prevBtn').addEventListener('click', () => this.previousStep());
+        // Note: Navigation buttons handled by WizardFramework
 
         // Measurement selection toggles
         const lcToggle = document.getElementById('measureLcToggle');
@@ -364,7 +371,24 @@ class LcLbMeasureApp {
     }
 
     /**
-     * Navigate to next step (skipping unselected measurements)
+     * Get current step index (delegate to wizard)
+     * @returns {number} Current step index
+     */
+    get currentStep() {
+        return this.wizard.getCurrentStep();
+    }
+
+    /**
+     * Get total steps (delegate to wizard)
+     * @returns {number} Total steps
+     */
+    get totalSteps() {
+        return this.wizard.getTotalSteps();
+    }
+
+    /**
+     * Navigate to next step (delegate to wizard)
+     * Handles save actions before proceeding
      */
     nextStep() {
         // Check if this is a "Save & Next" action
@@ -379,107 +403,38 @@ class LcLbMeasureApp {
             delete nextBtn.dataset.saveAndNext;
         }
 
-        let nextIndex = this.currentStep + 1;
-
-        // Skip unselected measurement steps
-        while (nextIndex < this.totalSteps && this.shouldSkipStep(nextIndex)) {
-            nextIndex++;
-        }
-
-        if (nextIndex < this.totalSteps) {
-            this.currentStep = nextIndex;
-            this.showStep(this.currentStep);
-        }
+        this.wizard.nextStep();
     }
 
     /**
-     * Navigate to previous step (skipping unselected measurements)
+     * Navigate to previous step (delegate to wizard)
      */
     previousStep() {
-        let prevIndex = this.currentStep - 1;
-
-        // Skip unselected measurement steps
-        while (prevIndex >= 0 && this.shouldSkipStep(prevIndex)) {
-            prevIndex--;
-        }
-
-        if (prevIndex >= 0) {
-            this.currentStep = prevIndex;
-            this.showStep(this.currentStep);
-        }
+        this.wizard.prevStep();
     }
 
     /**
-     * Show specific wizard step
+     * Navigate to a specific step (delegate to wizard)
+     * @param {number} stepIndex - Target step index
      */
-    showStep(stepIndex) {
-        // Hide all steps
-        document.querySelectorAll('.wizard-step').forEach(step => {
-            step.classList.remove('active');
-        });
-
-        // Show current step
-        const stepEl = document.getElementById(`step-${stepIndex}`);
-        if (stepEl) stepEl.classList.add('active');
-
-        // Update progress bar
-        this.updateProgressBar(stepIndex);
-
-        // Update navigation buttons
-        this.updateNavigationButtons(stepIndex);
-
-        // Call step's enter method
-        this.steps[stepIndex].enter();
+    goToStep(stepIndex) {
+        this.wizard.goToStep(stepIndex);
     }
 
     /**
-     * Update progress bar
+     * Enable or disable the next button
+     * @param {boolean} enabled - Whether to enable the button
      */
-    updateProgressBar(stepIndex) {
-        // Update step indicators
-        document.querySelectorAll('.step-indicator').forEach((step, i) => {
-            step.classList.toggle('active', i === stepIndex);
-            step.classList.toggle('completed', i < stepIndex);
-        });
-
-        // Update step connectors
-        document.querySelectorAll('.step-connector').forEach((connector, i) => {
-            connector.classList.toggle('completed', i < stepIndex);
-        });
-
-        // Update progress fill bar
-        const progressFill = document.getElementById('progressFill');
-        if (progressFill) {
-            const progress = ((stepIndex + 1) / this.totalSteps) * 100;
-            progressFill.style.width = `${progress}%`;
-        }
-
-        // Update step counter
-        const stepCounter = document.getElementById('stepCounter');
-        if (stepCounter) {
-            stepCounter.textContent = `Step ${stepIndex + 1} of ${this.totalSteps}`;
-        }
+    setNextButtonEnabled(enabled) {
+        this.wizard.setNextButtonEnabled(enabled);
     }
 
     /**
-     * Update navigation buttons
+     * Show or hide the next button
+     * @param {boolean} visible - Whether to show the button
      */
-    updateNavigationButtons(stepIndex) {
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-
-        prevBtn.style.visibility = stepIndex > 0 ? 'visible' : 'hidden';
-
-        if (stepIndex === this.totalSteps - 1) {
-            nextBtn.style.display = 'none';
-        } else {
-            nextBtn.style.display = 'flex';
-            // Update button text while preserving the arrow icon
-            const isFinish = stepIndex === this.totalSteps - 2;
-            nextBtn.innerHTML = isFinish
-                ? 'Finish <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>'
-                : 'Next <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>';
-        }
+    setNextButtonVisible(visible) {
+        this.wizard.setNextButtonVisible(visible);
     }
 
     /**

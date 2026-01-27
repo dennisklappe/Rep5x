@@ -40,10 +40,11 @@ const rep5xOffsets = {
     z: 100   // mm reduction for Z
 };
 
+// Wizard framework instance
+let wizard = null;
+
 // Wizard state
 const wizardState = {
-    currentStep: 1,
-    totalSteps: 6,
     applyRep5xOffsets: true,  // Whether to apply automatic Rep5x volume reduction
     config: {
         // Step 1: Printer
@@ -119,6 +120,24 @@ const neopixelColors = {
  * Initialize the wizard
  */
 function initWizard() {
+    // Initialise wizard framework
+    wizard = new WizardFramework({
+        totalSteps: 6,
+        stepIdPrefix: 'step',
+        zeroIndexed: false,
+        getNextButtonText: () => 'Next',
+        onStepChange: (newStep) => {
+            // If on review step (step 6), generate summary
+            if (newStep + 1 === 6) {
+                generateConfigSummary();
+                generateConfigPreview();
+            }
+            // Scroll to top of wizard
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+    wizard.init();
+
     // Try to load saved IK values from storage
     if (typeof StorageManager !== 'undefined') {
         const savedResults = StorageManager.loadCalibrationResults();
@@ -142,10 +161,6 @@ function initWizard() {
 
     // Set up input change listeners
     setupInputListeners();
-
-    // Update UI
-    updateProgressUI();
-    updateNavigationButtons();
 }
 
 /**
@@ -444,114 +459,33 @@ function selectNeopixelColor(element) {
 }
 
 /**
- * Navigate to next step
+ * Navigate to next step (delegates to wizard framework)
  */
 function nextStep() {
-    if (wizardState.currentStep < wizardState.totalSteps) {
-        // Hide current step
-        const currentStepEl = document.getElementById(`step${wizardState.currentStep}`);
-        currentStepEl.classList.remove('active');
-
-        // Move to next step
-        wizardState.currentStep++;
-
-        // Show next step
-        const nextStepEl = document.getElementById(`step${wizardState.currentStep}`);
-        nextStepEl.classList.add('active', 'animate-in');
-
-        // If on review step, generate summary
-        if (wizardState.currentStep === wizardState.totalSteps) {
-            generateConfigSummary();
-            generateConfigPreview();
-        }
-
-        // Update UI
-        updateProgressUI();
-        updateNavigationButtons();
-
-        // Scroll to top of wizard
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    wizard.nextStep();
 }
 
 /**
- * Navigate to previous step
+ * Navigate to previous step (delegates to wizard framework)
  */
 function previousStep() {
-    if (wizardState.currentStep > 1) {
-        // Hide current step
-        const currentStepEl = document.getElementById(`step${wizardState.currentStep}`);
-        currentStepEl.classList.remove('active');
-
-        // Move to previous step
-        wizardState.currentStep--;
-
-        // Show previous step
-        const prevStepEl = document.getElementById(`step${wizardState.currentStep}`);
-        prevStepEl.classList.add('active', 'animate-in');
-
-        // Update UI
-        updateProgressUI();
-        updateNavigationButtons();
-
-        // Scroll to top of wizard
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    wizard.prevStep();
 }
 
 /**
- * Update progress indicators
+ * Get current step (1-indexed for firmware builder)
+ * @returns {number} Current step (1-indexed)
  */
-function updateProgressUI() {
-    const step = wizardState.currentStep;
-    const total = wizardState.totalSteps;
-
-    // Update step counter
-    document.getElementById('stepCounter').textContent = `Step ${step} of ${total}`;
-
-    // Update progress bar
-    const progress = (step / total) * 100;
-    document.getElementById('progressFill').style.width = `${progress}%`;
-
-    // Update step indicators
-    for (let i = 1; i <= total; i++) {
-        const indicator = document.querySelector(`.step-indicator[data-step="${i}"]`);
-        const connector = document.querySelector(`.step-connector[data-step="${i}"]`);
-
-        if (indicator) {
-            indicator.classList.remove('active', 'completed');
-            if (i === step) {
-                indicator.classList.add('active');
-            } else if (i < step) {
-                indicator.classList.add('completed');
-                indicator.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
-            } else {
-                indicator.textContent = i;
-            }
-        }
-
-        if (connector) {
-            connector.classList.toggle('completed', i < step);
-        }
-    }
+function getCurrentStep() {
+    return wizard.getCurrentStep() + 1;
 }
 
 /**
- * Update navigation button visibility
+ * Get total steps
+ * @returns {number} Total steps
  */
-function updateNavigationButtons() {
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-
-    // Show/hide previous button
-    prevBtn.style.visibility = wizardState.currentStep > 1 ? 'visible' : 'hidden';
-
-    // Update next button text on last step
-    if (wizardState.currentStep === wizardState.totalSteps) {
-        nextBtn.style.display = 'none';
-    } else {
-        nextBtn.style.display = 'flex';
-    }
+function getTotalSteps() {
+    return wizard.getTotalSteps();
 }
 
 /**
@@ -682,30 +616,21 @@ function downloadConfigFiles() {
         // Generate Configuration.h
         setTimeout(() => {
             const configH = ConfigGenerator.generateConfigurationH(config);
-            downloadFile('Configuration.h', configH);
+            downloadConfigFile('Configuration.h', configH);
         }, 300);
 
         // Generate Configuration_adv.h
         setTimeout(() => {
             const configAdvH = ConfigGenerator.generateConfigurationAdvH(config);
-            downloadFile('Configuration_adv.h', configAdvH);
+            downloadConfigFile('Configuration_adv.h', configAdvH);
         }, 600);
     }
 }
 
-/**
- * Download a file
- */
-function downloadFile(filename, content) {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+// downloadFile is now provided by shared/file-downloader.js
+// Local wrapper to maintain the existing function signature (filename, content)
+function downloadConfigFile(filename, content) {
+    downloadFile(content, filename);
 }
 
 /**
@@ -906,14 +831,7 @@ function updateBuildButton(btn, title, subtitle) {
  * Download firmware blob
  */
 function downloadFirmwareBlob(blob) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'firmware.bin';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, 'firmware.bin');
 }
 
 /**
@@ -925,9 +843,9 @@ function sleep(ms) {
 
 /**
  * Export current configuration as JSON file
- * @param {boolean} showToast - Whether to show toast notification (default true)
+ * @param {boolean} showToastNotification - Whether to show toast notification (default true)
  */
-function exportConfig(showToast = true) {
+function exportConfig(showToastNotification = true) {
     const config = wizardState.config;
 
     // Create export object with metadata
@@ -944,20 +862,12 @@ function exportConfig(showToast = true) {
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `rep5x-firmware-config-${timestamp}.json`;
 
-    // Download as JSON
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Download as JSON using shared utility
+    downloadJSON(exportData, filename);
 
     // Show feedback toast
-    if (showToast) {
-        showConfigToast('Configuration saved', 'save');
+    if (showToastNotification) {
+        showToast('Configuration saved', 'save');
     }
 }
 
@@ -988,12 +898,12 @@ function handleConfigImport(event) {
             // Apply the imported configuration
             applyImportedConfig(data.config);
 
-            // Show success toast
-            showConfigToast('Configuration loaded', 'load');
+            // Show success toast using shared utility
+            showToast('Configuration loaded', 'load');
 
         } catch (error) {
             console.error('Import error:', error);
-            showConfigToast('Invalid config file', 'error');
+            showToast('Invalid config file', 'error');
         }
     };
 
@@ -1118,46 +1028,7 @@ function applyImportedConfig(config) {
     document.getElementById('segmentsPerSecond').value = config.segmentsPerSecond;
 }
 
-/**
- * Show a toast notification for config actions
- */
-function showConfigToast(message, type = 'save') {
-    // Remove existing toast if any
-    const existingToast = document.querySelector('.config-toast');
-    if (existingToast) {
-        existingToast.remove();
-    }
-
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = 'config-toast';
-
-    const iconSvg = type === 'error'
-        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'
-        : type === 'load'
-        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>'
-        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
-
-    toast.innerHTML = `
-        <div class="toast-icon" style="${type === 'error' ? 'background: #ef4444;' : ''}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">${iconSvg}</svg>
-        </div>
-        <span>${message}</span>
-    `;
-
-    document.body.appendChild(toast);
-
-    // Trigger animation
-    requestAnimationFrame(() => {
-        toast.classList.add('show');
-    });
-
-    // Auto-remove after delay
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 2500);
-}
+// showConfigToast is now provided by shared/toast-notification.js as showToast
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', initWizard);

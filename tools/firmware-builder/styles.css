@@ -1,0 +1,187 @@
+/* Rep5x Firmware Builder Styles */
+
+.wizard-container {
+    /* No min-height - let content determine size */
+}
+
+.step-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f9fffe 100%);
+    border: 2px solid var(--color-border);
+    transition: all 0.3s ease;
+}
+
+.step-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 8px 30px rgba(50, 215, 75, 0.12);
+}
+
+.step-card.selected {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg, #f0fff4 0%, #f7fffe 100%);
+    box-shadow: 0 4px 20px rgba(50, 215, 75, 0.15);
+}
+
+/* Input styling */
+.config-input {
+    font-family: 'JetBrains Mono', monospace;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s;
+    background: white;
+}
+
+.config-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(50, 215, 75, 0.15);
+}
+
+.config-input:hover:not(:focus) {
+    border-color: #c0c0c0;
+}
+
+/* Config preview */
+.config-preview {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border-radius: 12px;
+    padding: 1.5rem;
+    overflow-x: auto;
+    max-height: 400px;
+}
+
+.config-preview .comment {
+    color: #6a9955;
+}
+
+.config-preview .define {
+    color: #569cd6;
+}
+
+.config-preview .value {
+    color: #ce9178;
+}
+
+.config-preview .number {
+    color: #b5cea8;
+}
+
+/* Tooltips */
+.tooltip-trigger {
+    cursor: help;
+    border-bottom: 1px dashed var(--color-text-muted);
+}
+
+/* Section divider override - uses body background instead of white */
+.section-divider {
+    margin: 2rem 0;
+}
+
+.section-divider span {
+    background: var(--color-body);
+}
+
+/* Toggle switch */
+.bg-gray-300 {
+    background-color: #d1d5db;
+}
+
+.translate-x-5 {
+    transform: translateX(1.25rem);
+}
+
+.translate-x-0 {
+    transform: translateX(0);
+}
+
+/* Config action buttons */
+.config-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #4b5563;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.config-action-btn:hover {
+    color: var(--color-primary);
+    background: var(--color-light);
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+}
+
+.config-action-btn:active {
+    transform: translateY(0);
+}
+
+.config-action-btn svg {
+    transition: transform 0.15s ease;
+}
+
+.config-action-btn:hover svg {
+    transform: scale(1.1);
+}
+
+/* Config loaded toast notification */
+.config-toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1f2937;
+    color: white;
+    padding: 0.875rem 1.25rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.config-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.config-toast .toast-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    background: var(--color-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.config-toast .toast-icon svg {
+    width: 0.875rem;
+    height: 0.875rem;
+    color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .config-action-btn span {
+        display: none;
+    }
+    .config-action-btn {
+        padding: 0.5rem;
+    }
+}

@@ -140,40 +140,12 @@ class GcodeCorrectorApp {
             // Restore mode
             this.visualizer.mode = originalMode;
 
-            // Download
+            // Download using shared utility
             const filename = `rep5x-demo-${mode}-both.gcode`;
-            const blob = new Blob([gcode], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(url);
+            downloadGcode(gcode, filename);
         } catch (error) {
             alert('Error generating G-code: ' + error.message);
         }
-    }
-
-    setupDropZone(dropZone, fileInput, handler) {
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('border-primary', 'bg-blue-50');
-        });
-
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-primary', 'bg-blue-50');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-primary', 'bg-blue-50');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-                handler({ target: fileInput });
-            }
-        });
     }
 
     setupEventListeners() {
@@ -184,8 +156,8 @@ class GcodeCorrectorApp {
         calibrationFileInput.addEventListener('change', (e) => this.handleCalibrationFile(e));
         document.getElementById('loadBrowserCalibration').addEventListener('click', () => this.loadCalibrationFromStorage());
 
-        // Calibration drag and drop
-        this.setupDropZone(calibrationDropZone, calibrationFileInput, (e) => this.handleCalibrationFile(e));
+        // Calibration drag and drop (using shared utility)
+        setupDropZone(calibrationDropZone, calibrationFileInput, (e) => this.handleCalibrationFile(e));
 
         // G-code file import with drag and drop
         const gcodeDropZone = document.getElementById('gcodeDropZone');
@@ -193,8 +165,8 @@ class GcodeCorrectorApp {
 
         gcodeFileInput.addEventListener('change', (e) => this.handleGcodeFile(e));
 
-        // G-code drag and drop
-        this.setupDropZone(gcodeDropZone, gcodeFileInput, (e) => this.handleGcodeFile(e));
+        // G-code drag and drop (using shared utility)
+        setupDropZone(gcodeDropZone, gcodeFileInput, (e) => this.handleGcodeFile(e));
 
         // Processing options
         document.getElementById('applyIK').addEventListener('change', () => this.updateUI());
@@ -240,7 +212,7 @@ class GcodeCorrectorApp {
 
             this.loadCalibrationData(data);
         } catch (error) {
-            this.showStatus('calibrationStatus', 'Failed to load: ' + error.message, 'error');
+            showStatus('calibrationStatus', 'Failed to load: ' + error.message, 'error');
         }
     }
 
@@ -254,7 +226,7 @@ class GcodeCorrectorApp {
 
             this.loadCalibrationData(data);
         } else {
-            this.showStatus('calibrationStatus', 'No calibration data in browser storage', 'warning');
+            showStatus('calibrationStatus', 'No calibration data in browser storage', 'warning');
         }
     }
 
@@ -273,7 +245,7 @@ class GcodeCorrectorApp {
 
             // Show statistics
             const stats = this.corrector.getStatistics();
-            this.showStatus('calibrationStatus',
+            showStatus('calibrationStatus',
                 `Loaded: ${result.cSweepPoints} C-sweep + ${result.bSweepPoints} B-sweep points. ` +
                 `Max errors: X=${stats.x.absMax.toFixed(2)}mm, Y=${stats.y.absMax.toFixed(2)}mm, Z=${stats.z.absMax.toFixed(2)}mm`,
                 'success'
@@ -285,7 +257,7 @@ class GcodeCorrectorApp {
             this.updateUI();
             this.updatePreview();
         } catch (error) {
-            this.showStatus('calibrationStatus', 'Error: ' + error.message, 'error');
+            showStatus('calibrationStatus', 'Error: ' + error.message, 'error');
             this.hideGraph();
         }
     }
@@ -335,7 +307,7 @@ class GcodeCorrectorApp {
             if (detected.hasRep5xHeaders) {
                 statusMsg += ' - Rep5x headers detected';
             }
-            this.showStatus('gcodeStatus', statusMsg, 'success');
+            showStatus('gcodeStatus', statusMsg, 'success');
 
             // Show detected info and prefill options
             this.handleDetectedHeaders(detected);
@@ -343,7 +315,7 @@ class GcodeCorrectorApp {
             this.updateUI();
             this.updatePreview();
         } catch (error) {
-            this.showStatus('gcodeStatus', 'Error loading file: ' + error.message, 'error');
+            showStatus('gcodeStatus', 'Error loading file: ' + error.message, 'error');
         }
     }
 
@@ -657,15 +629,8 @@ class GcodeCorrectorApp {
         const baseName = inputName.replace(/\.[^/.]+$/, '');
         const filename = `${baseName}_corrected.gcode`;
 
-        const blob = new Blob([this.outputGcode], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-
-        URL.revokeObjectURL(url);
+        // Use shared utility
+        downloadGcode(this.outputGcode, filename);
     }
 
     copyToClipboard() {
@@ -679,25 +644,6 @@ class GcodeCorrectorApp {
         });
     }
 
-    showStatus(elementId, message, type) {
-        const el = document.getElementById(elementId);
-        el.textContent = message;
-        el.className = 'text-sm mt-2 ';
-
-        switch (type) {
-            case 'success':
-                el.className += 'text-green-600';
-                break;
-            case 'error':
-                el.className += 'text-red-600';
-                break;
-            case 'warning':
-                el.className += 'text-yellow-600';
-                break;
-            default:
-                el.className += 'text-gray-600';
-        }
-    }
 }
 
 // Initialize when DOM is ready
