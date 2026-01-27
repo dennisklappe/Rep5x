@@ -20,12 +20,12 @@ class StepResults {
     setup() {
         document.getElementById('export-csv-btn').addEventListener('click', () => {
             const csv = this.app.engine.exportCSV();
-            this.downloadFile('calibration-data.csv', csv, 'text/csv');
+            downloadCSV(csv, 'calibration-data.csv');
         });
 
         document.getElementById('export-json-btn').addEventListener('click', () => {
             const json = JSON.stringify(this.app.engine.exportJSON(), null, 2);
-            this.downloadFile('calibration-data.json', json, 'application/json');
+            downloadFile(json, 'calibration-data.json', 'application/json');
         });
 
         document.getElementById('export-firmware-btn').addEventListener('click', () => {
@@ -142,7 +142,7 @@ class StepResults {
 
             // Download
             const filename = `rep5x-demo-${mode}-${this.visualizer.sweepMode}.gcode`;
-            this.downloadFile(filename, gcode, 'text/plain');
+            downloadGcode(gcode, filename);
         } catch (error) {
             alert('Error generating G-code: ' + error.message);
         }
@@ -224,16 +224,6 @@ class StepResults {
         if (this.app.printer && this.app.printer.isConnected()) {
             await this.exportToFirmware();
         }
-    }
-
-    downloadFile(filename, content, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
     }
 
     /**

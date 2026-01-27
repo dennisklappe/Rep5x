@@ -682,30 +682,21 @@ function downloadConfigFiles() {
         // Generate Configuration.h
         setTimeout(() => {
             const configH = ConfigGenerator.generateConfigurationH(config);
-            downloadFile('Configuration.h', configH);
+            downloadConfigFile('Configuration.h', configH);
         }, 300);
 
         // Generate Configuration_adv.h
         setTimeout(() => {
             const configAdvH = ConfigGenerator.generateConfigurationAdvH(config);
-            downloadFile('Configuration_adv.h', configAdvH);
+            downloadConfigFile('Configuration_adv.h', configAdvH);
         }, 600);
     }
 }
 
-/**
- * Download a file
- */
-function downloadFile(filename, content) {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+// downloadFile is now provided by shared/file-downloader.js
+// Local wrapper to maintain the existing function signature (filename, content)
+function downloadConfigFile(filename, content) {
+    downloadFile(content, filename);
 }
 
 /**
@@ -906,14 +897,7 @@ function updateBuildButton(btn, title, subtitle) {
  * Download firmware blob
  */
 function downloadFirmwareBlob(blob) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'firmware.bin';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, 'firmware.bin');
 }
 
 /**
@@ -925,9 +909,9 @@ function sleep(ms) {
 
 /**
  * Export current configuration as JSON file
- * @param {boolean} showToast - Whether to show toast notification (default true)
+ * @param {boolean} showToastNotification - Whether to show toast notification (default true)
  */
-function exportConfig(showToast = true) {
+function exportConfig(showToastNotification = true) {
     const config = wizardState.config;
 
     // Create export object with metadata
@@ -944,20 +928,12 @@ function exportConfig(showToast = true) {
     const timestamp = new Date().toISOString().slice(0, 10);
     const filename = `rep5x-firmware-config-${timestamp}.json`;
 
-    // Download as JSON
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Download as JSON using shared utility
+    downloadJSON(exportData, filename);
 
     // Show feedback toast
-    if (showToast) {
-        showConfigToast('Configuration saved', 'save');
+    if (showToastNotification) {
+        showToast('Configuration saved', 'save');
     }
 }
 
@@ -988,12 +964,12 @@ function handleConfigImport(event) {
             // Apply the imported configuration
             applyImportedConfig(data.config);
 
-            // Show success toast
-            showConfigToast('Configuration loaded', 'load');
+            // Show success toast using shared utility
+            showToast('Configuration loaded', 'load');
 
         } catch (error) {
             console.error('Import error:', error);
-            showConfigToast('Invalid config file', 'error');
+            showToast('Invalid config file', 'error');
         }
     };
 
@@ -1118,46 +1094,7 @@ function applyImportedConfig(config) {
     document.getElementById('segmentsPerSecond').value = config.segmentsPerSecond;
 }
 
-/**
- * Show a toast notification for config actions
- */
-function showConfigToast(message, type = 'save') {
-    // Remove existing toast if any
-    const existingToast = document.querySelector('.config-toast');
-    if (existingToast) {
-        existingToast.remove();
-    }
-
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = 'config-toast';
-
-    const iconSvg = type === 'error'
-        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>'
-        : type === 'load'
-        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>'
-        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
-
-    toast.innerHTML = `
-        <div class="toast-icon" style="${type === 'error' ? 'background: #ef4444;' : ''}">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">${iconSvg}</svg>
-        </div>
-        <span>${message}</span>
-    `;
-
-    document.body.appendChild(toast);
-
-    // Trigger animation
-    requestAnimationFrame(() => {
-        toast.classList.add('show');
-    });
-
-    // Auto-remove after delay
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 2500);
-}
+// showConfigToast is now provided by shared/toast-notification.js as showToast
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', initWizard);
