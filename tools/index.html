@@ -4,48 +4,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rep5x Tools</title>
-    <meta name="description" content="Web-based tools for Rep5x 5-axis 3D printer">
+    <title>Rep5x Studio</title>
+    <meta name="description" content="Browser-based tools for your Rep5x 5-axis 3D printer">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="shared/styles.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
     <style>
-        /* CSS Custom Properties */
-        :root {
-            --color-primary: #32D74B;
-            --color-secondary: #1A1A1A;
-            --color-body: #FAFAFA;
-            --color-border: #E5E5E5;
-            --color-light: #F7FFF8;
-            --color-dark: #0D1117;
-            --color-text: #1F2937;
-            --color-text-dark: #111827;
-            --color-text-light: #fff;
+        .studio-hero {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%);
+            border-bottom: 1px solid var(--color-border);
         }
 
-        body {
-            background-color: var(--color-body);
-            color: var(--color-text);
+        .tool-tile {
+            background: white;
+            border: 2px solid var(--color-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
-        .bg-primary {
-            background-color: var(--color-primary) !important;
-        }
-
-        .text-primary {
-            color: var(--color-primary) !important;
-        }
-
-        .border-primary {
-            border-color: var(--color-primary) !important;
-        }
-
-        .tool-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .tool-card:hover {
+        .tool-tile:hover {
+            border-color: var(--color-primary);
             transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 12px 24px rgba(50, 215, 75, 0.12);
+        }
+
+        .tool-tile.featured {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fff8 100%);
+            border-color: var(--color-primary);
+        }
+
+        .tool-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+
+        .tool-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .tool-icon.green {
+            background: linear-gradient(135deg, rgba(50, 215, 75, 0.15) 0%, rgba(50, 215, 75, 0.08) 100%);
+            color: var(--color-primary);
+        }
+
+        .tool-icon.blue {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
+            color: #3b82f6;
+        }
+
+        .tool-icon.purple {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%);
+            color: #8b5cf6;
+        }
+
+        .tool-icon.orange {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.08) 100%);
+            color: #f97316;
+        }
+
+        .tool-icon.gray {
+            background: #f3f4f6;
+            color: #9ca3af;
+        }
+
+        .tool-title {
+            font-weight: 600;
+            font-size: 1.125rem;
+            color: var(--color-text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .tool-description {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            line-height: 1.6;
+            flex: 1;
+        }
+
+        .tool-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-primary);
+        }
+
+        .tool-link svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s;
+        }
+
+        .tool-tile:hover .tool-link svg {
+            transform: translateX(4px);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .category-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+        }
+
+        .category-line {
+            flex: 1;
+            height: 1px;
+            background: var(--color-border);
+        }
+
+        .workflow-card {
+            background: white;
+            border: 2px solid var(--color-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .workflow-step {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            transition: transform 0.15s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .workflow-step:hover {
+            transform: translateX(4px);
+        }
+
+        .workflow-step:not(:last-child) {
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .workflow-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--color-light);
+            border: 2px solid var(--color-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-primary);
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+
+        .workflow-step:hover .workflow-number {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .quick-tip {
+            background: var(--color-light);
+            border: 1px solid rgba(50, 215, 75, 0.3);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .quick-tip kbd {
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 0.25rem 0.625rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-text-dark);
         }
     </style>
 </head>
@@ -53,263 +205,314 @@
 <body class="bg-gray-50 min-h-screen">
     <!-- Header -->
     <header class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-gray-900">Rep5x Tools</h1>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-bold text-gray-900">Rep5x Studio</h1>
                 </div>
-                <a href="https://rep5x.com" class="text-primary hover:opacity-80 text-sm">← Back to Rep5x.com</a>
+                <a href="https://rep5x.com" class="text-primary hover:opacity-80 text-sm flex items-center gap-1">
+                    rep5x.com
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                </a>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">Web Tools for Rep5x</h2>
-            <p class="text-lg text-gray-600">Browser-based tools to help you work with your Rep5x 5-axis printer</p>
-            <p class="text-sm text-gray-500 mt-2">
-                <span class="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full">
-                    <kbd class="bg-white px-2 py-0.5 rounded border border-gray-300 text-xs font-mono mr-2">Space</kbd>
-                    Emergency stop in all printer control tools
-                </span>
+    <!-- Hero -->
+    <section class="studio-hero py-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-3">5-axis printer tools</h2>
+            <p class="text-gray-600 mb-6 max-w-xl">
+                Browser-based tools to calibrate, control, and visualise your Rep5x printer. No installation required.
             </p>
+            <div class="quick-tip">
+                <kbd>Space</kbd>
+                <span class="text-sm text-gray-600">Emergency stop in all printer control tools</span>
+            </div>
         </div>
+    </section>
 
-        <!-- Tools Grid -->
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <!-- Firmware Builder -->
-            <a href="/firmware-builder/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">Firmware Builder</h3>
-                </div>
-                <p class="text-gray-600 mb-4">
-                    Configure and build custom Rep5x Marlin firmware. Set dimensions, motors, display, and IK
-                    parameters, then compile in the cloud.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <!-- Workflow -->
+        <section class="mb-10">
+            <div class="category-header">
+                <span class="category-title">Recommended workflow</span>
+                <div class="category-line"></div>
+            </div>
 
-            <!-- Printer Control -->
-            <a href="/printer-control/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">Printer Control</h3>
+            <div class="workflow-card">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <a href="/firmware-builder/" target="_blank" class="workflow-step">
+                            <div class="workflow-number">1</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Build firmware</p>
+                                <p class="text-sm text-gray-500">Use Firmware Builder to configure and compile</p>
+                            </div>
+                        </a>
+                        <a href="/printer-setup/" target="_blank" class="workflow-step">
+                            <div class="workflow-number">2</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Setup printer</p>
+                                <p class="text-sm text-gray-500">Calibrate Z, C, and B axis home positions</p>
+                            </div>
+                        </a>
+                        <a href="/lc-lb-measure/" target="_blank" class="workflow-step">
+                            <div class="workflow-number">3</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Measure LC/LB</p>
+                                <p class="text-sm text-gray-500">Determine kinematic parameters</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div>
+                        <a href="/calibrator/" target="_blank" class="workflow-step">
+                            <div class="workflow-number">4</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Calibrate errors</p>
+                                <p class="text-sm text-gray-500">Find and compensate systematic errors</p>
+                            </div>
+                        </a>
+                        <a href="/gcode-viewer/" target="_blank" class="workflow-step">
+                            <div class="workflow-number">5</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Slice & preview</p>
+                                <p class="text-sm text-gray-500">Generate G-code and visualise in viewer</p>
+                            </div>
+                        </a>
+                        <a href="/printer-control/" target="_blank" class="workflow-step">
+                            <div class="workflow-number">6</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Print!</p>
+                                <p class="text-sm text-gray-500">Send to printer and start printing</p>
+                            </div>
+                        </a>
+                    </div>
                 </div>
-                <p class="text-gray-600 mb-4">
-                    Control your printer directly from the browser. Jog all 5 axes, send G-code commands, and monitor
-                    position in real-time.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
+            </div>
+        </section>
 
-            <!-- Printer Setup -->
-            <a href="/printer-setup/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                        </path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">Printer Setup</h3>
-                </div>
-                <p class="text-gray-600 mb-4">
-                    Calibrate Z height, C and B axis positions, and steps/degree. Essential first step before
-                    kinematic calibration.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
+        <!-- Setup & Configuration -->
+        <section class="mb-10">
+            <div class="category-header">
+                <span class="category-title">Setup & configuration</span>
+                <div class="category-line"></div>
+            </div>
 
-            <!-- LC/LB Measure -->
-            <a href="/lc-lb-measure/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">LC/LB Measure</h3>
-                </div>
-                <p class="text-gray-600 mb-4">
-                    Measure your printer's LC and LB parameters with step-by-step guidance. Supports camera-based and
-                    cone-based methods.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
+            <div class="grid md:grid-cols-2 gap-5">
+                <!-- Firmware Builder -->
+                <a href="/firmware-builder/" class="tool-tile featured">
+                    <div class="flex items-start justify-between">
+                        <div class="tool-icon green">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                            </svg>
+                        </div>
+                        <span class="badge badge-primary">Start here</span>
+                    </div>
+                    <h3 class="tool-title">Firmware Builder</h3>
+                    <p class="tool-description">
+                        Configure and build custom Rep5x Marlin firmware. Set printer dimensions, motors, display, and inverse kinematics parameters, then compile in the cloud.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
 
-            <!-- Vase Generator -->
-            <a href="/vase-generator/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">Vase Generator</h3>
-                </div>
-                <p class="text-gray-600 mb-4">
-                    Generate sample 5-axis vase mode G-code to test your Rep5x printer. Create elbow pipes and other
-                    curved geometries impossible with conventional 3-axis printing.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
+                <!-- Printer Setup -->
+                <a href="/printer-setup/" class="tool-tile">
+                    <div class="tool-icon green">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="tool-title">Printer Setup</h3>
+                    <p class="tool-description">
+                        Calibrate Z height, C and B axis positions, and steps/degree. Essential first step before kinematic calibration.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+            </div>
+        </section>
 
-            <!-- G-code Viewer -->
-            <a href="/gcode-viewer/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">G-code Viewer</h3>
-                </div>
-                <p class="text-gray-600 mb-4">
-                    Visualise and animate 5-axis G-code in 3D. Preview your prints with proper C/B axis rotation,
-                    inverse kinematics support, and real-time animation.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
+        <!-- Calibration -->
+        <section class="mb-10">
+            <div class="category-header">
+                <span class="category-title">Calibration</span>
+                <div class="category-line"></div>
+            </div>
 
-            <!-- Calibrator -->
-            <a href="/calibrator/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">Calibrator</h3>
-                </div>
-                <p class="text-gray-600 mb-4">
-                    Find error curves for your 5-axis system. Measure position accuracy across all C and B angles
-                    to identify and compensate for systematic errors.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
+            <div class="grid md:grid-cols-2 gap-5">
+                <!-- LC/LB Measure -->
+                <a href="/lc-lb-measure/" class="tool-tile">
+                    <div class="tool-icon blue">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="tool-title">LC/LB Measure</h3>
+                    <p class="tool-description">
+                        Measure your printer's LC and LB kinematic parameters with step-by-step guidance. Supports camera-based and cone-based methods.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
 
-            <!-- G-code Corrector -->
-            <a href="/gcode-corrector/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">G-code Corrector</h3>
-                </div>
-                <p class="text-gray-600 mb-4">
-                    Apply inverse kinematics and calibration corrections to your G-code. Supports software IK,
-                    firmware IK mode, and measured error compensation.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
+                <!-- Calibrator -->
+                <a href="/calibrator/" class="tool-tile">
+                    <div class="tool-icon blue">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="tool-title">Calibrator</h3>
+                    <p class="tool-description">
+                        Find error curves for your 5-axis system. Measure position accuracy across all C and B angles to identify and compensate for systematic errors.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+            </div>
+        </section>
 
-            <!-- Firmware Builder -->
-            <a href="/firmware-builder/"
-                class="tool-card block bg-white rounded-xl shadow-sm p-8 border-2 border-transparent hover:border-primary">
-                <div class="flex items-center mb-4">
-                    <svg class="w-12 h-12 text-primary mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                        </path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z">
-                        </path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-gray-900">Firmware Builder</h3>
-                </div>
-                <p class="text-gray-600 mb-4">
-                    Build custom Rep5x firmware with a step-by-step wizard. Configure printer size, display,
-                    motor settings, and inverse kinematics parameters.
-                </p>
-                <div class="flex items-center text-primary font-medium">
-                    Open Tool
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </a>
-        </div>
+        <!-- Preview & Print -->
+        <section class="mb-10">
+            <div class="category-header">
+                <span class="category-title">Preview & print</span>
+                <div class="category-line"></div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-5">
+                <!-- G-code Viewer -->
+                <a href="/gcode-viewer/" class="tool-tile">
+                    <div class="tool-icon purple">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="tool-title">G-code Viewer</h3>
+                    <p class="tool-description">
+                        Visualise and animate 5-axis G-code in 3D. Preview your prints with proper C/B axis rotation, inverse kinematics support, and real-time animation.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
+                <!-- Printer Control -->
+                <a href="/printer-control/" class="tool-tile">
+                    <div class="tool-icon purple">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="tool-title">Printer Control</h3>
+                    <p class="tool-description">
+                        Control your printer directly from the browser. Jog all 5 axes, send G-code commands, and monitor position in real-time.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+            </div>
+        </section>
+
+        <!-- G-code Generation -->
+        <section class="mb-10">
+            <div class="category-header">
+                <span class="category-title">G-code generation</span>
+                <div class="category-line"></div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-5">
+                <!-- Vase Generator -->
+                <a href="/vase-generator/" class="tool-tile">
+                    <div class="tool-icon orange">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="tool-title">Vase Generator</h3>
+                    <p class="tool-description">
+                        Generate sample 5-axis vase mode G-code. Create elbow pipes and curved geometries impossible with 3-axis printing.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
+                <!-- G-code Corrector -->
+                <a href="/gcode-corrector/" class="tool-tile">
+                    <div class="flex items-start justify-between">
+                        <div class="tool-icon gray">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </div>
+                        <span class="badge badge-warning">Deprecated</span>
+                    </div>
+                    <h3 class="tool-title">G-code Corrector</h3>
+                    <p class="tool-description">
+                        Apply inverse kinematics and calibration corrections. Now handled directly by firmware.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+            </div>
+        </section>
+
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center text-sm text-gray-500">
-                <p>Part of the <a href="https://rep5x.com" class="text-primary hover:opacity-80">Rep5x</a> open-source
-                    5-axis printer project</p>
-                <p class="mt-1">
-                    <a href="https://github.com/dennisklappe/Rep5x" class="text-primary hover:opacity-80">GitHub</a> ·
-                    <a href="https://discord.gg/pfTrx9uy8H" class="text-primary hover:opacity-80">Discord</a>
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-gray-500">
+                    Part of the <a href="https://rep5x.com" class="text-primary hover:opacity-80">Rep5x</a> open-source 5-axis printer project
                 </p>
+                <div class="flex gap-6">
+                    <a href="https://github.com/dennisklappe/Rep5x" class="text-sm text-gray-500 hover:text-primary">GitHub</a>
+                    <a href="https://discord.gg/GNdah82VBg" class="text-sm text-gray-500 hover:text-primary">Discord</a>
+                </div>
             </div>
         </div>
     </footer>
 
-    <!-- Load theme from website config -->
+    <!-- Load theme -->
     <script src="shared/theme.js"></script>
 </body>
 
