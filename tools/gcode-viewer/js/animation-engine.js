@@ -593,7 +593,7 @@ class AnimationEngine {
 
     updatePrinthead() {
         const pos = this.toThreePos(this.position);
-        const cRad = -this.position.c * Math.PI / 180;
+        const cRad = this.position.c * Math.PI / 180;
         const bRad = -this.position.b * Math.PI / 180;
 
         [this.printhead, this.realisticHead].forEach(head => {
