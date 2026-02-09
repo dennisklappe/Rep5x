@@ -121,7 +121,7 @@ class CollisionDetector {
             -position.y
         );
 
-        const cRad = -position.c * Math.PI / 180;
+        const cRad = position.c * Math.PI / 180;
         const bRad = -position.b * Math.PI / 180;
 
         // Build rotation matrix matching printhead orientation

@@ -212,7 +212,7 @@ class Mushroom extends ShapeBase {
                 bSign = 1 - 2 * p;
             }
 
-            addMove(x, y, z, -angle * 180 / Math.PI + aOffset, bSign * tiltAngle * 180 / Math.PI, i === 0);
+            addMove(x, y, z, angle * 180 / Math.PI + aOffset, bSign * tiltAngle * 180 / Math.PI, i === 0);
         }
         totalAngle += stemRotations * 2 * Math.PI;
 
@@ -256,7 +256,7 @@ class Mushroom extends ShapeBase {
 
             const x = radius * Math.cos(angle);
             const y = radius * Math.sin(angle);
-            const baseC = -angle * 180 / Math.PI;
+            const baseC = angle * 180 / Math.PI;
             const baseBdeg = tiltAngle * 180 / Math.PI;
 
             let C, B;
@@ -291,7 +291,7 @@ class Mushroom extends ShapeBase {
             const angle = totalAngle + (i / resolution) * 2 * Math.PI;
             const radius = lastProfile.radius * (1 - t);
 
-            addMove(radius * Math.cos(angle), radius * Math.sin(angle), lastProfile.z, -angle * 180 / Math.PI, 0, false, 0.4);
+            addMove(radius * Math.cos(angle), radius * Math.sin(angle), lastProfile.z, angle * 180 / Math.PI, 0, false, 0.4);
         }
 
         return gcode;
