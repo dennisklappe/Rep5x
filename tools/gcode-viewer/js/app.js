@@ -61,10 +61,12 @@ class GcodePreviewerApp {
         this.ui.onApplyManual = () => this.applyManualSettings();
 
         this.ui.onResize = () => {
-            const canvas = document.getElementById('canvas3d');
-            this.animationEngine.camera.aspect = canvas.offsetWidth / canvas.offsetHeight;
+            const container = document.querySelector('.canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            this.animationEngine.camera.aspect = width / height;
             this.animationEngine.camera.updateProjectionMatrix();
-            this.animationEngine.renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
+            this.animationEngine.renderer.setSize(width, height);
         };
     }
 

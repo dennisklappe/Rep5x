@@ -55,7 +55,22 @@ class StepCalibrateXY {
         }
     }
 
-    showImportModal() {
+    async showImportModal() {
+        // Check if printer has existing M667 calibration data
+        let hasExistingCalibration = false;
+        if (this.app.printer && this.app.printer.isConnected()) {
+            try {
+                const response = await this.app.printer.sendCommandAndCapture('M667', 5000);
+                const parsed = FourierFitter.parseM667Response(response);
+                // Check if any coefficients have non-zero values
+                hasExistingCalibration = parsed && Object.values(parsed.cSweep).concat(Object.values(parsed.bSweep)).some(
+                    arr => arr && arr.some(v => v !== 0)
+                );
+            } catch (e) {
+                console.warn('[Calibration] Could not check existing M667 data:', e);
+            }
+        }
+
         let modal = document.getElementById('import-calibration-modal');
         if (modal) modal.remove();
 
@@ -69,13 +84,14 @@ class StepCalibrateXY {
                     Choose calibration mode based on whether you have existing calibration data.
                 </p>
                 <div class="space-y-3 mb-4">
+                    ${hasExistingCalibration ? `
                     <button id="refine-calibration-btn" class="w-full btn-primary px-4 py-3 rounded-lg text-left">
                         <div class="font-medium">Refine existing calibration</div>
                         <div class="text-sm opacity-75">Measure residual errors and add to current M667 coefficients</div>
-                    </button>
-                    <button id="start-fresh-btn" class="w-full btn-secondary px-4 py-3 rounded-lg text-left">
+                    </button>` : ''}
+                    <button id="start-fresh-btn" class="w-full btn-primary px-4 py-3 rounded-lg text-left">
                         <div class="font-medium">Fresh calibration</div>
-                        <div class="text-sm text-gray-500">No existing calibration - measure raw mechanical errors</div>
+                        <div class="text-sm opacity-75">No existing calibration - measure raw mechanical errors</div>
                     </button>
                     <button id="skip-xy-btn" class="w-full btn-outline px-4 py-3 rounded-lg text-left text-gray-600">
                         <div class="font-medium">Skip to Z calibration</div>
@@ -86,11 +102,13 @@ class StepCalibrateXY {
         `;
         document.body.appendChild(modal);
 
-        document.getElementById('refine-calibration-btn').addEventListener('click', () => {
-            modal.remove();
-            this.app.refineMode = true;
-            this.startCalibration(false);  // Don't disable calibration correction
-        });
+        if (hasExistingCalibration) {
+            document.getElementById('refine-calibration-btn').addEventListener('click', () => {
+                modal.remove();
+                this.app.refineMode = true;
+                this.startCalibration(false);  // Don't disable calibration correction
+            });
+        }
 
         document.getElementById('start-fresh-btn').addEventListener('click', () => {
             modal.remove();
@@ -1156,9 +1174,26 @@ class StepCalibrateZ {
             const ref = this.app.referencePosition;
             const refZ = this.zReferencePosition || ref.z;
 
-            console.log('Z calibration: Moving to reference position with firmware IK:', {
+            // Use XY errors from XY calibration to pre-compensate position during Z calibration
+            // This keeps the nozzle closer to centre so the Z measurement is more accurate
+            let targetX = ref.x;
+            let targetY = ref.y;
+            const xyMeasurement = this.app.engine.getMeasurement(point.c, point.b);
+            if (xyMeasurement && xyMeasurement.error && !xyMeasurement.skipped) {
+                targetX -= xyMeasurement.error.x;
+                targetY -= xyMeasurement.error.y;
+                console.log('Z calibration: Applying XY correction:', {
+                    errorX: xyMeasurement.error.x.toFixed(3),
+                    errorY: xyMeasurement.error.y.toFixed(3),
+                    targetX: targetX.toFixed(2),
+                    targetY: targetY.toFixed(2)
+                });
+            }
+
+            console.log('Z calibration: Moving to position with firmware IK:', {
                 point,
-                reference: { x: ref.x, y: ref.y, z: refZ }
+                reference: { x: ref.x, y: ref.y, z: refZ },
+                target: { x: targetX, y: targetY, z: refZ }
             });
 
             // Check if we need a safety lift for large B angle changes
@@ -1190,14 +1225,14 @@ class StepCalibrateZ {
                 await this.app.printer.sendCommandAndWait(`G0 B${point.b.toFixed(1)} F1000`, 30000);
                 await this.app.printer.sendCommandAndWait(`G0 C${point.c.toFixed(1)} F1800`, 30000);
 
-                // 3. Move XY to target position
-                await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} F3000`, 30000);
+                // 3. Move XY to corrected target position
+                await this.app.printer.sendCommandAndWait(`G0 X${targetX.toFixed(2)} Y${targetY.toFixed(2)} F3000`, 30000);
 
                 // 4. Lower back to reference Z slowly
                 await this.app.printer.sendCommandAndWait(`G0 Z${refZ.toFixed(2)} F1500`, 30000);
             } else {
                 // Normal single movement - safe for small angle changes
-                await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${refZ.toFixed(2)} C${point.c.toFixed(1)} B${point.b.toFixed(1)} F1800`, 30000);
+                await this.app.printer.sendCommandAndWait(`G0 X${targetX.toFixed(2)} Y${targetY.toFixed(2)} Z${refZ.toFixed(2)} C${point.c.toFixed(1)} B${point.b.toFixed(1)} F1800`, 30000);
             }
 
             // Unlock controls immediately after movement completes
@@ -1251,9 +1286,16 @@ class StepCalibrateZ {
         // Re-enable IK
         await this.app.printer.sendCommandAndWait('G43.4', 5000);
 
-        // 2. Move to C0B0 reference position - firmware IK handles everything
-        console.log('Moving to C0B0 reference position with firmware IK');
-        await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} Z${refZ.toFixed(2)} C0 B0 F1800`, 30000);
+        // 2. Move to C0B0 reference position - apply XY correction if available
+        let targetX = ref.x;
+        let targetY = ref.y;
+        const xyMeasurement = this.app.engine.getMeasurement(0, 0);
+        if (xyMeasurement && xyMeasurement.error && !xyMeasurement.skipped) {
+            targetX -= xyMeasurement.error.x;
+            targetY -= xyMeasurement.error.y;
+        }
+        console.log('Moving to C0B0 reference position with XY correction');
+        await this.app.printer.sendCommandAndWait(`G0 X${targetX.toFixed(2)} Y${targetY.toFixed(2)} Z${refZ.toFixed(2)} C0 B0 F1800`, 30000);
         await this.app.printer.sendCommandAndWait('M400', 60000);
 
         // Wait for position to settle

@@ -418,6 +418,10 @@ input[type="range"]::-moz-range-thumb {
    ========================================================================== */
 
 .method-card {
+    border: 1px solid #E5E7EB;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    background: white;
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
     cursor: pointer;
 }

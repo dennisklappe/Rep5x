@@ -1,4 +1,4 @@
-// Camera controls for Rep5x G-code viewer
+// Shared camera controls for Rep5x tools
 // Handles orbit, pan, and zoom with mouse
 
 class CameraControls {

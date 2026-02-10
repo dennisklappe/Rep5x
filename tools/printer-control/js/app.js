@@ -97,10 +97,40 @@ class PrinterControlApp {
         }
 
         this.setupEventListeners();
+        this.setupConsoleHeight();
         this.logToConsole('[Ready] Printer control initialized', 'info');
 
         // Try auto-connect to previously used port
         this.tryAutoConnect();
+    }
+
+    /**
+     * Lock right column height to left column so console scrolls instead of growing
+     */
+    setupConsoleHeight() {
+        const leftCol = document.getElementById('leftColumn');
+        const rightCol = document.querySelector('.right-column');
+        if (!leftCol || !rightCol) return;
+
+        const sync = () => {
+            // Only constrain on desktop (lg grid) where columns are side-by-side
+            if (window.innerWidth >= 1024) {
+                rightCol.style.maxHeight = leftCol.offsetHeight + 'px';
+            } else {
+                rightCol.style.maxHeight = '';
+            }
+        };
+
+        // Sync after layout settles
+        requestAnimationFrame(sync);
+
+        // Re-sync on resize
+        window.addEventListener('resize', sync);
+
+        // Re-sync when left column content changes height
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(sync).observe(leftCol);
+        }
     }
 
     /**
@@ -312,6 +342,15 @@ class PrinterControlApp {
         if (gcodeStopBtn) {
             gcodeStopBtn.addEventListener('click', () => this.stopGcode());
         }
+
+        // EEPROM backup/restore
+        document.getElementById('eepromBackup').addEventListener('click', () => this.backupEeprom());
+        document.getElementById('eepromRestoreFile').addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                this.restoreEeprom(e.target.files[0]);
+                e.target.value = ''; // Reset so same file can be selected again
+            }
+        });
     }
 
     handleKeyboard(e) {
@@ -453,14 +492,21 @@ class PrinterControlApp {
             btn.style.opacity = enabled ? '1' : '0.5';
         });
 
-        // Home, emergency and extrusion buttons
-        ['homeXY', 'homeZ', 'homeC', 'homeB', 'homeAll', 'homeCBZero', 'emergencyStop', 'extrudeBtn', 'retractBtn'].forEach(id => {
+        // Home, emergency, extrusion and EEPROM buttons
+        ['homeXY', 'homeZ', 'homeC', 'homeB', 'homeAll', 'homeCBZero', 'emergencyStop', 'extrudeBtn', 'retractBtn', 'eepromBackup'].forEach(id => {
             const btn = document.getElementById(id);
             if (btn) {
                 btn.disabled = !enabled;
                 btn.style.opacity = enabled ? '1' : '0.5';
             }
         });
+
+        // EEPROM restore label
+        const restoreLabel = document.getElementById('eepromRestoreLabel');
+        if (restoreLabel) {
+            restoreLabel.style.opacity = enabled ? '1' : '0.5';
+            restoreLabel.style.pointerEvents = enabled ? '' : 'none';
+        }
 
         // Command input
         document.getElementById('commandInput').disabled = !enabled;
@@ -624,6 +670,146 @@ class PrinterControlApp {
             await this.printer.sendCommand(cmd);
         } catch (error) {
             this.logToConsole(`Send error: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Backup EEPROM settings to a downloadable file
+     * Captures M503 + M665 (IK parameters) + M667 (calibration coefficients)
+     */
+    async backupEeprom() {
+        if (!this.printer.isConnected()) {
+            this.logToConsole('Not connected to printer', 'error');
+            return;
+        }
+
+        try {
+            // Capture M503 (standard Marlin settings)
+            this.logToConsole('Reading EEPROM settings (M503)...', 'info');
+            const m503Response = await this.printer.sendCommandAndCapture('M503', 15000);
+            const m503Lines = m503Response.split('\n').filter(l => l.trim() && l.toLowerCase().trim() !== 'ok');
+
+            if (m503Lines.length === 0) {
+                this.logToConsole('No settings received from printer', 'error');
+                return;
+            }
+
+            // Capture M665 (IK parameters: LC/LB lengths)
+            this.logToConsole('Reading IK parameters (M665)...', 'info');
+            let m665Lines = [];
+            try {
+                const m665Response = await this.printer.sendCommandAndCapture('M665', 10000);
+                m665Lines = m665Response.split('\n').filter(l => l.trim() && l.toLowerCase().trim() !== 'ok');
+            } catch (e) {
+                this.logToConsole('Could not read M665 (IK parameters) - skipping', 'info');
+            }
+
+            // Capture M667 (calibration correction coefficients)
+            this.logToConsole('Reading calibration data (M667)...', 'info');
+            let m667Lines = [];
+            try {
+                const m667Response = await this.printer.sendCommandAndCapture('M667', 10000);
+                m667Lines = m667Response.split('\n').filter(l => l.trim() && l.toLowerCase().trim() !== 'ok');
+            } catch (e) {
+                this.logToConsole('Could not read M667 (calibration) - skipping', 'info');
+            }
+
+            // Build the backup file
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+            const sections = [
+                '; Rep5x EEPROM backup',
+                `; Date: ${new Date().toLocaleString()}`,
+                '; Restore this file via Printer Control > Restore backup',
+                ';',
+                '; === M503 output (standard settings) ===',
+                ...m503Lines,
+            ];
+
+            if (m665Lines.length > 0) {
+                sections.push('', '; === M665 output (IK parameters: LC/LB) ===', ...m665Lines);
+            }
+
+            if (m667Lines.length > 0) {
+                sections.push('', '; === M667 output (calibration coefficients) ===', ...m667Lines);
+            }
+
+            const content = sections.join('\n') + '\n';
+
+            // Download as file
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rep5x-eeprom-backup-${timestamp}.cfg`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            const totalLines = m503Lines.length + m665Lines.length + m667Lines.length;
+            this.logToConsole(`EEPROM backup saved (${totalLines} lines: M503 + M665 + M667)`, 'info');
+        } catch (error) {
+            this.logToConsole(`Backup failed: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Restore EEPROM settings from a backup file
+     */
+    async restoreEeprom(file) {
+        if (!this.printer.isConnected()) {
+            this.logToConsole('Not connected to printer', 'error');
+            return;
+        }
+
+        try {
+            const text = await file.text();
+            const allLines = text.split('\n');
+
+            // Extract valid firmware commands from the backup
+            // M503 output has lines like "echo:  M92 X80.00 Y80.00 ..." or raw "M92 ..."
+            const commands = [];
+            for (const raw of allLines) {
+                let line = raw.trim();
+                if (!line || line.startsWith(';')) continue;
+
+                // Strip "echo:" prefix and leading whitespace
+                line = line.replace(/^echo:\s*/i, '').trim();
+
+                // Strip inline comments
+                line = line.split(';')[0].trim();
+                if (!line) continue;
+
+                // Only keep lines that start with a valid G/M command
+                if (/^[GM]\d+/i.test(line)) {
+                    commands.push(line);
+                }
+            }
+
+            if (commands.length === 0) {
+                this.logToConsole('No valid commands found in backup file', 'error');
+                return;
+            }
+
+            this.logToConsole(`Restoring ${commands.length} settings from ${file.name}...`, 'info');
+
+            // Send each command and wait for ok
+            for (let i = 0; i < commands.length; i++) {
+                const cmd = commands[i];
+                this.logToConsole(`[${i + 1}/${commands.length}] ${cmd}`, 'info');
+                try {
+                    await this.printer.sendCommandAndWait(cmd, 10000);
+                } catch (error) {
+                    this.logToConsole(`Warning: ${cmd} - ${error.message}`, 'error');
+                }
+            }
+
+            // Save to EEPROM
+            this.logToConsole('Saving to EEPROM (M500)...', 'info');
+            await this.printer.sendCommandAndWait('M500', 10000);
+
+            this.logToConsole('EEPROM restore complete!', 'info');
+        } catch (error) {
+            this.logToConsole(`Restore failed: ${error.message}`, 'error');
         }
     }
 

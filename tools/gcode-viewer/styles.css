@@ -678,32 +678,14 @@ body {
    Responsive Styles
    ========================================== */
 
-/* Large screens */
+/* Large screens - wrap toolbar so progress bar gets its own row */
 @media (max-width: 1400px) {
-    .position-display {
-        gap: 0.5rem;
-    }
-    .position-item {
-        padding: 0.25rem 0.4rem;
-        min-width: auto;
-    }
-    .slider-control input[type="range"] {
-        width: 80px;
-    }
-}
-
-/* Medium screens */
-@media (max-width: 1200px) {
     .toolbar-row {
         height: auto;
         min-height: 56px;
         padding: 0.5rem 0.75rem;
         flex-wrap: wrap;
         gap: 0.5rem;
-    }
-
-    .toolbar-row.secondary {
-        min-height: 44px;
     }
 
     .toolbar-section {
@@ -713,14 +695,32 @@ body {
     }
 
     .toolbar-section.flex-1 {
-        flex: 1 1 200px;
-        min-width: 200px;
+        flex: 1 1 100%;
         order: 10;
-        width: 100%;
     }
 
     .section-label {
         display: none;
+    }
+
+    .position-display {
+        gap: 0.5rem;
+    }
+
+    .position-item {
+        padding: 0.25rem 0.4rem;
+        min-width: auto;
+    }
+
+    .slider-control input[type="range"] {
+        width: 80px;
+    }
+}
+
+/* Medium screens */
+@media (max-width: 1200px) {
+    .toolbar-row.secondary {
+        min-height: 44px;
     }
 
     .file-zone {

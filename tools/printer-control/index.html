@@ -339,6 +339,27 @@
                     <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M667 R">Reset calibration</button>
                 </div>
             </div>
+
+            <!-- EEPROM Backup/Restore -->
+            <div class="pt-4 border-t border-gray-200">
+                <h4 class="text-sm font-medium text-gray-600 mb-3">EEPROM backup</h4>
+                <p class="text-xs text-gray-400 mb-3">Save all printer settings to a file before flashing firmware, then restore afterwards</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="eepromBackup" class="btn-outline py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Download backup
+                    </button>
+                    <label id="eepromRestoreLabel" class="btn-outline py-2 px-3 rounded-lg text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        <input type="file" id="eepromRestoreFile" accept=".cfg,.txt,.gcode" class="hidden">
+                        Restore backup
+                    </label>
+                </div>
+            </div>
         </div>
 
     </main>

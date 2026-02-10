@@ -444,13 +444,16 @@ class AnimationEngine {
     updatePrintPath() {
         if (this.printPath) this.scene.remove(this.printPath);
 
-        // Flatten all segments to find global Z range
-        const allPoints = this.printedPath.flat();
-        if (allPoints.length < 2) return;
-
-        const zValues = allPoints.map(p => p.z);
-        const minZ = Math.min(...zValues);
-        const maxZ = Math.max(...zValues);
+        // Find global Z range across all segments (loop-based to avoid stack overflow)
+        let minZ = Infinity, maxZ = -Infinity, pointCount = 0;
+        for (const segment of this.printedPath) {
+            for (const p of segment) {
+                if (p.z < minZ) minZ = p.z;
+                if (p.z > maxZ) maxZ = p.z;
+                pointCount++;
+            }
+        }
+        if (pointCount < 2) return;
         const zRange = maxZ - minZ || 1;
 
         // Create a group to hold all segment lines
@@ -506,12 +509,16 @@ class AnimationEngine {
     updatePrintPathWithSegments(segments) {
         if (this.printPath) this.scene.remove(this.printPath);
 
-        const allPoints = segments.flat();
-        if (allPoints.length < 2) return;
-
-        const zValues = allPoints.map(p => p.z);
-        const minZ = Math.min(...zValues);
-        const maxZ = Math.max(...zValues);
+        // Find global Z range across all segments (loop-based to avoid stack overflow)
+        let minZ = Infinity, maxZ = -Infinity, pointCount = 0;
+        for (const segment of segments) {
+            for (const p of segment) {
+                if (p.z < minZ) minZ = p.z;
+                if (p.z > maxZ) maxZ = p.z;
+                pointCount++;
+            }
+        }
+        if (pointCount < 2) return;
         const zRange = maxZ - minZ || 1;
 
         const group = new THREE.Group();
