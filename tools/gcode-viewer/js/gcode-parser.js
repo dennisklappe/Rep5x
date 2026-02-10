@@ -321,13 +321,16 @@ class GcodeParser {
         }
         
         // Fallback: estimate from Z positions
-        const zPositions = this.commands
-            .filter(cmd => cmd.z !== null)
-            .map(cmd => cmd.z);
-        
-        if (zPositions.length > 0) {
-            const maxZ = Math.max(...zPositions);
-            const minZ = Math.min(...zPositions);
+        let minZ = Infinity, maxZ = -Infinity, hasZ = false;
+        for (const cmd of this.commands) {
+            if (cmd.z !== null) {
+                if (cmd.z < minZ) minZ = cmd.z;
+                if (cmd.z > maxZ) maxZ = cmd.z;
+                hasZ = true;
+            }
+        }
+
+        if (hasZ) {
             return Math.floor((maxZ - minZ) / 0.2) + 1; // Assume 0.2mm layers
         }
         

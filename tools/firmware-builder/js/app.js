@@ -858,8 +858,9 @@ function exportConfig(showToastNotification = true) {
         config: config
     };
 
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().slice(0, 10);
+    // Generate filename with local timestamp
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
     const filename = `rep5x-firmware-config-${timestamp}.json`;
 
     // Download as JSON using shared utility

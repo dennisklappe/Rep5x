@@ -1,5 +1,5 @@
-// Scene objects for Rep5x G-code viewer
-// Creates build platform, axes, and schematic printhead
+// Shared scene objects for Rep5x tools
+// Creates build platform, axes, lighting, and schematic printhead
 
 class SceneObjects {
     static BED_SIZE_X = 200;  // Default bed X size in mm
