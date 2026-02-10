@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rep5x Spline Slicer</title>
+    <meta name="description" content="Load an STL model, define a spline path through it, and generate 5-axis vase mode G-code">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="../shared/styles.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
+    <style>
+        /* ============================================================
+           Spline Slicer — Clean Slicer Layout
+           ============================================================ */
+        body.slicer-body {
+            margin: 0;
+            padding: 0;
+            background: #f0f2f5;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Hide footer in slicer mode */
+        body.slicer-body #shared-footer { display: none; }
+
+        /* ---- Workspace ---- */
+        .slicer-workspace {
+            display: flex;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+
+        /* ---- Viewport ---- */
+        .slicer-viewport {
+            flex: 1;
+            position: relative;
+            background: #f0f2f5;
+            min-width: 0;
+        }
+        .slicer-viewport canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+
+        .canvas-hint {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 0.625rem 1.25rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--toolbar-border, #e0e3e8);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            z-index: 10;
+        }
+        .canvas-hint-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary, #6b7280);
+        }
+        .canvas-hint-item kbd {
+            padding: 0.25rem 0.5rem;
+            background: var(--toolbar-surface, #f3f4f6);
+            border: 1px solid var(--toolbar-border, #d1d5db);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 0.6875rem;
+            font-weight: 500;
+        }
+
+        /* Canvas Drop Overlay */
+        .canvas-drop-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(50, 215, 75, 0.1);
+            border: 3px dashed var(--color-primary, #32D74B);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            pointer-events: none;
+        }
+        .canvas-drop-overlay.active { display: flex; }
+        .canvas-drop-content {
+            text-align: center;
+            color: var(--color-primary, #32D74B);
+        }
+        .canvas-drop-content svg { margin: 0 auto 0.75rem; }
+        .canvas-drop-content span { font-size: 1.125rem; font-weight: 600; }
+
+        .viewport-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f2f5;
+            z-index: 20;
+        }
+        .viewport-spinner {
+            width: 28px; height: 28px;
+            border: 2px solid #d1d5db;
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Warning strip */
+        .slicer-warning-strip {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 5px;
+            padding: 4px 12px;
+            font-size: 11px;
+            color: #92400e;
+            z-index: 10;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+        .slicer-warning-strip:hover { opacity: 0.7; }
+
+        /* ---- Sidebar ---- */
+        .slicer-sidebar {
+            width: 320px;
+            min-width: 320px;
+            background: #fff;
+            border-left: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Tab bar */
+        .ss-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fafbfc;
+            flex-shrink: 0;
+        }
+        .ss-tabs .tab-button {
+            flex: 1;
+            padding: 9px 0;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #9ca3af;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .ss-tabs .tab-button:hover {
+            color: #6b7280;
+            background: #f3f4f6;
+        }
+
+        /* Active tab — JS toggles border-primary/text-primary */
+        .ss-tabs .tab-button.border-primary {
+            border-bottom-color: var(--color-primary) !important;
+        }
+        .ss-tabs .tab-button.text-primary {
+            color: var(--color-primary) !important;
+        }
+
+        /* Scrollable content area */
+        .ss-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 14px 16px;
+        }
+        .ss-content::-webkit-scrollbar { width: 5px; }
+        .ss-content::-webkit-scrollbar-track { background: transparent; }
+        .ss-content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+        .tab-content { display: block; }
+        .tab-content.hidden { display: none !important; }
+
+        /* ---- Form Elements ---- */
+        .ss-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 5px;
+        }
+        .ss-value {
+            color: var(--color-primary);
+            font-family: 'Consolas','Monaco',monospace;
+            font-weight: 600;
+        }
+        .ss-input {
+            width: 100%;
+            padding: 6px 8px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            color: #1f2937;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .ss-input:focus { border-color: var(--color-primary); }
+
+        .ss-select {
+            width: 100%;
+            padding: 6px 8px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            color: #1f2937;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+        }
+        .ss-select:focus { border-color: var(--color-primary); }
+
+        .ss-textarea {
+            width: 100%;
+            padding: 6px 8px;
+            background: #fafbfc;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            color: #1f2937;
+            font-size: 11px;
+            font-family: 'Consolas','Monaco',monospace;
+            line-height: 1.5;
+            outline: none;
+            resize: vertical;
+        }
+        .ss-textarea:focus { border-color: var(--color-primary); }
+
+        /* Sliders */
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #E5E7EB;
+            outline: none;
+            cursor: pointer;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-primary, #32D74B);
+            cursor: pointer;
+            margin-top: 0;
+        }
+        .slider::-moz-range-track {
+            height: 8px;
+            border-radius: 4px;
+            background: #E5E7EB;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-primary, #32D74B);
+            cursor: pointer;
+            border: none;
+        }
+
+        .ss-range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+
+        .ss-section { margin-bottom: 14px; }
+        .ss-section:last-child { margin-bottom: 0; }
+
+        .ss-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 12px 0;
+        }
+
+        /* Toggle group */
+        .ss-toggle-group {
+            display: flex;
+            gap: 1px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .ss-toggle-btn {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            background: #fff;
+            color: #9ca3af;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .ss-toggle-btn:hover { color: #6b7280; }
+        .ss-toggle-btn.bg-primary { background: var(--color-primary) !important; color: #fff !important; }
+        .ss-toggle-btn.bg-gray-200 { background: #fff !important; color: #9ca3af !important; }
+        .ss-toggle-btn.bg-gray-200:hover { color: #6b7280 !important; }
+
+        /* Drop zone */
+        .ss-dropzone {
+            border: 1px dashed #d1d5db;
+            border-radius: 6px;
+            padding: 16px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: #fafbfc;
+        }
+        .ss-dropzone:hover { border-color: var(--color-primary); background: rgba(50,215,75,0.04); }
+        .ss-dropzone.drag-over { border-color: var(--color-primary); background: rgba(50,215,75,0.06); }
+
+        /* Rotation buttons */
+        .ss-rot-btn {
+            padding: 4px 0;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.12s;
+            text-align: center;
+        }
+        .ss-rot-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+        /* Checkbox */
+        .ss-checkbox { width: 14px; height: 14px; accent-color: var(--color-primary); cursor: pointer; }
+
+        /* Preview button */
+        .ss-preview-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background: #2563eb;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background 0.15s;
+        }
+        .ss-preview-btn:hover { background: #1d4ed8; }
+
+        /* Details/accordion */
+        .ss-details { border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+        .ss-details summary {
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            background: #fafbfc;
+        }
+        .ss-details summary:hover { color: #374151; }
+        .ss-details[open] summary { border-bottom: 1px solid #e5e7eb; }
+        .ss-details-body { padding: 10px; }
+
+        /* Control point list */
+        .ss-point-list { max-height: 50vh; overflow-y: auto; }
+        .ss-point-list::-webkit-scrollbar { width: 4px; }
+        .ss-point-list::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+        .ss-empty-msg { font-size: 11px; color: #9ca3af; font-style: italic; }
+
+        .ss-point-item {
+            padding: 6px 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 5px;
+            margin-bottom: 4px;
+        }
+        .ss-point-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+        .ss-point-label { font-size: 10px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.03em; }
+        .ss-point-delete { background: none; border: none; cursor: pointer; color: #ef4444; padding: 0; line-height: 1; }
+        .ss-point-delete:hover { color: #dc2626; }
+        .ss-point-coords { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 4px; }
+        .ss-coord-label { font-size: 9px; color: #9ca3af; }
+        .ss-coord-input {
+            width: 100%;
+            padding: 2px 4px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            color: #1f2937;
+            font-size: 11px;
+            font-family: 'Consolas','Monaco',monospace;
+            outline: none;
+        }
+        .ss-coord-input:focus { border-color: var(--color-primary); }
+        .ss-point-options { display: flex; align-items: center; gap: 4px; }
+        .ss-slice-label { font-size: 10px; color: #9ca3af; margin-right: 2px; }
+        .ss-mode-btn {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            border: 1px solid #d1d5db;
+            cursor: pointer;
+            font-weight: 600;
+            background: #fff;
+            color: #9ca3af;
+            transition: all 0.12s;
+        }
+        .ss-mode-btn:hover { border-color: #9ca3af; color: #6b7280; }
+        .ss-mode-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+        .ss-barrier-label { display: flex; align-items: center; gap: 3px; margin-left: 6px; cursor: pointer; font-size: 10px; color: #9ca3af; }
+        .ss-barrier-checkbox { accent-color: var(--color-primary); width: 12px; height: 12px; }
+        .ss-barrier-active { color: #d97706; font-weight: 600; }
+
+        /* ---- Generate button bar ---- */
+        .ss-generate-bar {
+            flex-shrink: 0;
+            padding: 12px 16px;
+            border-top: 1px solid #e5e7eb;
+            background: #fff;
+        }
+        .ss-generate-btn {
+            width: 100%;
+            padding: 11px;
+            background: var(--color-primary);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s;
+        }
+        .ss-generate-btn:hover { opacity: 0.9; box-shadow: 0 2px 12px rgba(50,215,75,0.25); }
+        .ss-generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ---- Misc overrides ---- */
+        #modelInfo { font-size: 12px; }
+        #sliceInfo { font-size: 11px; color: #6b7280; }
+        #sliceInfo .font-medium { color: var(--color-primary); }
+        #layerHeightWarning { font-size: 11px; color: #d97706 !important; }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            .slicer-workspace { flex-direction: column; }
+            .slicer-viewport { height: 50vh; }
+            .slicer-sidebar { width: 100%; min-width: 100%; height: 50vh; }
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="slicer-body" data-tool-name="Spline Slicer">
+    <!-- Header -->
+    <div id="shared-header"></div>
+
+    <!-- Workspace -->
+    <div class="slicer-workspace">
+
+        <!-- ==================== 3D VIEWPORT ==================== -->
+        <div class="slicer-viewport">
+            <canvas id="canvas3d"></canvas>
+
+            <div class="canvas-hint">
+                <div class="canvas-hint-item">
+                    <kbd>Drag</kbd>
+                    <span>Rotate view</span>
+                </div>
+                <div class="canvas-hint-item">
+                    <kbd>Scroll</kbd>
+                    <span>Zoom</span>
+                </div>
+                <div class="canvas-hint-item">
+                    <kbd>Right-drag</kbd>
+                    <span>Pan</span>
+                </div>
+            </div>
+
+            <div class="slicer-warning-strip" onclick="this.style.display='none'" title="Click to dismiss">
+                Experimental — always verify G-code before printing
+            </div>
+
+            <div id="loading" class="viewport-loading">
+                <div class="viewport-spinner"></div>
+            </div>
+        </div>
+
+        <!-- ==================== SIDEBAR ==================== -->
+        <div class="slicer-sidebar">
+
+            <!-- Tab Navigation -->
+            <div class="ss-tabs">
+                <button id="tabModel" class="tab-button border-b-2 border-primary text-primary">Model</button>
+                <button id="tabSpline" class="tab-button border-b-2 border-transparent text-gray-500">Spline</button>
+                <button id="tabSlice" class="tab-button border-b-2 border-transparent text-gray-500">Slice</button>
+                <button id="tabPrintSettings" class="tab-button border-b-2 border-transparent text-gray-500">Print</button>
+                <button id="tabAdvanced" class="tab-button border-b-2 border-transparent text-gray-500">Adv</button>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="ss-content">
+
+                <!-- TAB: Model -->
+                <div id="contentModel" class="tab-content">
+                    <div class="ss-section">
+                        <label class="ss-label">STL file</label>
+                        <div id="stlDropZone" class="ss-dropzone" onclick="document.getElementById('stlFileInput').click()">
+                            <input type="file" id="stlFileInput" accept=".stl" class="hidden" />
+                            <div id="dropZoneContent">
+                                <svg class="mx-auto h-8 w-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <p class="text-sm text-gray-500">Drop STL or click to browse</p>
+                                <p class="text-xs text-gray-400 mt-1">Binary and ASCII supported</p>
+                            </div>
+                            <div id="dropZoneSelected" class="hidden">
+                                <svg class="mx-auto h-7 w-7 mb-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <p class="text-sm font-semibold text-gray-700" id="stlFileName"></p>
+                                <p class="text-xs text-gray-400" id="stlFileSize"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="modelInfo" class="ss-section text-sm text-gray-400 italic">No model loaded</div>
+
+                    <div id="modelRotationControls" class="ss-section hidden">
+                        <label class="ss-label">Orientation</label>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">
+                            <button id="rotateXPos" class="ss-rot-btn">X +90&deg;</button>
+                            <button id="rotateYPos" class="ss-rot-btn">Y +90&deg;</button>
+                            <button id="rotateZPos" class="ss-rot-btn">Z +90&deg;</button>
+                            <button id="rotateXNeg" class="ss-rot-btn">X -90&deg;</button>
+                            <button id="rotateYNeg" class="ss-rot-btn">Y -90&deg;</button>
+                            <button id="rotateZNeg" class="ss-rot-btn">Z -90&deg;</button>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Rotate before placing spline points</p>
+                    </div>
+
+                    <div class="ss-divider"></div>
+
+                    <div class="ss-section">
+                        <label class="ss-label">Build volume</label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                            <div>
+                                <span class="text-xs text-gray-400">Width (mm)</span>
+                                <input type="number" id="bedWidth" value="200" class="ss-input" style="margin-top:2px" />
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-400">Depth (mm)</span>
+                                <input type="number" id="bedDepth" value="200" class="ss-input" style="margin-top:2px" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Spline -->
+                <div id="contentSpline" class="tab-content hidden">
+                    <div class="ss-section">
+                        <label class="ss-label">Curve type</label>
+                        <div class="ss-toggle-group">
+                            <button id="curveTypeLinear" class="ss-toggle-btn bg-primary text-white">Linear</button>
+                            <button id="curveTypeSmooth" class="ss-toggle-btn bg-gray-200 text-gray-700">Smooth</button>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1" id="curveTypeHint" style="line-height:1.4">Each segment has a constant tilt angle. Use this for sharp transitions (e.g. print vertically, then bend 90&deg; for a nose).</p>
+                    </div>
+
+                    <div class="ss-divider"></div>
+
+                    <div class="ss-section">
+                        <label class="ss-label">Interaction mode</label>
+                        <div class="ss-toggle-group">
+                            <button id="placeModeBtn" class="ss-toggle-btn bg-primary text-white">Place</button>
+                            <button id="editModeBtn" class="ss-toggle-btn bg-gray-200 text-gray-700">Edit</button>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1" style="line-height:1.4">Place: click model to add points. Edit: drag existing points.</p>
+                    </div>
+
+                    <div class="ss-divider"></div>
+
+                    <div class="ss-section">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+                            <label class="ss-label" style="margin-bottom:0">Control points</label>
+                            <button id="clearPointsBtn" style="font-size:10px;color:#ef4444;background:none;border:none;cursor:pointer;font-weight:600">Clear all</button>
+                        </div>
+                        <div id="controlPointList" class="ss-point-list">
+                            <p class="ss-empty-msg">No control points placed yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Slice -->
+                <div id="contentSlice" class="tab-content hidden">
+                    <div class="ss-section">
+                        <label class="ss-label">Layer height: <span id="layerHeightValue" class="ss-value">0.2</span>mm</label>
+                        <input type="range" id="layerHeight" min="0.1" max="0.4" step="0.05" value="0.2" class="slider" />
+                        <div class="ss-range-labels"><span>0.1mm</span><span>0.4mm</span></div>
+                        <p id="layerHeightWarning" class="hidden" style="margin-top:2px"></p>
+                    </div>
+                    <div class="ss-section">
+                        <label class="ss-label">Wall count: <span id="wallCountValue" class="ss-value">2</span></label>
+                        <input type="range" id="wallCount" min="1" max="5" step="1" value="2" class="slider" />
+                        <div class="ss-range-labels"><span>1</span><span>5</span></div>
+                    </div>
+                    <div class="ss-section">
+                        <label class="ss-label">Infill density: <span id="infillDensityValue" class="ss-value">20</span>%</label>
+                        <input type="range" id="infillDensity" min="0" max="100" step="5" value="20" class="slider" />
+                        <div class="ss-range-labels"><span>0% (hollow)</span><span>100% (solid)</span></div>
+                    </div>
+
+                    <div class="ss-divider"></div>
+
+                    <div class="ss-section">
+                        <button id="previewSlicesBtn" class="ss-preview-btn">
+                            <svg style="width:16px;height:16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Preview slices
+                        </button>
+                    </div>
+                    <div id="sliceInfo" class="ss-empty-msg">Click "Preview slices" to see slice contours on the model</div>
+                </div>
+
+                <!-- TAB: Print Settings -->
+                <div id="contentPrintSettings" class="tab-content hidden">
+                    <div class="ss-section">
+                        <label class="ss-label">Material preset</label>
+                        <select id="materialPreset" class="ss-select">
+                            <option value="pla">PLA</option>
+                            <option value="petg">PETG</option>
+                            <option value="abs">ABS</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="ss-section">
+                        <label class="ss-label">Nozzle temp: <span id="nozzleTempValue" class="ss-value">210</span>&deg;C</label>
+                        <input type="range" id="nozzleTemp" min="180" max="260" value="210" class="slider" />
+                        <div class="ss-range-labels"><span>180&deg;C</span><span>260&deg;C</span></div>
+                    </div>
+                    <div class="ss-section">
+                        <label class="ss-label">Bed temp: <span id="bedTempValue" class="ss-value">60</span>&deg;C</label>
+                        <input type="range" id="bedTemp" min="0" max="110" value="60" class="slider" />
+                        <div class="ss-range-labels"><span>0&deg;C</span><span>110&deg;C</span></div>
+                    </div>
+                    <div class="ss-section">
+                        <label class="ss-label">Nozzle: <span id="nozzleDiameterValue" class="ss-value">0.4</span>mm</label>
+                        <input type="range" id="nozzleDiameter" min="0" max="5" step="1" value="2" list="nozzleSizes" class="slider" />
+                        <datalist id="nozzleSizes">
+                            <option value="0" label="0.2"></option>
+                            <option value="1" label="0.3"></option>
+                            <option value="2" label="0.4"></option>
+                            <option value="3" label="0.6"></option>
+                            <option value="4" label="0.8"></option>
+                            <option value="5" label="1.0"></option>
+                        </datalist>
+                        <div class="ss-range-labels" style="position:relative;height:14px">
+                            <span style="position:absolute;left:0">0.2</span>
+                            <span style="position:absolute;left:40%;transform:translateX(-50%)">0.4</span>
+                            <span style="position:absolute;right:0">1.0</span>
+                        </div>
+                    </div>
+                    <div class="ss-section">
+                        <label class="ss-label">Speed: <span id="speedValue" class="ss-value">20</span>mm/s</label>
+                        <input type="range" id="speed" min="10" max="1000" value="20" class="slider" />
+                        <div class="ss-range-labels"><span>10mm/s</span><span>1000mm/s</span></div>
+                    </div>
+                </div>
+
+                <!-- TAB: Advanced -->
+                <div id="contentAdvanced" class="tab-content hidden">
+                    <div class="ss-section">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                            <input type="checkbox" id="enableCAxisOptimization" checked class="ss-checkbox" />
+                            <span style="font-size:12px;font-weight:600;color:#374151">C-axis shortest route</span>
+                        </label>
+                        <p style="font-size:10px;color:#9ca3af;margin-top:3px;margin-left:22px">Optimises rotation to take the shortest path</p>
+                    </div>
+
+                    <div class="ss-divider"></div>
+
+                    <details class="ss-details">
+                        <summary>G-code templates</summary>
+                        <div class="ss-details-body" style="display:flex;flex-direction:column;gap:10px">
+                            <div>
+                                <label class="ss-label">Start G-code</label>
+                                <textarea id="startGcode" rows="12" class="ss-textarea">G49 ;Disable IK during homing
+M667 S0 ;Disable calibration during homing
+M220 S100 ;Reset Feedrate
+M221 S100 ;Reset Flowrate
+
+M104 S[nozzle_temperature_initial_layer] ;Set final nozzle temp
+M190 S[bed_temperature_initial_layer_single] ;Set and wait for bed temp to stabilize
+
+G28 X ;Home X to prevent cable blocking Z homing
+G28 ;Home all axes
+G91 ;Relative positioning
+G0 Z-20 F3000 ;Move Z down 20mm from top for bowden tube alignment
+G90 ;Absolute positioning
+G0 C0 B0 F3000 ;Move rotation axes to 0
+
+; Purge line (at original coordinates before centering)
+G92 E0 ;Reset Extruder
+G1 Z2.0 F3000 ;Move Z Axis up
+G1 X-2 Y20 Z0.28 F600 ;Move to start position slowly
+M109 S[nozzle_temperature_initial_layer] ;Wait for nozzle temp to stabilize
+G1 X-2 Y145.0 Z0.28 F1500.0 E15 ;Draw the first line
+G1 X-1.7 Y145.0 Z0.28 F5000.0 ;Move to side a little
+G1 X-1.7 Y20 Z0.28 F1500.0 E30 ;Draw the second line
+G92 E0 ;Reset Extruder
+G1 E-1.0000 F1800 ;Retract a bit
+G1 Z2.0 F3000 ;Move Z Axis up
+G1 E0.0000 F1800
+
+; Post-homing positioning
+G0 X[bed_center_x] Y[bed_center_y] F1800 ;Move to center
+G92 X0 Y0 C0 B0 ;Set bed center as origin (0,0) and reset rotation axes
+M211 S0 ;Disable software endstops (required for C-axis optimization with negative values)
+
+G43.4 ;Enable IK
+M667 S1 ;Enable calibration</textarea>
+                            </div>
+                            <div>
+                                <label class="ss-label">End G-code</label>
+                                <textarea id="endGcode" rows="10" class="ss-textarea">G91 ;Relative positioning
+G1 E-2 F2700 ;Retract a bit
+G1 E-2 Z0.2 F2400 ;Retract and raise Z
+G1 X5 Y5 F3000 ;Wipe out
+G90 ;Absolute positioning
+
+G49 ;Disable IK before homing
+M667 S0 ;Disable calibration
+G28 Z ;Home Z to max height
+G4 P1000 ;Wait for Z axis to settle
+
+G0 X110 Y200 ;Move bed to back for easy part removal
+G0 C0 B0 ;Return C and B to 0 degrees
+
+M106 S0 ;Turn-off fan
+M104 S0 ;Turn-off hotend
+M140 S0 ;Turn-off bed
+
+M84 X Y E A B ;Disable all steppers except Z</textarea>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+            </div><!-- /ss-content -->
+
+            <!-- Generate Button -->
+            <div class="ss-generate-bar">
+                <button id="generate" class="ss-generate-btn">
+                    <svg style="width:18px;height:18px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    </svg>
+                    Generate G-code
+                </button>
+            </div>
+        </div><!-- /slicer-sidebar -->
+
+    </div><!-- /slicer-workspace -->
+
+    <!-- Footer (hidden but kept for JS) -->
+    <div id="shared-footer"></div>
+
+    <!-- Three.js and STLLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+
+    <!-- Shared components -->
+    <script src="../shared/theme.js"></script>
+    <script src="../shared/header.js"></script>
+    <script src="../shared/footer.js"></script>
+    <script src="../shared/file-downloader.js"></script>
+    <script src="../shared/drag-drop-handler.js"></script>
+    <script src="../shared/toast-notification.js"></script>
+    <script src="../shared/c-axis-optimizer.js"></script>
+    <script src="../shared/scene-objects.js"></script>
+
+    <!-- Core modules -->
+    <script src="js/stl-handler.js"></script>
+    <script src="js/spline-editor.js"></script>
+    <script src="js/mesh-slicer.js"></script>
+    <script src="js/contour-processor.js"></script>
+    <script src="js/scene-manager.js"></script>
+    <script src="js/gcode-generator.js"></script>
+    <script src="js/ui-controller.js"></script>
+
+    <!-- Main application -->
+    <script src="js/app.js"></script>
+</body>
+</html>
