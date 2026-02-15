@@ -116,6 +116,12 @@ class GcodeGenerator {
             gcode.push(`; Stem Height: ${params.stemHeight}mm`);
             gcode.push(`; Cap Diameter: ${params.capDiameter}mm`);
             gcode.push(`; Cap Height: ${params.capHeight}mm`);
+        } else if (shapeName === 'spiral-flower') {
+            gcode.push(`; Diameter: ${params.flowerDiameter}mm`);
+            gcode.push(`; Height: ${params.flowerHeight}mm`);
+            gcode.push(`; Waves: ${params.flowerWaves}`);
+            gcode.push(`; Wave Height: ${params.flowerWaveHeight}mm`);
+            gcode.push(`; Flare: ${params.flowerFlare}mm`);
         } else {
             gcode.push(`; Diameter: ${params.diameter}mm`);
             gcode.push(`; Vertical Section: ${params.vertical}mm`);
