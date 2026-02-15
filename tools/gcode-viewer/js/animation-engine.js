@@ -216,8 +216,8 @@ class AnimationEngine {
         this.commands = commands.filter(cmd => cmd?.hasMovement);
 
         // Clear all existing paths
-        if (this.printPath) this.scene.remove(this.printPath);
-        if (this.travelPath) this.scene.remove(this.travelPath);
+        this.disposeGroup(this.printPath);
+        this.disposeGroup(this.travelPath);
         this.printPath = null;
         this.travelPath = null;
 
@@ -244,14 +244,10 @@ class AnimationEngine {
             this.currentSegment = [];
             this.lastExtrusionPos = null;
             this.travelMoves = [];
-            if (this.printPath) {
-                this.scene.remove(this.printPath);
-                this.printPath = null;
-            }
-            if (this.travelPath) {
-                this.scene.remove(this.travelPath);
-                this.travelPath = null;
-            }
+            this.disposeGroup(this.printPath);
+            this.disposeGroup(this.travelPath);
+            this.printPath = null;
+            this.travelPath = null;
             this.updateProgressCallback(0);
         }
         this.isPlaying = true;
@@ -267,14 +263,10 @@ class AnimationEngine {
         this.currentSegment = [];
         this.lastExtrusionPos = null;
         this.travelMoves = [];
-        if (this.printPath) {
-            this.scene.remove(this.printPath);
-            this.printPath = null;
-        }
-        if (this.travelPath) {
-            this.scene.remove(this.travelPath);
-            this.travelPath = null;
-        }
+        this.disposeGroup(this.printPath);
+        this.disposeGroup(this.travelPath);
+        this.printPath = null;
+        this.travelPath = null;
         this.position = { x: 0, y: 0, z: 0, c: 0, b: 0 };
         this.updatePrinthead();
         this.updateProgressCallback(0);
@@ -285,6 +277,8 @@ class AnimationEngine {
     setProgress(percentage) {
         this.currentStep = Math.floor((percentage / 100) * this.commands.length);
         this.currentStep = Math.max(0, Math.min(this.currentStep, this.commands.length - 1));
+        this.currentSegment = [];
+        this.lastExtrusionPos = null;
         this.rebuildPrintPath();
         this.syncPosition();
         if (this.collisionEnabled && this.collisionPoints.length > 0) {
@@ -441,8 +435,24 @@ class AnimationEngine {
         this.updatePositionCallback(this.position);
     }
 
+    // Dispose all geometries and materials in a Three.js group
+    disposeGroup(group) {
+        if (!group) return;
+        this.scene.remove(group);
+        group.traverse((child) => {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
+        });
+    }
+
     updatePrintPath() {
-        if (this.printPath) this.scene.remove(this.printPath);
+        this.disposeGroup(this.printPath);
 
         // Find global Z range across all segments (loop-based to avoid stack overflow)
         let minZ = Infinity, maxZ = -Infinity, pointCount = 0;
@@ -507,7 +517,7 @@ class AnimationEngine {
 
     // Used during playback to include current segment
     updatePrintPathWithSegments(segments) {
-        if (this.printPath) this.scene.remove(this.printPath);
+        this.disposeGroup(this.printPath);
 
         // Find global Z range across all segments (loop-based to avoid stack overflow)
         let minZ = Infinity, maxZ = -Infinity, pointCount = 0;
@@ -569,7 +579,7 @@ class AnimationEngine {
     }
 
     updateTravelPath() {
-        if (this.travelPath) this.scene.remove(this.travelPath);
+        this.disposeGroup(this.travelPath);
         if (!this.showTravelMoves || this.travelMoves.length === 0) return;
 
         const group = new THREE.Group();
@@ -637,7 +647,7 @@ class AnimationEngine {
 
     clearCollisionMarkers() {
         if (this.collisionMarkers) {
-            this.scene.remove(this.collisionMarkers);
+            this.disposeGroup(this.collisionMarkers);
             this.collisionMarkers = null;
         }
     }
