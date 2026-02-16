@@ -1,20 +1,107 @@
 \chapter{Introduction}
 \label{chap:introduction}
+Additive manufacturing has become an accessible manufacturing method for hobbyists, makers and educators. Specifically FDM-printers are affordable and are used by millions worldwide. Yet, there are still some limitations: support structures are often needed for overhanging geometry, the surface quality of non-planar surfaces is lacking, and printed parts show mechanical anisotropy.
 
-\section{Background and context}
+Multi-axis printing, where an extra yaw and pitch axis are added to the printer, offers a solution for these issues. Using five degrees of freedom you can create complex forms without supports and with an improved surface quality. The issue is however that multi-axis printers are still only accessible for the industry, with machines costing tens of thousands of euros and requiring complex unavailable software.
+
+In 2023 Janis Andersons developed a prototype for a 5-axis retrofit system for consumer FDM printers. His research proved that the technology works, but he left behind a gap: the design is still hard to reproduce, documentation is lacking and there is no community to support new builders.
+
+This research will focus on filling this gap.
+
+\section{Background}
 \label{sec:intro-background}
+
+\subsection{Additive manufacturing}
+\label{subsec:intro-am}
+
+\subsubsection{History and growth}
+\label{subsubsec:intro-am-history}
+
+\subsubsection{Advantages of additive manufacturing}
+\label{subsubsec:intro-am-advantages}
+
+\subsubsection{Limitations of additive manufacturing}
+\label{subsubsec:intro-am-limitations}
+
+\subsection{Fused deposition modelling}
+\label{subsec:intro-fdm}
+
+\subsubsection{Working principles}
+\label{subsubsec:intro-fdm-principles}
+
+\subsubsection{The maker movement and open-source hardware}
+\label{subsubsec:intro-maker-movement}
+Desktop 3D printing has been growing massively in the past ten to fifteen years. Printers like the Ender 3 are now accessible for under 200 euros and are used by all sorts of people: individuals, makerspaces, schools and even small companies.
+
+\subsubsection{Limitations of conventional FDM}
+\label{subsubsec:intro-fdm-limitations}
+However, these traditional 3-axis printers have some limitations. They are bound by planar printing, meaning that they can only print a full flat layer at a time, stacking them in the Z-direction. This causes overhangs to need support material since you cannot print in mid-air. Curved surfaces will have visible layer lines and the mechanical strength is usually lower in the Z-direction due to anisotropy.
+
+\subsection{Multi-axis printing}
+\label{subsec:intro-multi-axis}
+
+\subsubsection{Principles and benefits}
+\label{subsubsec:intro-multi-axis-principles}
+Adding two additional axes solves many of these issues. By adding two extra rotational axes, the print head can be angled in any direction. This allows you to print certain geometry without supports that would otherwise be impossible with traditional printing.
+
+\subsubsection{Current state of multi-axis printing}
+\label{subsubsec:intro-multi-axis-state}
+
+\subsubsection{Barriers to adoption}
+\label{subsubsec:intro-multi-axis-barriers}
+
+\subsection{Prior work}
+\label{subsec:intro-prior-work}
+
+\subsubsection{Andersons' 5-axis retrofit prototype}
+\label{subsubsec:intro-andersons}
+
+\subsubsection{Findings and contributions}
+\label{subsubsec:intro-andersons-findings}
+
+\subsubsection{Remaining challenges}
+\label{subsubsec:intro-andersons-challenges}
 
 \section{Problem statement}
 \label{sec:intro-problem}
+Andersons proved that the technology works, but his prototype was not yet ready for replication by others. The design is relatively simple, but the documentation and support are lacking. Current commercial alternatives are unaffordable for the average maker, and the existing workflow for 5-axis printing is still too complex.
+
+\subsection{The reproducibility gap}
+\label{subsec:intro-reproducibility-gap}
+
+\subsection{Accessibility barriers}
+\label{subsec:intro-accessibility-barriers}
+
+\subsection{Lack of community and documentation}
+\label{subsec:intro-lack-community}
 
 \section{Research objectives}
 \label{sec:intro-objectives}
+The primary objective of this research is to redesign the multi-axis retrofit so it can be built with affordable and accessible parts. Alongside the hardware, an extensive set of open-source documentation will be developed, including build guides, part lists and instructions. This should result in a complete workflow that guides makers from building the printer to actually printing with it. Finally, the documentation will be validated by letting independent makers reproduce the system and incorporating their feedback into the design.
 
 \section{Research questions}
 \label{sec:intro-rq}
+How can a 5-axis retrofit system be redesigned and documented so that individual makers can reproduce it?
+\begin{enumerate}
+    \item Which design modifications are needed to improve reproducibility?
+    \item What documentation and instructions are needed for successful replication?
+    \item How can community feedback be collected and analysed to further improve the system?
+\end{enumerate}
 
 \section{Scope and boundaries}
 \label{sec:intro-scope}
+This research aims at making 5-axis printing more accessible for the maker community, not at developing new printing technology itself. The target audience are makers with basic knowledge of 3D printing and electronics, no experts, but no complete beginners either. The design should be affordable, with a total budget for the retrofit of under 200 euros. For practical reasons, the Ender 3 will be used as the first compatible printer since it is a widespread and cheap model. The design is however meant to be adaptable to other printers.
+
+This research does not aim to develop completely new slicing software or write firmware from scratch. Instead, it builds upon existing tools and workflows. Industrial applications, certification and commercialisation are also outside the scope of this work.
+
+\subsection{Target audience}
+\label{subsec:intro-target-audience}
+
+\subsection{Budget constraints}
+\label{subsec:intro-budget}
+
+\subsection{Technical boundaries}
+\label{subsec:intro-technical-boundaries}
 
 \section{Thesis outline}
 \label{sec:intro-outline}

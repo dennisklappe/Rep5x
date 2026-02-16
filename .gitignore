@@ -1,45 +1,21 @@
-# Website build artifacts and dependencies
-website/node_modules/
-website/dist/
-website/.astro/
-website/.DS_Store
-
-# Package manager files (yarn.lock committed for reproducible builds)
-website/package-lock.json
-website/pnpm-lock.yaml
-
-# Environment variables
-website/.env
-website/.env.local
-website/.env.*.local
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+*.pdf
 
-# Temporary files
-*.tmp
-*.temp
-temp/
-website/temp/
-
-# Thesis build artifacts
+# Build directory
 thesis/build/
