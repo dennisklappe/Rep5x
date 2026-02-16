@@ -104,6 +104,18 @@ class UIController {
             }
         });
 
+        // Spiral Flower sliders
+        ['flowerDiameter', 'flowerHeight', 'flowerWaves', 'flowerWaveHeight', 'flowerFlare'].forEach(id => {
+            const slider = document.getElementById(id);
+            if (slider) {
+                slider.addEventListener('input', (e) => {
+                    const valueSpan = document.getElementById(id + 'Value');
+                    if (valueSpan) valueSpan.textContent = e.target.value;
+                    if (this.onPreviewUpdate) this.onPreviewUpdate();
+                });
+            }
+        });
+
         // Bed size changes
         const bedWidth = document.getElementById('bedWidth');
         const bedDepth = document.getElementById('bedDepth');
@@ -242,6 +254,14 @@ class UIController {
                 capDiameter: parseFloat(document.getElementById('capDiameter')?.value || 50),
                 capHeight: parseFloat(document.getElementById('capHeight')?.value || 25)
             };
+        } else if (shapeName === 'spiral-flower') {
+            return {
+                flowerDiameter: parseFloat(document.getElementById('flowerDiameter')?.value || 30),
+                flowerHeight: parseFloat(document.getElementById('flowerHeight')?.value || 60),
+                flowerWaves: parseFloat(document.getElementById('flowerWaves')?.value || 3),
+                flowerWaveHeight: parseFloat(document.getElementById('flowerWaveHeight')?.value || 3),
+                flowerFlare: parseFloat(document.getElementById('flowerFlare')?.value || 15)
+            };
         } else {
             return {
                 diameter: parseFloat(document.getElementById('diameter')?.value || 30),
@@ -275,12 +295,14 @@ class UIController {
     updateShapeInfo(shape) {
         const shapeInfo = {
             'elbow-pipe': 'Elbow pipe demonstrates the B-axis (pitch) printing capability.',
-            'mushroom': 'Mushroom shape demonstrates both C-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form.'
+            'mushroom': 'Mushroom shape demonstrates both C-axis (yaw) and B-axis (pitch) capabilities with an organic overhanging form.',
+            'spiral-flower': 'Spiral flower demonstrates simultaneous non-planar C-axis rotation and B-axis tilt. The toolpath spirals upward with sinusoidal Z oscillations while B tilts to follow the wave slope, then flares outward like a flower.'
         };
 
         const shapeDescriptions = {
             'elbow-pipe': 'Configurable elbow pipe to demonstrate B-axis (pitch) printing',
-            'mushroom': 'Organic mushroom shape demonstrating both C and B axis movements'
+            'mushroom': 'Organic mushroom shape demonstrating both C and B axis movements',
+            'spiral-flower': 'Wavy spiral with flower flare demonstrating simultaneous non-planar C and B movement'
         };
 
         const infoElem = document.getElementById('shapeInfo');
@@ -294,16 +316,20 @@ class UIController {
         }
 
         // Toggle parameter panels
-        const elbowParams = document.getElementById('elbowPipeParams');
-        const mushroomParams = document.getElementById('mushroomParams');
+        const panels = {
+            'elbowPipeParams': 'elbow-pipe',
+            'mushroomParams': 'mushroom',
+            'spiralFlowerParams': 'spiral-flower'
+        };
 
-        if (elbowParams && mushroomParams) {
-            if (shape === 'mushroom') {
-                elbowParams.classList.add('hidden');
-                mushroomParams.classList.remove('hidden');
-            } else {
-                elbowParams.classList.remove('hidden');
-                mushroomParams.classList.add('hidden');
+        for (const [panelId, shapeName] of Object.entries(panels)) {
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                if (shape === shapeName) {
+                    panel.classList.remove('hidden');
+                } else {
+                    panel.classList.add('hidden');
+                }
             }
         }
     }
