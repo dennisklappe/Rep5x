@@ -72,6 +72,7 @@
                         <select id="shape" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="elbow-pipe">Elbow Pipe</option>
                             <option value="mushroom">Mushroom</option>
+                            <option value="spiral-flower">Spiral Flower</option>
                         </select>
                         <p id="shapeDescription" class="mt-1 text-xs text-gray-500">Configurable elbow pipe to demonstrate B-axis (pitch) printing</p>
                     </div>
@@ -189,6 +190,79 @@
                                 <span>60mm</span>
                             </div>
                             <p class="mt-1 text-xs text-gray-500">Height of the mushroom cap</p>
+                        </div>
+                    </div>
+
+                    <!-- Spiral Flower Parameters -->
+                    <div id="spiralFlowerParams" class="hidden">
+                        <!-- Diameter -->
+                        <div class="slider-container mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Diameter: <span id="flowerDiameterValue" class="font-semibold text-primary">30</span>mm
+                            </label>
+                            <input type="range" id="flowerDiameter" min="15" max="60" value="30"
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>15mm</span>
+                                <span>60mm</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Base tube diameter</p>
+                        </div>
+
+                        <!-- Height -->
+                        <div class="slider-container mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Height: <span id="flowerHeightValue" class="font-semibold text-primary">60</span>mm
+                            </label>
+                            <input type="range" id="flowerHeight" min="30" max="100" value="60"
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>30mm</span>
+                                <span>100mm</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Total height of the vase</p>
+                        </div>
+
+                        <!-- Waves per revolution -->
+                        <div class="slider-container mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Waves per revolution: <span id="flowerWavesValue" class="font-semibold text-primary">3</span>
+                            </label>
+                            <input type="range" id="flowerWaves" min="1" max="6" value="3"
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>1</span>
+                                <span>6</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Number of wave peaks per rotation (drives B oscillation)</p>
+                        </div>
+
+                        <!-- Wave Height -->
+                        <div class="slider-container mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Wave Height: <span id="flowerWaveHeightValue" class="font-semibold text-primary">3</span>mm
+                            </label>
+                            <input type="range" id="flowerWaveHeight" min="1" max="10" value="3"
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>1mm</span>
+                                <span>10mm</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Amplitude of non-planar Z waves</p>
+                        </div>
+
+                        <!-- Flare -->
+                        <div class="slider-container">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Flower Flare: <span id="flowerFlareValue" class="font-semibold text-primary">15</span>mm
+                            </label>
+                            <input type="range" id="flowerFlare" min="0" max="30" value="15"
+                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" />
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>0mm</span>
+                                <span>30mm</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">How much the top flares outward like a flower</p>
                         </div>
                     </div>
 
@@ -452,6 +526,7 @@ M84 X Y E A B ;Disable all steppers except Z
     <!-- Shape implementations -->
     <script src="js/shapes/elbow-pipe.js"></script>
     <script src="js/shapes/mushroom.js"></script>
+    <script src="js/shapes/spiral-flower.js"></script>
 
     <!-- Core modules -->
     <script src="../shared/inverse-kinematics.js"></script>

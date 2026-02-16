@@ -9,7 +9,8 @@ class VaseGeneratorApp {
         // Register shapes
         this.shapes = {
             'elbow-pipe': new ElbowPipe(),
-            'mushroom': new Mushroom()
+            'mushroom': new Mushroom(),
+            'spiral-flower': new SpiralFlower()
         };
     }
 
