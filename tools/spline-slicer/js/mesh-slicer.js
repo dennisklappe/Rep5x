@@ -2,7 +2,11 @@
 
 class MeshSlicer {
     constructor() {
-        this.HASH_PRECISION = 5;
+        // Snap grid: 0.001mm — merges intersection endpoints from shared STL edges
+        // that may have slightly different vertex coordinates (float32 precision).
+        this.SNAP_PRECISION = 1000;      // round(coord * 1000) / 1000
+        this.HASH_PRECISION = 3;         // toFixed(3) — matches snap grid
+        this.MIN_SEGMENT_LENGTH = 0.001; // discard degenerate segments below 1 micron
     }
 
     /**
@@ -42,11 +46,23 @@ class MeshSlicer {
             const t = da / (da - db);
             const point = new THREE.Vector3().lerpVectors(va, vb, t);
             intersections.push(point);
-        } else if (Math.abs(da) < 1e-10 && Math.abs(db) > 1e-10) {
+        } else if (Math.abs(da) < 1e-6 && Math.abs(db) > 1e-6) {
             intersections.push(va.clone());
-        } else if (Math.abs(db) < 1e-10 && Math.abs(da) > 1e-10) {
+        } else if (Math.abs(db) < 1e-6 && Math.abs(da) > 1e-6) {
             intersections.push(vb.clone());
         }
+    }
+
+    /**
+     * Snap a point to the precision grid (mutates in place)
+     * This ensures shared edges from adjacent STL triangles produce
+     * identical intersection endpoints even if vertex coords differ slightly.
+     */
+    _snapPoint(point) {
+        const p = this.SNAP_PRECISION;
+        point.x = Math.round(point.x * p) / p;
+        point.y = Math.round(point.y * p) / p;
+        point.z = Math.round(point.z * p) / p;
     }
 
     /**
@@ -59,17 +75,36 @@ class MeshSlicer {
     }
 
     /**
-     * Connect line segments into ordered contours
+     * Connect line segments into ordered contours.
+     *
+     * Strategy:
+     * 1. Snap endpoints to grid and build hash-based adjacency
+     * 2. Walk adjacency chains to form contours
+     * 3. If the chain breaks (no matching neighbour), try nearest-neighbour
+     *    from remaining unused segments to continue
+     *
      * @param {Array} segments - Array of {a, b} segments
      * @returns {Array} Array of contours (each contour is an array of THREE.Vector3)
      */
     connectSegments(segments) {
         if (segments.length === 0) return [];
 
+        // Snap all endpoints to grid for robust matching
+        for (const seg of segments) {
+            this._snapPoint(seg.a);
+            this._snapPoint(seg.b);
+        }
+
+        // Filter out degenerate (near-zero-length) segments
+        const validSegments = segments.filter(seg =>
+            seg.a.distanceTo(seg.b) > this.MIN_SEGMENT_LENGTH
+        );
+        if (validSegments.length === 0) return [];
+
         // Build adjacency map
         const adjacency = new Map();
-        for (let i = 0; i < segments.length; i++) {
-            const seg = segments[i];
+        for (let i = 0; i < validSegments.length; i++) {
+            const seg = validSegments[i];
             const hashA = this._hashPoint(seg.a);
             const hashB = this._hashPoint(seg.b);
 
@@ -83,41 +118,77 @@ class MeshSlicer {
         const used = new Set();
         const contours = [];
 
-        for (let i = 0; i < segments.length; i++) {
+        // Build a spatial index of segment midpoints for nearest-neighbour fallback
+        const segMidpoints = validSegments.map(seg =>
+            new THREE.Vector3().addVectors(seg.a, seg.b).multiplyScalar(0.5)
+        );
+
+        for (let i = 0; i < validSegments.length; i++) {
             if (used.has(i)) continue;
 
             const contour = [];
             used.add(i);
-            contour.push(segments[i].a.clone());
-            contour.push(segments[i].b.clone());
+            contour.push(validSegments[i].a.clone());
+            contour.push(validSegments[i].b.clone());
 
-            let currentHash = this._hashPoint(segments[i].b);
-            const startHash = this._hashPoint(segments[i].a);
+            let currentHash = this._hashPoint(validSegments[i].b);
+            let currentPoint = validSegments[i].b;
+            const startHash = this._hashPoint(validSegments[i].a);
 
             // Walk the chain
-            let maxSteps = segments.length;
+            let maxSteps = validSegments.length;
             while (maxSteps-- > 0) {
                 const neighbours = adjacency.get(currentHash);
-                if (!neighbours) break;
-
                 let found = false;
-                for (const neighbour of neighbours) {
-                    if (!used.has(neighbour.index)) {
-                        used.add(neighbour.index);
-                        // Don't push if this closes the loop (avoids duplicate of start point)
-                        if (neighbour.hash === startHash) {
-                            found = true;
+
+                if (neighbours) {
+                    for (const neighbour of neighbours) {
+                        if (!used.has(neighbour.index)) {
+                            used.add(neighbour.index);
+                            // Don't push if this closes the loop (avoids duplicate of start point)
+                            if (neighbour.hash === startHash) {
+                                found = true;
+                                currentHash = neighbour.hash;
+                                break;
+                            }
+                            contour.push(neighbour.point.clone());
                             currentHash = neighbour.hash;
+                            currentPoint = neighbour.point;
+                            found = true;
                             break;
                         }
-                        contour.push(neighbour.point.clone());
-                        currentHash = neighbour.hash;
-                        found = true;
-                        break;
                     }
                 }
 
-                if (!found || currentHash === startHash) break;
+                if (currentHash === startHash) break;
+
+                // Nearest-neighbour fallback: if adjacency chain broke,
+                // find the closest unused segment endpoint and jump to it
+                if (!found) {
+                    let bestDist = Infinity;
+                    let bestIdx = -1;
+                    let bestIsA = true;
+
+                    for (let j = 0; j < validSegments.length; j++) {
+                        if (used.has(j)) continue;
+                        const dA = currentPoint.distanceTo(validSegments[j].a);
+                        const dB = currentPoint.distanceTo(validSegments[j].b);
+                        if (dA < bestDist) { bestDist = dA; bestIdx = j; bestIsA = true; }
+                        if (dB < bestDist) { bestDist = dB; bestIdx = j; bestIsA = false; }
+                    }
+
+                    if (bestIdx >= 0 && bestDist < 1.0) {
+                        // Jump to nearest segment (within 1mm tolerance)
+                        used.add(bestIdx);
+                        const seg = validSegments[bestIdx];
+                        const nextPoint = bestIsA ? seg.b : seg.a;
+                        contour.push(nextPoint.clone());
+                        currentHash = this._hashPoint(nextPoint);
+                        currentPoint = nextPoint;
+                    } else {
+                        break; // No nearby segment found — end this contour
+                    }
+                }
             }
 
             if (contour.length >= 3) {

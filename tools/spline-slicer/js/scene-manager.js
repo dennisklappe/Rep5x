@@ -11,6 +11,8 @@ class SceneManager {
         this.stlMesh = null;
         this.splineLine = null;
         this.controlPointSpheres = [];
+        this.sliceIndicators = [];
+        this.barrierIndicators = [];
         this.sliceLines = [];
         this.platform = null;
         this.gridHelper = null;
@@ -383,21 +385,81 @@ class SceneManager {
 
     // === Control Point Spheres ===
 
-    setControlPoints(points) {
+    setControlPoints(points, sliceModes = [], clipFlags = []) {
         this.clearControlPoints();
 
-        const geometry = new THREE.SphereGeometry(this.CONTROL_POINT_RADIUS, 16, 16);
+        const sphereGeom = new THREE.SphereGeometry(this.CONTROL_POINT_RADIUS, 16, 16);
+        const ringGeom = new THREE.RingGeometry(
+            this.CONTROL_POINT_RADIUS * 2, this.CONTROL_POINT_RADIUS * 3, 32
+        );
+        const barrierGeom = new THREE.CircleGeometry(this.CONTROL_POINT_RADIUS * 6, 32);
 
-        for (const point of points) {
+        for (let i = 0; i < points.length; i++) {
+            const point = points[i];
+            const mode = sliceModes[i] || 'auto';
+            const hasBarrier = clipFlags[i] || false;
+
+            // Sphere colour: blue for flat, red for auto
+            // depthTest off so points are always visible through the model
+            const sphereColor = mode === 'flat' ? 0x3388ff : this.CONTROL_POINT_COLOR;
             const material = new THREE.MeshPhongMaterial({
-                color: this.CONTROL_POINT_COLOR,
-                shininess: 100
+                color: sphereColor,
+                shininess: 100,
+                depthTest: false
             });
-            const sphere = new THREE.Mesh(geometry.clone(), material);
+            const sphere = new THREE.Mesh(sphereGeom.clone(), material);
             sphere.position.copy(point);
+            sphere.renderOrder = 1;
             this.scene.add(sphere);
             this.controlPointSpheres.push(sphere);
+
+            // Slice plane indicator ring
+            const tangent = this._computePointTangent(points, i);
+            const normal = mode === 'flat'
+                ? new THREE.Vector3(0, 1, 0)
+                : tangent;
+
+            const ringColor = mode === 'flat' ? 0x3388ff : 0xff8800;
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: ringColor, side: THREE.DoubleSide,
+                transparent: true, opacity: 0.6,
+                depthTest: false
+            });
+            const ring = new THREE.Mesh(ringGeom.clone(), ringMat);
+            ring.position.copy(point);
+            ring.lookAt(point.clone().add(normal));
+            ring.renderOrder = 1;
+            this.scene.add(ring);
+            this.sliceIndicators.push(ring);
+
+            // Barrier indicator disc — same orientation as the slice plane
+            if (hasBarrier && i > 0) {
+                const barrierNormal = normal; // reuse slice-plane normal (flat=up, auto=tangent)
+                const barrierMat = new THREE.MeshBasicMaterial({
+                    color: 0xff4444, side: THREE.DoubleSide,
+                    transparent: true, opacity: 0.25,
+                    depthTest: false
+                });
+                const barrier = new THREE.Mesh(barrierGeom.clone(), barrierMat);
+                barrier.position.copy(point);
+                barrier.lookAt(point.clone().add(barrierNormal));
+                barrier.renderOrder = 1;
+                this.scene.add(barrier);
+                this.barrierIndicators.push(barrier);
+            }
         }
+    }
+
+    /** Compute approximate tangent at a control point from its neighbours */
+    _computePointTangent(points, index) {
+        if (points.length < 2) return new THREE.Vector3(0, 1, 0);
+        if (index === 0) {
+            return new THREE.Vector3().subVectors(points[1], points[0]).normalize();
+        }
+        if (index === points.length - 1) {
+            return new THREE.Vector3().subVectors(points[index], points[index - 1]).normalize();
+        }
+        return new THREE.Vector3().subVectors(points[index + 1], points[index - 1]).normalize();
     }
 
     clearControlPoints() {
@@ -407,6 +469,20 @@ class SceneManager {
             if (sphere.material) sphere.material.dispose();
         }
         this.controlPointSpheres = [];
+
+        for (const indicator of this.sliceIndicators) {
+            this.scene.remove(indicator);
+            if (indicator.geometry) indicator.geometry.dispose();
+            if (indicator.material) indicator.material.dispose();
+        }
+        this.sliceIndicators = [];
+
+        for (const barrier of this.barrierIndicators) {
+            this.scene.remove(barrier);
+            if (barrier.geometry) barrier.geometry.dispose();
+            if (barrier.material) barrier.material.dispose();
+        }
+        this.barrierIndicators = [];
     }
 
     // === Slice Contour Display ===

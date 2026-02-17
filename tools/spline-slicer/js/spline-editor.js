@@ -229,15 +229,17 @@ class SplineEditor {
         const cpFractions = this._getControlPointFractions();
 
         // Pre-compute clip planes from control points with barriers
+        // Barrier normal = slice plane normal at that control point (tangent for auto, up for flat)
         const allClipPlanes = [];
-        for (let cp = 1; cp < this.controlPoints.length; cp++) {
+        const N = this.controlPoints.length;
+        for (let cp = 1; cp < N; cp++) {
             if (this.clipFlags[cp]) {
-                const incomingDir = new THREE.Vector3()
-                    .subVectors(this.controlPoints[cp], this.controlPoints[cp - 1])
-                    .normalize();
+                const clipNormal = this.sliceModes[cp] === 'flat'
+                    ? new THREE.Vector3(0, 1, 0)
+                    : this.curve.getTangent(cp / (N - 1)).normalize();
                 allClipPlanes.push({
                     point: this.controlPoints[cp].clone(),
-                    normal: incomingDir,
+                    normal: clipNormal,
                     fraction: cpFractions[cp]
                 });
             }
@@ -370,14 +372,26 @@ class SplineEditor {
             const segLength = segDir.length();
             const tangent = segDir.clone().normalize();
 
-            // Check if start control point has a barrier — use incoming tangent as clip normal
+            // Check if start control point has a barrier
+            // Barrier normal = averaged tangent at junction (same as slice direction indicator)
             if (this.clipFlags[seg] && seg > 0) {
-                const incomingTangent = new THREE.Vector3()
-                    .subVectors(this.controlPoints[seg], this.controlPoints[seg - 1])
-                    .normalize();
+                let clipNormal;
+                if (this.sliceModes[seg] === 'flat') {
+                    clipNormal = new THREE.Vector3(0, 1, 0);
+                } else if (seg < this.controlPoints.length - 1) {
+                    // Average of incoming and outgoing directions
+                    clipNormal = new THREE.Vector3()
+                        .subVectors(this.controlPoints[seg + 1], this.controlPoints[seg - 1])
+                        .normalize();
+                } else {
+                    // Last point: use incoming direction
+                    clipNormal = new THREE.Vector3()
+                        .subVectors(this.controlPoints[seg], this.controlPoints[seg - 1])
+                        .normalize();
+                }
                 activeClipPlanes.push({
                     point: this.controlPoints[seg].clone(),
-                    normal: incomingTangent
+                    normal: clipNormal
                 });
             }
 

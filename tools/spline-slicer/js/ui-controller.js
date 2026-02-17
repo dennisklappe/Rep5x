@@ -554,6 +554,7 @@ class UIController {
     getAdvancedSettings() {
         return {
             enableCAxisOptimization: document.getElementById('enableCAxisOptimization')?.checked || false,
+            ikMode: document.getElementById('ikMode')?.value || 'live',
             startGcode: document.getElementById('startGcode')?.value || '',
             endGcode: document.getElementById('endGcode')?.value || ''
         };

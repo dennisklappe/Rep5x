@@ -3,7 +3,7 @@
 
 class ContourProcessor {
     /**
-     * Build a local 2D coordinate system for a plane
+     * Build a local 2D coordinate system for a plane (initial/fallback)
      * Returns {u, v, origin} where u and v are orthogonal unit vectors in the plane
      */
     _buildPlaneCoords(planeNormal, planePoint) {
@@ -13,6 +13,33 @@ class ContourProcessor {
             : new THREE.Vector3(1, 0, 0);
 
         const u = new THREE.Vector3().crossVectors(planeNormal, ref).normalize();
+        const v = new THREE.Vector3().crossVectors(planeNormal, u).normalize();
+
+        return { u, v, origin: planePoint.clone() };
+    }
+
+    /**
+     * Build plane coords using parallel transport from a previous frame.
+     * This prevents the U/V basis from flipping abruptly when the plane
+     * normal crosses the reference-vector threshold, which would cause
+     * contour winding to flip and break offset/infill generation.
+     */
+    _buildPlaneCoordsFromPrev(planeNormal, planePoint, prevCoords) {
+        if (!prevCoords) {
+            return this._buildPlaneCoords(planeNormal, planePoint);
+        }
+
+        // Project previous U onto the new plane (parallel transport)
+        let u = prevCoords.u.clone()
+            .sub(planeNormal.clone().multiplyScalar(prevCoords.u.dot(planeNormal)));
+
+        const uLen = u.length();
+        if (uLen < 0.01) {
+            // Previous U is nearly parallel to new normal — fall back
+            return this._buildPlaneCoords(planeNormal, planePoint);
+        }
+
+        u.divideScalar(uLen); // normalize
         const v = new THREE.Vector3().crossVectors(planeNormal, u).normalize();
 
         return { u, v, origin: planePoint.clone() };
@@ -181,11 +208,12 @@ class ContourProcessor {
      * @param {THREE.Vector3} planePoint - Point on the slice plane
      * @param {object} settings - {wallCount, nozzleDiameter, infillDensity}
      * @param {number} sliceIndex - For alternating infill angle
-     * @returns {object} {walls: [contour3D, ...], infill: [{a, b}, ...]}
+     * @param {object|null} prevCoords - Previous slice's plane coords for continuous basis
+     * @returns {object} {walls, infill, coords} — coords should be passed to next slice
      */
-    process(contours3D, planeNormal, planePoint, settings, sliceIndex) {
+    process(contours3D, planeNormal, planePoint, settings, sliceIndex, prevCoords = null) {
         const { wallCount, nozzleDiameter, infillDensity } = settings;
-        const coords = this._buildPlaneCoords(planeNormal, planePoint);
+        const coords = this._buildPlaneCoordsFromPrev(planeNormal, planePoint, prevCoords);
 
         const allWalls = [];
         const allInfill = [];
@@ -233,6 +261,6 @@ class ContourProcessor {
             }
         }
 
-        return { walls: allWalls, infill: allInfill };
+        return { walls: allWalls, infill: allInfill, coords };
     }
 }

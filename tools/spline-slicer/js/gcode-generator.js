@@ -16,7 +16,7 @@ class GcodeGenerator {
     generate(slices, printSettings, advancedSettings) {
         const { layerHeight, speed, nozzleDiameter, nozzleTemp, bedTemp,
                 bedWidth, bedDepth, wallCount, infillDensity } = printSettings;
-        const { enableCAxisOptimization, startGcode, endGcode } = advancedSettings;
+        const { enableCAxisOptimization, ikMode = 'live', startGcode, endGcode } = advancedSettings;
 
         const gcode = [];
         const bedCenterX = bedWidth / 2;
@@ -43,8 +43,9 @@ class GcodeGenerator {
 
         // 5-axis parameters
         gcode.push('; === Rep5x Parameters ===');
-        gcode.push('; Inverse Kinematics: firmware-side (G43.4)');
-        gcode.push('; Calibration Correction: firmware-side (M667)');
+        const ikModeLabel = ikMode === 'preprocess' ? 'pre-processed (M668)' :
+                            ikMode === 'live' ? 'live (G43.4)' : 'none';
+        gcode.push(`; IK Mode: ${ikModeLabel}`);
         gcode.push(`; C-axis Optimization: ${enableCAxisOptimization ? 'enabled' : 'disabled'}`);
         gcode.push('');
 
@@ -53,7 +54,7 @@ class GcodeGenerator {
         if (processedStartGcode.trim()) {
             gcode.push(...processedStartGcode.split('\n'));
         } else {
-            this.addDefaultStartGcode(gcode);
+            this.addDefaultStartGcode(gcode, ikMode, nozzleTemp, bedTemp, bedCenterX, bedCenterY);
         }
         gcode.push('M83 ; Use relative extrusion');
         gcode.push('');
@@ -64,6 +65,7 @@ class GcodeGenerator {
         const filamentArea = Math.PI * Math.pow(this.FILAMENT_DIAMETER / 2, 2);
 
         let prevSliceDistance = 0;
+        let prevCoords = null; // Track plane basis for continuous parallel transport
 
         for (let s = 0; s < slices.length; s++) {
             const slice = slices[s];
@@ -84,13 +86,16 @@ class GcodeGenerator {
             gcode.push(`; --- Slice ${s} (B=${B.toFixed(1)} C=${C.toFixed(1)}) ---`);
 
             // Process contours into walls and infill
-            const { walls, infill } = this.contourProcessor.process(
+            // Pass prevCoords for continuous basis (parallel transport prevents basis flips)
+            const { walls, infill, coords } = this.contourProcessor.process(
                 slice.contours,
                 normal,
                 slice.point,
                 { wallCount: wallCount || 1, nozzleDiameter, infillDensity: infillDensity || 0 },
-                s
+                s,
+                prevCoords
             );
+            prevCoords = coords;
 
             // Generate wall G-code
             for (let w = 0; w < walls.length; w++) {
@@ -224,22 +229,34 @@ class GcodeGenerator {
         return result;
     }
 
-    addDefaultStartGcode(gcode) {
-        gcode.push('G49 ; Disable IK during homing');
-        gcode.push('M667 S0 ; Disable calibration during homing');
+    addDefaultStartGcode(gcode, ikMode = 'live', nozzleTemp = 210, bedTemp = 60, bedCenterX = 100, bedCenterY = 100) {
+        if (ikMode === 'preprocess') {
+            gcode.push('G49 ; Disable IK');
+            gcode.push('M667 S0 ; Disable calibration');
+            gcode.push(`M668 B${bedTemp} H${nozzleTemp} ; Pre-process IK + start heating`);
+        } else {
+            gcode.push('G49 ; Disable IK during homing');
+            gcode.push('M667 S0 ; Disable calibration during homing');
+            gcode.push(`M104 S${nozzleTemp} ; Set hotend temp`);
+            gcode.push(`M140 S${bedTemp} ; Set bed temp`);
+        }
         gcode.push('G28 ; Home all axes');
-        gcode.push('G1 Z5 F300 ; Lift Z');
-        gcode.push('M104 S210 ; Set hotend temp');
-        gcode.push('M140 S60 ; Set bed temp');
-        gcode.push('M190 S60 ; Wait for bed');
-        gcode.push('M109 S210 ; Wait for hotend');
         gcode.push('G92 E0 ; Reset extruder');
+        gcode.push('G1 Z2 F3000 ; Lift Z');
+        gcode.push(`M190 S${bedTemp} ; Wait for bed`);
+        gcode.push(`M109 S${nozzleTemp} ; Wait for hotend`);
         gcode.push('G1 E10 F200 ; Prime extruder');
         gcode.push('G92 E0 ; Reset extruder');
         gcode.push('G21 ; Set units to millimeters');
         gcode.push('G90 ; Use absolute coordinates');
-        gcode.push('G43.4 ; Enable IK');
-        gcode.push('M667 S1 ; Enable calibration');
+        gcode.push(`G0 X${bedCenterX} Y${bedCenterY} F2400 ; Move to bed centre`);
+        gcode.push('G92 X0 Y0 C0 B0 ; Set bed centre as origin');
+        gcode.push('M211 S0 ; Disable software endstops');
+        if (ikMode === 'live') {
+            gcode.push('G43.4 ; Enable IK');
+            gcode.push('M667 S1 ; Enable calibration');
+            gcode.push('M205 I2 J2 ; Lower C/B jerk for smooth 5-axis movement');
+        }
     }
 
     addDefaultEndGcode(gcode) {

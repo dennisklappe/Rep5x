@@ -214,8 +214,12 @@ class SplineSlicerApp {
     updateSplineVisuals() {
         const points = this.splineEditor.getPoints();
 
-        // Update control point spheres
-        this.sceneManager.setControlPoints(points);
+        // Update control point spheres with mode/barrier indicators
+        this.sceneManager.setControlPoints(
+            points,
+            this.splineEditor.getSliceModes(),
+            this.splineEditor.getClipFlags()
+        );
 
         // Update spline curve
         const curvePoints = this.splineEditor.getCurvePoints(200);
