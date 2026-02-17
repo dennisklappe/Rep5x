@@ -14,7 +14,7 @@ class SpiralFlower extends ShapeBase {
             flowerDiameter: 30,
             flowerHeight: 60,
             flowerWaves: 3,
-            flowerWaveHeight: 3,
+            flowerWaveHeight: 2,
             flowerFlare: 15
         };
     }
@@ -52,12 +52,16 @@ class SpiralFlower extends ShapeBase {
         // --- Stem profile: wavy bulges along height ---
         // Creates wall angle changes that drive B movement on the stem.
         // Two undulations: bulge-narrow-bulge before the flare zone.
+        // The sine wave uses exactly 2 full cycles (4π) so the value AND derivative
+        // are both zero at progress=stemEnd, giving a smooth transition to the flare.
         const stemEnd = 0.65;
         let taper;
         if (progress < stemEnd) {
             const p = progress / stemEnd;
-            // Two sine waves along the stem give bulge-narrow-bulge
-            taper = 1.0 + 0.18 * Math.sin(p * Math.PI * 2);
+            // Fade-out envelope: smooth cubic ease (1→0) over last 20% of stem
+            const fadeStart = 0.8; // start fading at 80% of stem (progress=0.52)
+            const envelope = p < fadeStart ? 1.0 : 1.0 - smoothstep((p - fadeStart) / (1 - fadeStart));
+            taper = 1.0 + 0.18 * Math.sin(p * Math.PI * 2) * envelope;
         } else {
             taper = 1.0;
         }
@@ -108,7 +112,7 @@ class SpiralFlower extends ShapeBase {
         if (progress > 0.65) {
             flareT = smoothstep((progress - 0.65) / 0.35);
         }
-        const waveAmp = flowerWaveHeight * (1 + flareT * 0.6);
+        const waveAmp = flowerWaveHeight;
         const waveZ = waveAmp * Math.sin(flowerWaves * angle) * waveEnvelope;
         const z = progress * flowerHeight + waveZ;
 
@@ -123,8 +127,11 @@ class SpiralFlower extends ShapeBase {
         // Wall tilt angle from vertical (positive = wall goes outward)
         const wallAngle = Math.atan(drdz);
 
+        // Ramp up B gradually near the bed to avoid heater block hitting the bed
+        const bRamp = Math.min(1, (progress * flowerHeight) / 5);
+
         // Nozzle perpendicular to wall: tilt inward when wall goes outward
-        const bAngle = wallAngle;
+        const bAngle = wallAngle * bRamp;
 
         // C = radial direction (pointing outward from center)
         const cAngle = angle;
@@ -188,13 +195,12 @@ class SpiralFlower extends ShapeBase {
         return pathPoints;
     }
 
-    generateGcode(params, layerHeight, speed) {
+    generateGcode(params, layerHeight, speed, nozzleDiameter = 0.4) {
         const { flowerDiameter, flowerHeight, flowerWaves, flowerWaveHeight, flowerFlare } = params;
         const gcode = [];
-        const resolution = 100;
 
         const filamentArea = Math.PI * Math.pow(1.75 / 2, 2);
-        const extrusionMultiplier = (layerHeight * 0.4) / filamentArea;
+        const extrusionMultiplier = (layerHeight * nozzleDiameter) / filamentArea;
 
         gcode.push("; === SPIRAL FLOWER VASE ===");
         gcode.push(`; Diameter: ${flowerDiameter}mm, Height: ${flowerHeight}mm`);
@@ -202,9 +208,9 @@ class SpiralFlower extends ShapeBase {
         gcode.push(`; Flare: ${flowerFlare}mm`);
         gcode.push("; Non-planar C + B axis demonstration");
         gcode.push("; C = radial, B = perpendicular to wall surface (inward on flare)");
+        gcode.push("; Arc-length parameterised for uniform segment length");
 
         let prevPos = null;
-        let totalAngle = 0;
 
         const addMove = (x, y, z, C, B, isFirst, speedMult = 1) => {
             let deltaE = 0;
@@ -219,14 +225,84 @@ class SpiralFlower extends ShapeBase {
             prevPos = pos;
         };
 
-        // Wavy spiral body
+        // --- Flat starter layers for bed adhesion (B=0, no waves, Z rises normally) ---
+        gcode.push("", "; === STARTER LAYERS (flat, no tilt) ===");
+        const baseRadius = flowerDiameter / 2;
+        const starterRevs = 4;
+        const starterCircumference = 2 * Math.PI * baseRadius;
+        const starterTotalArc = starterRevs * starterCircumference;
+        const starterSegments = Math.round(starterTotalArc / 1.0); // ~1.0mm segments
+        const starterZStart = layerHeight;
+        const starterZEnd = starterRevs * layerHeight;
+
+        for (let i = 0; i <= starterSegments; i++) {
+            const frac = i / starterSegments;
+            const angle = frac * starterRevs * 2 * Math.PI;
+            const x = baseRadius * Math.cos(angle);
+            const y = baseRadius * Math.sin(angle);
+            const z = starterZStart + frac * (starterZEnd - starterZStart);
+            const C = angle * 180 / Math.PI;
+
+            addMove(x, y, z, C, 0, i === 0);
+        }
+
+        // Wavy spiral body (continues from starter ring)
         gcode.push("", "; === WAVY SPIRAL BODY ===");
         const totalRotations = flowerHeight / layerHeight;
-        const totalSegments = Math.round(totalRotations * resolution);
+        const resolution = 100;
+        const totalFineSegments = Math.round(totalRotations * resolution);
+        const starterAngleEnd = starterRevs * 2 * Math.PI;
 
-        for (let i = 0; i <= totalSegments; i++) {
-            const t = i / totalSegments;
-            const angle = totalAngle + (i / resolution) * 2 * Math.PI;
+        // --- First pass: build cumulative arc-length table at fine resolution ---
+        const arcTable = [];
+        let cumArc = 0;
+        let prevFinePos = null;
+
+        for (let i = 0; i <= totalFineSegments; i++) {
+            const t = i / totalFineSegments;
+            const angle = starterAngleEnd + (i / resolution) * 2 * Math.PI;
+            const profile = this.getProfile(t, angle, params);
+
+            const x = profile.radius * Math.cos(angle);
+            const y = profile.radius * Math.sin(angle);
+            const z = profile.z + starterZEnd;
+
+            if (prevFinePos) {
+                const dx = x - prevFinePos.x;
+                const dy = y - prevFinePos.y;
+                const dz = z - prevFinePos.z;
+                cumArc += Math.sqrt(dx * dx + dy * dy + dz * dz);
+            }
+
+            arcTable.push({ t, angle, cumArc });
+            prevFinePos = { x, y, z };
+        }
+
+        const totalArc = cumArc;
+        const targetSegLen = 1.0; // mm — short enough for uniform extrusion, long enough for smooth planner motion
+        const numSegments = Math.round(totalArc / targetSegLen);
+
+        gcode.push(`; Total arc length: ${totalArc.toFixed(1)}mm, Segments: ${numSegments}, Target segment: ${targetSegLen}mm`);
+
+        // --- Second pass: walk arc table at uniform arc-length intervals ---
+        for (let i = 0; i <= numSegments; i++) {
+            const targetArc = (i / numSegments) * totalArc;
+
+            // Binary search for the arc table entry just before targetArc
+            let lo = 0, hi = arcTable.length - 1;
+            while (lo < hi - 1) {
+                const mid = (lo + hi) >> 1;
+                if (arcTable[mid].cumArc <= targetArc) lo = mid;
+                else hi = mid;
+            }
+
+            // Interpolate between lo and hi
+            const a0 = arcTable[lo], a1 = arcTable[hi];
+            const span = a1.cumArc - a0.cumArc;
+            const frac = span > 0 ? (targetArc - a0.cumArc) / span : 0;
+
+            const t = a0.t + frac * (a1.t - a0.t);
+            const angle = a0.angle + frac * (a1.angle - a0.angle);
 
             const profile = this.getProfile(t, angle, params);
 
@@ -236,9 +312,18 @@ class SpiralFlower extends ShapeBase {
             const B = profile.bAngle * 180 / Math.PI;
             const C = profile.cAngle * 180 / Math.PI;
 
-            const speedMult = t > 0.65 ? 0.6 : 1.0;
+            // Smooth speed ramp: 1.0 → 0.6 over progress 0.55 → 0.70
+            let speedMult;
+            if (t < 0.55) {
+                speedMult = 1.0;
+            } else if (t > 0.70) {
+                speedMult = 0.6;
+            } else {
+                const ramp = (t - 0.55) / 0.15;
+                speedMult = 1.0 - 0.4 * (ramp * ramp * (3 - 2 * ramp)); // smoothstep
+            }
 
-            addMove(x, y, profile.z, C, B, i === 0, speedMult);
+            addMove(x, y, profile.z + starterZEnd, C, B, false, speedMult);
         }
 
         return gcode;

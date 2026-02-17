@@ -613,6 +613,14 @@
                                 <!-- Jog Controls -->
                                 <div class="border border-gray-200 rounded-lg p-4">
                                     <div class="flex justify-center gap-8 mb-4">
+                                        <div>
+                                            <p class="text-xs text-gray-500 mb-2 text-center">X Movement</p>
+                                            <div class="flex items-center gap-1" style="padding-top: 14px;">
+                                                <button class="jog-btn" data-axis="X" data-dir="-1">X-</button>
+                                                <div class="w-4"></div>
+                                                <button class="jog-btn" data-axis="X" data-dir="1">X+</button>
+                                            </div>
+                                        </div>
                                         <div id="jog-z-controls-z">
                                             <p class="text-xs text-gray-500 mb-2 text-center">Z Movement</p>
                                             <div class="flex flex-col items-center gap-1">
@@ -789,7 +797,7 @@
                     <div id="refine-section" class="hidden mt-6 pt-6 border-t border-gray-200">
                         <p class="text-sm text-gray-600 mb-3 text-center">Want to improve accuracy? Run another calibration pass.</p>
                         <div class="flex justify-center">
-                            <button id="refine-calibration-btn" class="btn-secondary px-6 py-3 rounded-lg font-medium">
+                            <button id="results-refine-btn" class="btn-secondary px-6 py-3 rounded-lg font-medium">
                                 Refine calibration
                             </button>
                         </div>
