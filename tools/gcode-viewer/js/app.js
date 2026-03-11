@@ -10,6 +10,7 @@ class GcodePreviewerApp {
         this.collisionDetector = new CollisionDetector();
         this.ikReverser = null;
         this.calibrationReverser = null;
+        this.shareHandler = new ShareHandler();
         this.currentData = null;
 
         // Reversal settings
@@ -26,6 +27,12 @@ class GcodePreviewerApp {
             this.ui.setupEventListeners();
             this.initializePrintheadSelector();
             this.ui.hideLoading();
+
+            // Restore share preference
+            const shareCheckbox = document.getElementById('shareForResearch');
+            if (shareCheckbox) {
+                shareCheckbox.checked = this.shareHandler.isEnabled();
+            }
         } catch (error) {
             console.error('Error initializing app:', error);
             document.getElementById('loading').innerHTML =
@@ -56,6 +63,7 @@ class GcodePreviewerApp {
         this.ui.onShowRealisticHeadChange = (show) => this.animationEngine.showRealisticPrinthead(show);
         this.ui.onShowCollisionsChange = (enabled) => this.handleCollisionToggle(enabled);
         this.ui.onShowTravelMovesChange = (show) => this.animationEngine.setShowTravelMoves(show);
+        this.ui.onShareForResearchChange = (enabled) => this.shareHandler.setEnabled(enabled);
         this.ui.onPrintheadChange = (printheadId) => this.handlePrintheadChange(printheadId);
         this.ui.onManualModeChange = (enabled) => this.toggleManualMode(enabled);
         this.ui.onApplyManual = () => this.applyManualSettings();
@@ -113,6 +121,9 @@ class GcodePreviewerApp {
 
             this.ui.enableControls();
             this.ui.hideLoading();
+
+            // Share file for research if enabled
+            this.shareHandler.share(file, parseResult.metadata, this.parser.getStatistics());
 
         } catch (error) {
             console.error('Error loading G-code file:', error);
