@@ -58,7 +58,22 @@ function buildMetadataHtml(metadata) {
   return `<table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;">${rows}</table>`;
 }
 
+async function sendEmail(env, payload) {
+  const response = await fetch('https://api.emailit.com/v1/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${env.EMAILIT_API_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const text = await response.text();
+  return { ok: response.ok, status: response.status, body: text };
+}
+
 export async function onRequestPost({ request, env }) {
+  const errors = [];
+
   try {
     const formData = await request.formData();
     const file = formData.get('file');
@@ -76,25 +91,25 @@ export async function onRequestPost({ request, env }) {
     const fileSize = file.size;
     const metadataHtml = buildMetadataHtml({ ...metadata, filename, fileSize: formatBytes(fileSize) });
 
-    // Read the file once and reuse the buffer
     const arrayBuffer = await file.arrayBuffer();
 
     let emailBody;
     let attachments;
-    let r2Key = null;
 
     if (fileSize < 10 * 1024 * 1024) {
-      // Small file: try to attach directly
       const base64 = arrayBufferToBase64(arrayBuffer);
-      attachments = [{ filename, content: base64, encoding: 'base64' }];
+      attachments = [{
+        filename,
+        content: base64,
+        content_type: 'application/octet-stream',
+      }];
       emailBody = `
         <h2>New G-code File Shared</h2>
         ${metadataHtml}
         <p style="margin-top:16px;color:#718096;">File attached to this email.</p>
       `;
     } else {
-      // Large file: upload to R2
-      r2Key = `${new Date().toISOString().split('T')[0]}/${Date.now()}-${filename}`;
+      const r2Key = `${new Date().toISOString().split('T')[0]}/${Date.now()}-${filename}`;
       await env.GCODE_BUCKET.put(r2Key, arrayBuffer, {
         httpMetadata: { contentType: 'application/octet-stream' },
         customMetadata: { originalName: filename }
@@ -107,7 +122,6 @@ export async function onRequestPost({ request, env }) {
         <p>Stored in R2: <code>${r2Key}</code></p>
         <p style="color:#718096;">Access via Cloudflare dashboard &rarr; R2 &rarr; rep5x-gcode-research bucket.</p>
       `;
-      attachments = undefined;
     }
 
     const emailPayload = {
@@ -120,54 +134,50 @@ export async function onRequestPost({ request, env }) {
       emailPayload.attachments = attachments;
     }
 
-    const emailResponse = await fetch('https://api.emailit.com/v1/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${env.EMAILIT_API_KEY}`
-      },
-      body: JSON.stringify(emailPayload)
-    });
+    const result = await sendEmail(env, emailPayload);
 
-    // If attachment-based email failed, fall back to R2 path
-    if (!emailResponse.ok && attachments) {
-      console.error('EmailIt attachment failed, falling back to R2:', await emailResponse.text());
+    if (!result.ok && attachments) {
+      errors.push(`attachment email failed (${result.status}): ${result.body}`);
 
-      r2Key = `${new Date().toISOString().split('T')[0]}/${Date.now()}-${filename}`;
+      // Fallback: upload to R2 and send without attachment
+      const r2Key = `${new Date().toISOString().split('T')[0]}/${Date.now()}-${filename}`;
       await env.GCODE_BUCKET.put(r2Key, arrayBuffer, {
         httpMetadata: { contentType: 'application/octet-stream' },
         customMetadata: { originalName: filename }
       });
 
-      await fetch('https://api.emailit.com/v1/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${env.EMAILIT_API_KEY}`
-        },
-        body: JSON.stringify({
-          from: 'Rep5x Gcode Viewer <noreply@rep5x.com>',
-          to: 'dennis@rep5x.com',
-          subject: `[Gcode Share] ${filename}`,
-          html: `
-            <h2>New G-code File Shared</h2>
-            ${metadataHtml}
-            <p style="margin-top:16px;"><strong>Attachment failed, file stored in R2.</strong></p>
-            <p>Stored in R2: <code>${r2Key}</code></p>
-            <p style="color:#718096;">Access via Cloudflare dashboard &rarr; R2 &rarr; rep5x-gcode-research bucket.</p>
-          `
-        })
+      const fallbackResult = await sendEmail(env, {
+        from: 'Rep5x Gcode Viewer <noreply@rep5x.com>',
+        to: 'dennis@rep5x.com',
+        subject: `[Gcode Share] ${filename}`,
+        html: `
+          <h2>New G-code File Shared</h2>
+          ${metadataHtml}
+          <p style="margin-top:16px;"><strong>Attachment failed, file stored in R2.</strong></p>
+          <p>Stored in R2: <code>${r2Key}</code></p>
+          <p style="color:#718096;">Access via Cloudflare dashboard &rarr; R2 &rarr; rep5x-gcode-research bucket.</p>
+        `
       });
+
+      if (!fallbackResult.ok) {
+        errors.push(`fallback email failed (${fallbackResult.status}): ${fallbackResult.body}`);
+      }
+    } else if (!result.ok) {
+      errors.push(`email failed (${result.status}): ${result.body}`);
     }
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({
+        success: errors.length === 0,
+        errors: errors.length > 0 ? errors : undefined,
+        emailStatus: result.status,
+        emailResponse: result.body,
+      }),
       { status: 200, headers: CORS_HEADERS }
     );
   } catch (error) {
-    console.error('gcode-share error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: 'Internal error' }),
+      JSON.stringify({ success: false, error: error.message, errors }),
       { status: 500, headers: CORS_HEADERS }
     );
   }
