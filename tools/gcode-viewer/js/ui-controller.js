@@ -28,6 +28,7 @@ class UIController {
             showRealisticHead: document.getElementById('showRealisticHead'),
             showCollisions: document.getElementById('showCollisions'),
             showTravelMoves: document.getElementById('showTravelMoves'),
+            shareForResearch: document.getElementById('shareForResearch'),
             collisionInfo: document.getElementById('collisionInfo'),
             collisionCount: document.getElementById('collisionCount'),
 
@@ -68,6 +69,7 @@ class UIController {
         this.onShowCollisionsChange = null;
         this.onShowTravelMovesChange = null;
         this.onPrintheadChange = null;
+        this.onShareForResearchChange = null;
         this.onManualModeChange = null;
         this.onApplyManual = null;
     }
@@ -124,6 +126,12 @@ class UIController {
         if (this.elements.showTravelMoves) {
             this.elements.showTravelMoves.addEventListener('change', (e) => {
                 if (this.onShowTravelMovesChange) this.onShowTravelMovesChange(e.target.checked);
+            });
+        }
+
+        if (this.elements.shareForResearch) {
+            this.elements.shareForResearch.addEventListener('change', (e) => {
+                if (this.onShareForResearchChange) this.onShareForResearchChange(e.target.checked);
             });
         }
 
