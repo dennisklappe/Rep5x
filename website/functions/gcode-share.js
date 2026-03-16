@@ -99,9 +99,9 @@ export async function onRequestPost({ request, env }) {
     if (fileSize < 10 * 1024 * 1024) {
       const base64 = arrayBufferToBase64(arrayBuffer);
       attachments = [{
-        filename,
+        filename: filename + '.txt',
         content: base64,
-        content_type: 'application/octet-stream',
+        content_type: 'text/plain',
       }];
       emailBody = `
         <h2>New G-code File Shared</h2>
