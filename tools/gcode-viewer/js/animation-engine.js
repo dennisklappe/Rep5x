@@ -451,131 +451,139 @@ class AnimationEngine {
         });
     }
 
-    updatePrintPath() {
-        this.disposeGroup(this.printPath);
+    // Build tube geometry for an extrusion segment
+    buildTubeGeometry(segment, minZ, zRange) {
+        if (segment.length < 2) return null;
 
-        // Find global Z range across all segments (loop-based to avoid stack overflow)
+        const lineWidth = 0.45;
+        const layerHeight = 0.2;
+        const hw = lineWidth / 2;
+        const hh = layerHeight / 2;
+
+        const vertCount = segment.length * 4;
+        const triCount = (segment.length - 1) * 8;
+        const positions = new Float32Array(vertCount * 3);
+        const normals = new Float32Array(vertCount * 3);
+        const colors = new Float32Array(vertCount * 3);
+        const indices = new Uint32Array(triCount * 3);
+
+        const up = new THREE.Vector3(0, 1, 0);
+        const tmpDir = new THREE.Vector3();
+        const tmpSide = new THREE.Vector3();
+
+        for (let i = 0; i < segment.length; i++) {
+            const p = segment[i];
+            const pt = p.point;
+
+            // Direction vector
+            if (i < segment.length - 1) {
+                tmpDir.subVectors(segment[i + 1].point, pt).normalize();
+            } // else reuse previous direction
+
+            // Side vector perpendicular to direction and up
+            tmpSide.crossVectors(tmpDir, up).normalize();
+            if (tmpSide.lengthSq() < 0.001) {
+                tmpSide.set(1, 0, 0);
+            }
+
+            // 4 vertices per point: top, right, bottom, left
+            const base = i * 4;
+            // top
+            positions[base * 3]     = pt.x;
+            positions[base * 3 + 1] = pt.y + hh;
+            positions[base * 3 + 2] = pt.z;
+            normals[base * 3 + 1] = 1;
+            // right
+            positions[(base + 1) * 3]     = pt.x + tmpSide.x * hw;
+            positions[(base + 1) * 3 + 1] = pt.y;
+            positions[(base + 1) * 3 + 2] = pt.z + tmpSide.z * hw;
+            normals[(base + 1) * 3] = tmpSide.x;
+            normals[(base + 1) * 3 + 2] = tmpSide.z;
+            // bottom
+            positions[(base + 2) * 3]     = pt.x;
+            positions[(base + 2) * 3 + 1] = pt.y - hh;
+            positions[(base + 2) * 3 + 2] = pt.z;
+            normals[(base + 2) * 3 + 1] = -1;
+            // left
+            positions[(base + 3) * 3]     = pt.x - tmpSide.x * hw;
+            positions[(base + 3) * 3 + 1] = pt.y;
+            positions[(base + 3) * 3 + 2] = pt.z - tmpSide.z * hw;
+            normals[(base + 3) * 3] = -tmpSide.x;
+            normals[(base + 3) * 3 + 2] = -tmpSide.z;
+
+            // Color based on Z height
+            const zNormalized = (p.z - minZ) / zRange;
+            const c = this.viridisColor(zNormalized);
+            for (let v = 0; v < 4; v++) {
+                colors[(base + v) * 3]     = c.r;
+                colors[(base + v) * 3 + 1] = c.g;
+                colors[(base + v) * 3 + 2] = c.b;
+            }
+
+            // Indices: connect this ring to the next
+            if (i < segment.length - 1) {
+                const a = base;
+                const b = base + 4;
+                let idx = i * 24; // 8 triangles × 3 indices
+                for (let face = 0; face < 4; face++) {
+                    const v0 = a + face;
+                    const v1 = a + (face + 1) % 4;
+                    const v2 = b + face;
+                    const v3 = b + (face + 1) % 4;
+                    indices[idx++] = v0; indices[idx++] = v2; indices[idx++] = v1;
+                    indices[idx++] = v1; indices[idx++] = v2; indices[idx++] = v3;
+                }
+            }
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geo.setIndex(new THREE.BufferAttribute(indices, 1));
+        return geo;
+    }
+
+    buildPathFromSegments(segments) {
+        // Find global Z range
         let minZ = Infinity, maxZ = -Infinity, pointCount = 0;
-        for (const segment of this.printedPath) {
+        for (const segment of segments) {
             for (const p of segment) {
                 if (p.z < minZ) minZ = p.z;
                 if (p.z > maxZ) maxZ = p.z;
                 pointCount++;
             }
         }
-        if (pointCount < 2) return;
+        if (pointCount < 2) return null;
         const zRange = maxZ - minZ || 1;
 
-        // Create a group to hold all segment lines
         const group = new THREE.Group();
+        const material = new THREE.MeshLambertMaterial({
+            vertexColors: true,
+            side: THREE.DoubleSide,
+        });
 
-        for (const segment of this.printedPath) {
-            if (segment.length < 2) continue;
-
-            const points = segment.map(p => p.point);
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-            // Create vertex colors for this segment
-            const colors = [];
-            for (let i = 0; i < segment.length; i++) {
-                const p = segment[i];
-                const prevP = i > 0 ? segment[i - 1] : null;
-
-                // Height-based color from professional colormap
-                const zNormalized = (p.z - minZ) / zRange;
-                const baseColor = this.viridisColor(zNormalized);
-
-                // Direction-based shading for 3D depth
-                const prevPoint = prevP ? prevP.point : null;
-                const dirShading = this.calculateDirectionalShading(prevPoint, p.point);
-
-                // B-axis influence - subtle warmth shift for tilted sections
-                const bNormalized = Math.min(p.b / 45, 1);
-                const warmShift = bNormalized * 0.15; // Subtle warm tint when tilted
-
-                // Combine all factors
-                const r = Math.min(1, (baseColor.r + warmShift) * dirShading);
-                const g = Math.min(1, baseColor.g * dirShading);
-                const b = Math.min(1, (baseColor.b - warmShift * 0.5) * dirShading);
-
-                colors.push(r, g, b);
+        for (const segment of segments) {
+            const geo = this.buildTubeGeometry(segment, minZ, zRange);
+            if (geo) {
+                group.add(new THREE.Mesh(geo, material));
             }
-
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            const material = new THREE.LineBasicMaterial({
-                vertexColors: true,
-                linewidth: 3,
-                fog: true  // Enable fog effect
-            });
-            const line = new THREE.Line(geometry, material);
-            group.add(line);
         }
 
-        this.printPath = group;
-        this.scene.add(this.printPath);
+        return group;
+    }
+
+    updatePrintPath() {
+        this.disposeGroup(this.printPath);
+        this.printPath = this.buildPathFromSegments(this.printedPath);
+        if (this.printPath) this.scene.add(this.printPath);
     }
 
     // Used during playback to include current segment
     updatePrintPathWithSegments(segments) {
         this.disposeGroup(this.printPath);
-
-        // Find global Z range across all segments (loop-based to avoid stack overflow)
-        let minZ = Infinity, maxZ = -Infinity, pointCount = 0;
-        for (const segment of segments) {
-            for (const p of segment) {
-                if (p.z < minZ) minZ = p.z;
-                if (p.z > maxZ) maxZ = p.z;
-                pointCount++;
-            }
-        }
-        if (pointCount < 2) return;
-        const zRange = maxZ - minZ || 1;
-
-        const group = new THREE.Group();
-
-        for (const segment of segments) {
-            if (segment.length < 2) continue;
-
-            const points = segment.map(p => p.point);
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-            const colors = [];
-            for (let i = 0; i < segment.length; i++) {
-                const p = segment[i];
-                const prevP = i > 0 ? segment[i - 1] : null;
-
-                // Height-based color from professional colormap
-                const zNormalized = (p.z - minZ) / zRange;
-                const baseColor = this.viridisColor(zNormalized);
-
-                // Direction-based shading for 3D depth
-                const prevPoint = prevP ? prevP.point : null;
-                const dirShading = this.calculateDirectionalShading(prevPoint, p.point);
-
-                // B-axis influence - subtle warmth shift for tilted sections
-                const bNormalized = Math.min(p.b / 45, 1);
-                const warmShift = bNormalized * 0.15;
-
-                // Combine all factors
-                const r = Math.min(1, (baseColor.r + warmShift) * dirShading);
-                const g = Math.min(1, baseColor.g * dirShading);
-                const b = Math.min(1, (baseColor.b - warmShift * 0.5) * dirShading);
-
-                colors.push(r, g, b);
-            }
-
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            const material = new THREE.LineBasicMaterial({
-                vertexColors: true,
-                linewidth: 3,
-                fog: true
-            });
-            const line = new THREE.Line(geometry, material);
-            group.add(line);
-        }
-
-        this.printPath = group;
-        this.scene.add(this.printPath);
+        this.printPath = this.buildPathFromSegments(segments);
+        if (this.printPath) this.scene.add(this.printPath);
     }
 
     updateTravelPath() {

@@ -146,6 +146,13 @@ class GcodeParser {
             if (command) {
                 this.commands.push(command);
             }
+        } else if (line.startsWith('G2 ') || line.startsWith('G3 ') ||
+                   line.startsWith('G2\t') || line.startsWith('G3\t')) {
+            // Arc commands - linearize into short G1 segments
+            const arcCommands = this.parseArcCommand(line, lineNumber);
+            for (const cmd of arcCommands) {
+                this.commands.push(cmd);
+            }
         }
         // M0 pause commands are ignored in the viewer
     }
@@ -195,6 +202,84 @@ class GcodeParser {
         }
 
         return coords.hasReset ? coords : null;
+    }
+
+    parseArcCommand(line, lineNumber) {
+        // G2 = clockwise, G3 = counterclockwise
+        const clockwise = line.startsWith('G2');
+        const results = [];
+
+        // Extract parameters
+        const getParam = (ch) => {
+            const m = line.match(new RegExp(ch + '([-+]?\\d*\\.?\\d+)', 'i'));
+            return m ? parseFloat(m[1]) : null;
+        };
+
+        const endX = getParam('X');
+        const endY = getParam('Y');
+        const endZ = getParam('Z');
+        const i = getParam('I') || 0;
+        const j = getParam('J') || 0;
+        const e = getParam('E');
+        const f = getParam('F');
+
+        const startX = this.currentPosition.x;
+        const startY = this.currentPosition.y;
+        const startZ = this.currentPosition.z;
+
+        const targetX = (endX !== null ? endX + this.coordinateOffset.x : startX);
+        const targetY = (endY !== null ? endY + this.coordinateOffset.y : startY);
+        const targetZ = (endZ !== null ? endZ + this.coordinateOffset.z : startZ);
+
+        // Center of arc (I, J are relative to start)
+        const centerX = startX + i;
+        const centerY = startY + j;
+
+        const startAngle = Math.atan2(startY - centerY, startX - centerX);
+        const endAngle = Math.atan2(targetY - centerY, targetX - centerX);
+        const radius = Math.sqrt(i * i + j * j);
+
+        if (radius < 0.001) return results;
+
+        // Calculate sweep angle
+        let sweep = endAngle - startAngle;
+        if (clockwise) {
+            if (sweep >= 0) sweep -= 2 * Math.PI;
+        } else {
+            if (sweep <= 0) sweep += 2 * Math.PI;
+        }
+
+        // Number of segments based on arc length
+        const arcLength = Math.abs(sweep * radius);
+        const segments = Math.max(4, Math.min(64, Math.ceil(arcLength / 1.0)));
+        const ePerSegment = e !== null ? e / segments : null;
+        const zStep = (targetZ - startZ) / segments;
+
+        for (let s = 1; s <= segments; s++) {
+            const t = s / segments;
+            const angle = startAngle + sweep * t;
+            const x = centerX + radius * Math.cos(angle);
+            const y = centerY + radius * Math.sin(angle);
+            const z = startZ + zStep * s;
+
+            const cmd = {
+                lineNumber: lineNumber,
+                type: 'move',
+                x: x, y: y, z: z,
+                c: null, b: null,
+                e: ePerSegment,
+                f: s === 1 ? f : null,
+                hasMovement: true
+            };
+
+            this.currentPosition.x = x;
+            this.currentPosition.y = y;
+            this.currentPosition.z = z;
+
+            results.push(cmd);
+        }
+
+        return results;
     }
 
     parseComment(line) {
