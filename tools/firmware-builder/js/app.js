@@ -572,6 +572,7 @@ function formatDisplayName(value) {
     const names = {
         'btt_mini_12864': 'BTT Mini 12864',
         'reprap_full_graphic': 'RepRap Full Graphic',
+        'cr10_stock': 'CR-10 Stock Display',
         'tft35': 'BTT TFT35',
         'none': 'No display'
     };
