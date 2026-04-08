@@ -205,6 +205,40 @@ jobs:
             echo "Set EVENT_GCODE_AFTER_HOMING to: $ESCAPED_GCODE"
           fi
 
+          # === DISPLAY ===
+          DISPLAY=$(echo "$CUSTOMIZATIONS" | jq -r '.display // empty')
+          if [ -n "$DISPLAY" ]; then
+            # Disable all display options first
+            sed -i 's/^#define BTT_MINI_12864/\/\/#define BTT_MINI_12864/' marlin/Marlin/Configuration.h
+            sed -i 's/^#define REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER/\/\/#define REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER/' marlin/Marlin/Configuration.h
+            sed -i 's/^#define CR10_STOCKDISPLAY/\/\/#define CR10_STOCKDISPLAY/' marlin/Marlin/Configuration.h
+
+            # Enable the selected display
+            case "$DISPLAY" in
+              "btt_mini_12864")
+                sed -i 's/^\/\/#define BTT_MINI_12864/#define BTT_MINI_12864/' marlin/Marlin/Configuration.h
+                echo "Set display to BTT Mini 12864"
+                ;;
+              "reprap_full_graphic")
+                sed -i 's/^\/\/#define REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER/#define REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER/' marlin/Marlin/Configuration.h
+                echo "Set display to RepRap Full Graphic"
+                ;;
+              "cr10_stock")
+                sed -i 's/^\/\/#define CR10_STOCKDISPLAY/#define CR10_STOCKDISPLAY/' marlin/Marlin/Configuration.h
+                echo "Set display to CR-10 Stock Display"
+                ;;
+              "none")
+                echo "No display selected"
+                ;;
+            esac
+
+            # Disable neopixel for non-BTT Mini displays
+            if [ "$DISPLAY" != "btt_mini_12864" ]; then
+              sed -i 's/^#define NEOPIXEL_LED/\/\/#define NEOPIXEL_LED/' marlin/Marlin/Configuration.h
+              echo "Disabled NeoPixel (not BTT Mini 12864)"
+            fi
+          fi
+
           # === NEOPIXEL COLOR ===
           NEOPIXEL_COLOR=$(echo "$CUSTOMIZATIONS" | jq -r '.neopixelColor // empty')
           if [ -n "$NEOPIXEL_COLOR" ]; then
