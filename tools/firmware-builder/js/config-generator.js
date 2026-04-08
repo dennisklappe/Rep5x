@@ -46,6 +46,10 @@ const ConfigGenerator = {
             defines: ['REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER'],
             needsNeopixel: false
         },
+        'cr10_stock': {
+            defines: ['CR10_STOCKDISPLAY'],
+            needsNeopixel: false
+        },
         'tft35': {
             defines: ['BTT_TFT35_SPI_V1_0'],
             needsNeopixel: false
@@ -419,6 +423,7 @@ ${config.zHomeDir > 0 ? '#define Z_SAFE_HOMING' : '//#define Z_SAFE_HOMING'}
 
 ${config.display === 'btt_mini_12864' ? '#define BTT_MINI_12864' : '//#define BTT_MINI_12864'}
 ${config.display === 'reprap_full_graphic' ? '#define REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER' : '//#define REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER'}
+${config.display === 'cr10_stock' ? '#define CR10_STOCKDISPLAY' : '//#define CR10_STOCKDISPLAY'}
 
 #define SDSUPPORT
 //#define SDCARD_READONLY  // Disabled - conflicts with POWER_LOSS_RECOVERY
