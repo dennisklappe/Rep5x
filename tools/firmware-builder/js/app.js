@@ -97,6 +97,17 @@ const wizardState = {
         invertB: false,
         invertE: false,
 
+        // Step 2: Homing - C and B axis
+        cHomeDir: -1,
+        bHomeDir: -1,
+
+        // Step 2: Endstop hit states
+        endstopX: 'HIGH',
+        endstopY: 'HIGH',
+        endstopZ: 'HIGH',
+        endstopC: 'LOW',
+        endstopB: 'LOW',
+
         // Step 6: Kinematics
         ikLC: 2.30,
         ikLB: 52.87,
@@ -198,7 +209,9 @@ function setupInputListeners() {
     const selectInputsNumeric = [
         { id: 'xHomeDir', key: 'xHomeDir' },
         { id: 'yHomeDir', key: 'yHomeDir' },
-        { id: 'zHomeDir', key: 'zHomeDir' }
+        { id: 'zHomeDir', key: 'zHomeDir' },
+        { id: 'cHomeDir', key: 'cHomeDir' },
+        { id: 'bHomeDir', key: 'bHomeDir' }
     ];
 
     selectInputsNumeric.forEach(({ id, key }) => {
@@ -206,6 +219,24 @@ function setupInputListeners() {
         if (select) {
             select.addEventListener('change', () => {
                 wizardState.config[key] = parseInt(select.value);
+            });
+        }
+    });
+
+    // Select inputs (string values) - endstop hit states
+    const selectInputsEndstop = [
+        { id: 'endstopX', key: 'endstopX' },
+        { id: 'endstopY', key: 'endstopY' },
+        { id: 'endstopZ', key: 'endstopZ' },
+        { id: 'endstopC', key: 'endstopC' },
+        { id: 'endstopB', key: 'endstopB' }
+    ];
+
+    selectInputsEndstop.forEach(({ id, key }) => {
+        const select = document.getElementById(id);
+        if (select) {
+            select.addEventListener('change', () => {
+                wizardState.config[key] = select.value;
             });
         }
     });
@@ -664,6 +695,14 @@ async function buildFirmware() {
             xHomeDir: config.xHomeDir,
             yHomeDir: config.yHomeDir,
             zHomeDir: config.zHomeDir,
+            cHomeDir: config.cHomeDir,
+            bHomeDir: config.bHomeDir,
+            // Endstop hit states
+            endstopX: config.endstopX,
+            endstopY: config.endstopY,
+            endstopZ: config.endstopZ,
+            endstopC: config.endstopC,
+            endstopB: config.endstopB,
             // Display
             display: config.display,
             neopixelColor: config.neopixelColor,
@@ -1022,6 +1061,25 @@ function applyImportedConfig(config) {
     invertFields.forEach(field => {
         const el = document.getElementById(field);
         if (el) el.checked = config[field];
+    });
+
+    // === C/B Homing Directions ===
+    if (config.cHomeDir !== undefined) {
+        const el = document.getElementById('cHomeDir');
+        if (el) el.value = config.cHomeDir;
+    }
+    if (config.bHomeDir !== undefined) {
+        const el = document.getElementById('bHomeDir');
+        if (el) el.value = config.bHomeDir;
+    }
+
+    // === Endstop Hit States ===
+    const endstopFields = ['endstopX', 'endstopY', 'endstopZ', 'endstopC', 'endstopB'];
+    endstopFields.forEach(field => {
+        if (config[field] !== undefined) {
+            const el = document.getElementById(field);
+            if (el) el.value = config[field];
+        }
     });
 
     // === IK Parameters ===

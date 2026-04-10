@@ -93,6 +93,14 @@ async function handleBuildRequest(request, env, corsHeaders) {
     xHomeDir: body.xHomeDir,
     yHomeDir: body.yHomeDir,
     zHomeDir: body.zHomeDir,
+    cHomeDir: body.cHomeDir,
+    bHomeDir: body.bHomeDir,
+    // Endstop hit states
+    endstopX: body.endstopX,
+    endstopY: body.endstopY,
+    endstopZ: body.endstopZ,
+    endstopC: body.endstopC,
+    endstopB: body.endstopB,
     // Display
     display: body.display,
     neopixelColor: body.neopixelColor,
@@ -255,6 +263,14 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     xHomeDir: buildData.xHomeDir,
     yHomeDir: buildData.yHomeDir,
     zHomeDir: buildData.zHomeDir,
+    cHomeDir: buildData.cHomeDir,
+    bHomeDir: buildData.bHomeDir,
+    // Endstop hit states
+    endstopX: buildData.endstopX,
+    endstopY: buildData.endstopY,
+    endstopZ: buildData.endstopZ,
+    endstopC: buildData.endstopC,
+    endstopB: buildData.endstopB,
     // Display
     display: buildData.display,
     neopixelColor: buildData.neopixelColor,

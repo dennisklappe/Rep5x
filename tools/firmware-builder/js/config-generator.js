@@ -83,8 +83,8 @@ const ConfigGenerator = {
         lines.push(`#define X_HOME_DIR ${config.xHomeDir > 0 ? '1' : '-1'}  // ${config.xHomeDir > 0 ? 'MAX' : 'MIN'}`);
         lines.push(`#define Y_HOME_DIR ${config.yHomeDir > 0 ? '1' : '-1'}  // ${config.yHomeDir > 0 ? 'MAX' : 'MIN'}`);
         lines.push(`#define Z_HOME_DIR ${config.zHomeDir > 0 ? '1' : '-1'}  // ${config.zHomeDir > 0 ? 'MAX' : 'MIN'}`);
-        lines.push('#define I_HOME_DIR -1  // C-axis homes to MIN');
-        lines.push('#define J_HOME_DIR -1  // B-axis homes to MIN');
+        lines.push(`#define I_HOME_DIR ${config.cHomeDir > 0 ? '1' : '-1'}  // C-axis homes to ${config.cHomeDir > 0 ? 'MAX' : 'MIN'}`);
+        lines.push(`#define J_HOME_DIR ${config.bHomeDir > 0 ? '1' : '-1'}  // B-axis homes to ${config.bHomeDir > 0 ? 'MAX' : 'MIN'}`);
         lines.push('');
         lines.push('// === Steps Per Unit ===');
         lines.push(`#define DEFAULT_AXIS_STEPS_PER_UNIT { ${config.stepsX}, ${config.stepsY}, ${config.stepsZ}, ${config.stepsC}, ${config.stepsB}, ${config.stepsE} }`);
@@ -115,6 +115,13 @@ const ConfigGenerator = {
         lines.push(`#define DEFAULT_ROTATIONAL_JOINT_OFFSET_Z ${config.ikLB}  // LB`);
         lines.push(`#define DEFAULT_SEGMENTS_PER_SECOND ${config.segmentsPerSecond}`);
         lines.push('#define DEFAULT_TOOL_CENTERPOINT_CONTROL false  // Enable via G43.4 in start g-code');
+        lines.push('');
+        lines.push('// === Endstop Hit States ===');
+        lines.push(`#define X_MIN_ENDSTOP_HIT_STATE ${config.endstopX || 'HIGH'}`);
+        lines.push(`#define Y_MIN_ENDSTOP_HIT_STATE ${config.endstopY || 'HIGH'}`);
+        lines.push(`#define Z_MIN_ENDSTOP_HIT_STATE ${config.endstopZ || 'HIGH'}`);
+        lines.push(`#define I_MIN_ENDSTOP_HIT_STATE ${config.endstopC || 'LOW'}`);
+        lines.push(`#define J_MIN_ENDSTOP_HIT_STATE ${config.endstopB || 'LOW'}`);
         lines.push('');
         lines.push('// === Axis positions ===');
         lines.push(`#define MANUAL_I_HOME_POS ${config.cHomePos}  // C position after homing`);
@@ -330,16 +337,16 @@ const ConfigGenerator = {
 #define ENDSTOPPULLUPS
 
 // Endstop hit states
-#define X_MIN_ENDSTOP_HIT_STATE HIGH
-#define X_MAX_ENDSTOP_HIT_STATE HIGH
-#define Y_MIN_ENDSTOP_HIT_STATE HIGH
-#define Y_MAX_ENDSTOP_HIT_STATE HIGH
-#define Z_MIN_ENDSTOP_HIT_STATE HIGH
-#define Z_MAX_ENDSTOP_HIT_STATE HIGH
-#define I_MIN_ENDSTOP_HIT_STATE LOW
-#define I_MAX_ENDSTOP_HIT_STATE HIGH
-#define J_MIN_ENDSTOP_HIT_STATE LOW
-#define J_MAX_ENDSTOP_HIT_STATE HIGH
+#define X_MIN_ENDSTOP_HIT_STATE ${config.endstopX || 'HIGH'}
+#define X_MAX_ENDSTOP_HIT_STATE ${config.endstopX || 'HIGH'}
+#define Y_MIN_ENDSTOP_HIT_STATE ${config.endstopY || 'HIGH'}
+#define Y_MAX_ENDSTOP_HIT_STATE ${config.endstopY || 'HIGH'}
+#define Z_MIN_ENDSTOP_HIT_STATE ${config.endstopZ || 'HIGH'}
+#define Z_MAX_ENDSTOP_HIT_STATE ${config.endstopZ || 'HIGH'}
+#define I_MIN_ENDSTOP_HIT_STATE ${config.endstopC || 'LOW'}
+#define I_MAX_ENDSTOP_HIT_STATE ${config.endstopC || 'LOW'}
+#define J_MIN_ENDSTOP_HIT_STATE ${config.endstopB || 'LOW'}
+#define J_MAX_ENDSTOP_HIT_STATE ${config.endstopB || 'LOW'}
 
 // @section motion
 
@@ -382,8 +389,8 @@ ${config.zHomeDir > 0 ? '#define Z_SAFE_HOMING' : '//#define Z_SAFE_HOMING'}
 #define X_HOME_DIR  ${config.xHomeDir > 0 ? '1' : '-1'}
 #define Y_HOME_DIR ${config.yHomeDir > 0 ? '1' : '-1'}
 #define Z_HOME_DIR  ${config.zHomeDir > 0 ? '1' : '-1'}
-#define I_HOME_DIR -1
-#define J_HOME_DIR -1
+#define I_HOME_DIR ${config.cHomeDir > 0 ? '1' : '-1'}
+#define J_HOME_DIR ${config.bHomeDir > 0 ? '1' : '-1'}
 
 // @section geometry
 

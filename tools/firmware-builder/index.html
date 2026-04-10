@@ -275,6 +275,84 @@
                                 </p>
                             </div>
                         </div>
+
+                        <!-- C and B Homing Directions -->
+                        <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">C (yaw) homes to</label>
+                                <select id="cHomeDir" class="config-input w-full">
+                                    <option value="-1" selected>MIN (-)</option>
+                                    <option value="1">MAX (+)</option>
+                                </select>
+                                <p class="text-xs text-gray-400 mt-1">Direction to find C-axis endstop</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">B (tilt) homes to</label>
+                                <select id="bHomeDir" class="config-input w-full">
+                                    <option value="-1" selected>MIN (-)</option>
+                                    <option value="1">MAX (+)</option>
+                                </select>
+                                <p class="text-xs text-gray-400 mt-1">Direction to find B-axis endstop</p>
+                            </div>
+                        </div>
+
+                        <div class="section-divider">
+                            <span>Endstop switch states</span>
+                        </div>
+
+                        <!-- Endstop Hit States -->
+                        <p class="text-sm text-gray-600 mb-4">
+                            Set the signal state when each endstop is triggered. Most switches are <strong>normally open (NO)</strong> and read <strong>HIGH</strong> when pressed. If your endstop is <strong>normally closed (NC)</strong>, set it to <strong>LOW</strong>.
+                        </p>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">X endstop</label>
+                                <select id="endstopX" class="config-input w-full">
+                                    <option value="HIGH" selected>HIGH (NO)</option>
+                                    <option value="LOW">LOW (NC)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Y endstop</label>
+                                <select id="endstopY" class="config-input w-full">
+                                    <option value="HIGH" selected>HIGH (NO)</option>
+                                    <option value="LOW">LOW (NC)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Z endstop</label>
+                                <select id="endstopZ" class="config-input w-full">
+                                    <option value="HIGH" selected>HIGH (NO)</option>
+                                    <option value="LOW">LOW (NC)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">C (yaw) endstop</label>
+                                <select id="endstopC" class="config-input w-full">
+                                    <option value="HIGH">HIGH (NO)</option>
+                                    <option value="LOW" selected>LOW (NC)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">B (tilt) endstop</label>
+                                <select id="endstopB" class="config-input w-full">
+                                    <option value="HIGH">HIGH (NO)</option>
+                                    <option value="LOW" selected>LOW (NC)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mt-4">
+                            <div class="flex gap-3">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <p class="text-sm text-blue-800">
+                                    <strong>Tip:</strong> If an axis won't home or immediately reports as triggered, the endstop state is likely inverted. Use <code class="bg-blue-100 px-1 rounded">M119</code> over serial to check endstop states — they should show "open" when not pressed and "TRIGGERED" when pressed.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -659,6 +737,16 @@
                                 </svg>
                                 <p class="text-sm text-blue-800">
                                     <strong>C-axis (yaw):</strong> Inverted by default for CNC convention where positive C = clockwise when viewed from above.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div class="flex gap-3">
+                                <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                                <p class="text-sm text-amber-800">
+                                    <strong>C and B axis directions affect inverse kinematics.</strong> Only invert these if your motor is physically mounted in the opposite direction from the reference build. Do not invert just because the jog direction feels wrong — use the <a href="../printer-setup/" class="underline hover:no-underline">Printer Setup</a> tool to verify correct axis directions after flashing.
                                 </p>
                             </div>
                         </div>
