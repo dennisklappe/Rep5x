@@ -333,6 +333,17 @@ jobs:
           aws configure set aws_access_key_id $R2_ACCESS_KEY_ID
           aws configure set aws_secret_access_key $R2_SECRET_ACCESS_KEY
 
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-build-${{ github.event.inputs.build_id }}
+          path: |
+            marlin/Marlin/Configuration.h
+            marlin/Marlin/Configuration_adv.h
+            customizations.json
+            ${{ steps.firmware.outputs.path }}
+
       - name: Upload config files to R2
         if: always()
         env:
