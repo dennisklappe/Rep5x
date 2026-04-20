@@ -159,6 +159,39 @@ jobs:
             sed -i "s/^#define INVERT_E0_DIR.*/#define INVERT_E0_DIR $INVERT_E/" marlin/Marlin/Configuration.h
           fi
 
+          # === ENDSTOP HIT STATES ===
+          ENDSTOP_X=$(echo "$CUSTOMIZATIONS" | jq -r '.endstopX // empty')
+          ENDSTOP_Y=$(echo "$CUSTOMIZATIONS" | jq -r '.endstopY // empty')
+          ENDSTOP_Z=$(echo "$CUSTOMIZATIONS" | jq -r '.endstopZ // empty')
+          ENDSTOP_C=$(echo "$CUSTOMIZATIONS" | jq -r '.endstopC // empty')
+          ENDSTOP_B=$(echo "$CUSTOMIZATIONS" | jq -r '.endstopB // empty')
+
+          if [ -n "$ENDSTOP_X" ]; then
+            sed -i "s/^#define X_MIN_ENDSTOP_HIT_STATE.*/#define X_MIN_ENDSTOP_HIT_STATE $ENDSTOP_X/" marlin/Marlin/Configuration.h
+            sed -i "s/^#define X_MAX_ENDSTOP_HIT_STATE.*/#define X_MAX_ENDSTOP_HIT_STATE $ENDSTOP_X/" marlin/Marlin/Configuration.h
+            echo "Set X endstop hit state to $ENDSTOP_X"
+          fi
+          if [ -n "$ENDSTOP_Y" ]; then
+            sed -i "s/^#define Y_MIN_ENDSTOP_HIT_STATE.*/#define Y_MIN_ENDSTOP_HIT_STATE $ENDSTOP_Y/" marlin/Marlin/Configuration.h
+            sed -i "s/^#define Y_MAX_ENDSTOP_HIT_STATE.*/#define Y_MAX_ENDSTOP_HIT_STATE $ENDSTOP_Y/" marlin/Marlin/Configuration.h
+            echo "Set Y endstop hit state to $ENDSTOP_Y"
+          fi
+          if [ -n "$ENDSTOP_Z" ]; then
+            sed -i "s/^#define Z_MIN_ENDSTOP_HIT_STATE.*/#define Z_MIN_ENDSTOP_HIT_STATE $ENDSTOP_Z/" marlin/Marlin/Configuration.h
+            sed -i "s/^#define Z_MAX_ENDSTOP_HIT_STATE.*/#define Z_MAX_ENDSTOP_HIT_STATE $ENDSTOP_Z/" marlin/Marlin/Configuration.h
+            echo "Set Z endstop hit state to $ENDSTOP_Z"
+          fi
+          if [ -n "$ENDSTOP_C" ]; then
+            sed -i "s/^#define I_MIN_ENDSTOP_HIT_STATE.*/#define I_MIN_ENDSTOP_HIT_STATE $ENDSTOP_C/" marlin/Marlin/Configuration.h
+            sed -i "s/^#define I_MAX_ENDSTOP_HIT_STATE.*/#define I_MAX_ENDSTOP_HIT_STATE $ENDSTOP_C/" marlin/Marlin/Configuration.h
+            echo "Set C endstop hit state to $ENDSTOP_C"
+          fi
+          if [ -n "$ENDSTOP_B" ]; then
+            sed -i "s/^#define J_MIN_ENDSTOP_HIT_STATE.*/#define J_MIN_ENDSTOP_HIT_STATE $ENDSTOP_B/" marlin/Marlin/Configuration.h
+            sed -i "s/^#define J_MAX_ENDSTOP_HIT_STATE.*/#define J_MAX_ENDSTOP_HIT_STATE $ENDSTOP_B/" marlin/Marlin/Configuration.h
+            echo "Set B endstop hit state to $ENDSTOP_B"
+          fi
+
           # === IK PARAMETERS ===
           IK_LC=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLC // empty')
           IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')

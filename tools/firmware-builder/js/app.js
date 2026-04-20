@@ -31,6 +31,15 @@ const printerPresets = {
         xHomeDir: -1,
         yHomeDir: -1,
         zHomeDir: -1
+    },
+    'ender5pro': {
+        name: 'Ender 5 Pro',
+        xBedSize: 220,
+        yBedSize: 220,
+        zMaxPos: 300,
+        xHomeDir: -1,
+        yHomeDir: -1,
+        zHomeDir: 1
     }
 };
 
@@ -96,6 +105,13 @@ const wizardState = {
         invertC: true,
         invertB: false,
         invertE: false,
+
+        // Step 4: Endstop hit state (HIGH = NO, LOW = NC)
+        endstopX: 'HIGH',
+        endstopY: 'HIGH',
+        endstopZ: 'HIGH',
+        endstopC: 'HIGH',
+        endstopB: 'LOW',
 
         // Step 6: Kinematics
         ikLC: 2.30,
@@ -223,7 +239,12 @@ function setupInputListeners() {
         { id: 'socketZ', key: 'socketZ' },
         { id: 'socketC', key: 'socketC' },
         { id: 'socketB', key: 'socketB' },
-        { id: 'socketE', key: 'socketE' }
+        { id: 'socketE', key: 'socketE' },
+        { id: 'endstopX', key: 'endstopX' },
+        { id: 'endstopY', key: 'endstopY' },
+        { id: 'endstopZ', key: 'endstopZ' },
+        { id: 'endstopC', key: 'endstopC' },
+        { id: 'endstopB', key: 'endstopB' }
     ];
 
     selectInputsString.forEach(({ id, key }) => {
@@ -547,6 +568,7 @@ function formatPrinterName(value) {
         'ender3v3se': 'Ender 3 V3 SE',
         'ender3pro': 'Ender 3 Pro',
         'ender3v2': 'Ender 3 V2',
+        'ender5pro': 'Ender 5 Pro',
         'custom': 'Custom'
     };
     return names[value] || value;
@@ -695,6 +717,12 @@ async function buildFirmware() {
             invertC: config.invertC,
             invertB: config.invertB,
             invertE: config.invertE,
+            // Endstop hit states
+            endstopX: config.endstopX,
+            endstopY: config.endstopY,
+            endstopZ: config.endstopZ,
+            endstopC: config.endstopC,
+            endstopB: config.endstopB,
             // IK parameters
             ikLC: config.ikLC,
             ikLB: config.ikLB,
@@ -1022,6 +1050,13 @@ function applyImportedConfig(config) {
     invertFields.forEach(field => {
         const el = document.getElementById(field);
         if (el) el.checked = config[field];
+    });
+
+    // === Endstop hit states ===
+    const endstopFields = ['endstopX', 'endstopY', 'endstopZ', 'endstopC', 'endstopB'];
+    endstopFields.forEach(field => {
+        const el = document.getElementById(field);
+        if (el && config[field]) el.value = config[field];
     });
 
     // === IK Parameters ===
