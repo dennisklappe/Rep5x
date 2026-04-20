@@ -180,6 +180,7 @@
                                 <option value="ender3v3se" selected>Ender 3 V3 SE (220×220×270)</option>
                                 <option value="ender3pro">Ender 3 Pro (220×220×250)</option>
                                 <option value="ender3v2">Ender 3 V2 (220×220×250)</option>
+                                <option value="ender5pro">Ender 5 Pro (220×220×300)</option>
                             </select>
                         </div>
 
@@ -660,6 +661,51 @@
                                 <p class="text-sm text-blue-800">
                                     <strong>C-axis (yaw):</strong> Inverted by default for CNC convention where positive C = clockwise when viewed from above.
                                 </p>
+                            </div>
+                        </div>
+
+                        <div class="section-divider">
+                            <span>Endstop switches</span>
+                        </div>
+
+                        <p class="text-sm text-gray-600 mb-2">Select <strong>NO</strong> (normally open) or <strong>NC</strong> (normally closed) based on your switch wiring.</p>
+
+                        <!-- Endstop hit states -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">X endstop</label>
+                                <select id="endstopX" class="config-input w-full">
+                                    <option value="HIGH" selected>NO (normally open)</option>
+                                    <option value="LOW">NC (normally closed)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Y endstop</label>
+                                <select id="endstopY" class="config-input w-full">
+                                    <option value="HIGH" selected>NO (normally open)</option>
+                                    <option value="LOW">NC (normally closed)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">Z endstop</label>
+                                <select id="endstopZ" class="config-input w-full">
+                                    <option value="HIGH" selected>NO (normally open)</option>
+                                    <option value="LOW">NC (normally closed)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">C endstop</label>
+                                <select id="endstopC" class="config-input w-full">
+                                    <option value="HIGH" selected>NO (normally open)</option>
+                                    <option value="LOW">NC (normally closed)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">B endstop</label>
+                                <select id="endstopB" class="config-input w-full">
+                                    <option value="HIGH">NO (normally open)</option>
+                                    <option value="LOW" selected>NC (normally closed)</option>
+                                </select>
                             </div>
                         </div>
                     </div>

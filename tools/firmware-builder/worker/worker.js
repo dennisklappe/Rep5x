@@ -124,6 +124,12 @@ async function handleBuildRequest(request, env, corsHeaders) {
     invertC: body.invertC,
     invertB: body.invertB,
     invertE: body.invertE,
+    // Endstop hit states
+    endstopX: body.endstopX,
+    endstopY: body.endstopY,
+    endstopZ: body.endstopZ,
+    endstopC: body.endstopC,
+    endstopB: body.endstopB,
     // IK parameters
     ikLC: body.ikLC,
     ikLB: body.ikLB,
@@ -286,6 +292,12 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     invertC: buildData.invertC,
     invertB: buildData.invertB,
     invertE: buildData.invertE,
+    // Endstop hit states
+    endstopX: buildData.endstopX,
+    endstopY: buildData.endstopY,
+    endstopZ: buildData.endstopZ,
+    endstopC: buildData.endstopC,
+    endstopB: buildData.endstopB,
     // IK parameters
     ikLC: buildData.ikLC,
     ikLB: buildData.ikLB,
