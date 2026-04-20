@@ -154,7 +154,7 @@ class Mushroom extends ShapeBase {
         return pathPoints;
     }
 
-    generateGcode(params, layerHeight, speed) {
+    generateGcode(params, layerHeight, speed, nozzleDiameter = 0.4) {
         const { stemDiameter, stemHeight, capDiameter, capHeight } = params;
         const gcode = [];
         const stemRadius = stemDiameter / 2;
@@ -162,7 +162,7 @@ class Mushroom extends ShapeBase {
         const resolution = 100;
 
         const filamentArea = Math.PI * Math.pow(1.75 / 2, 2);
-        const extrusionMultiplier = (layerHeight * 0.4) / filamentArea;
+        const extrusionMultiplier = (layerHeight * nozzleDiameter) / filamentArea;
 
         gcode.push("; === MUSHROOM VASE ===");
         gcode.push(`; Stem: ${stemDiameter}mm x ${stemHeight}mm`);
@@ -296,34 +296,4 @@ class Mushroom extends ShapeBase {
 
         return gcode;
     }
-}
-
-// Legacy function wrappers for backwards compatibility
-function createMushroom(stemRadius, stemHeight, capRadius, capHeight) {
-    const shape = new Mushroom();
-    return shape.createGeometry({
-        stemDiameter: stemRadius * 2,
-        stemHeight,
-        capDiameter: capRadius * 2,
-        capHeight
-    });
-}
-
-function createMushroomPath(stemRadius, stemHeight, capRadius, capHeight) {
-    const shape = new Mushroom();
-    return shape.createPath({
-        stemDiameter: stemRadius * 2,
-        stemHeight,
-        capDiameter: capRadius * 2,
-        capHeight
-    });
-}
-
-function generateMushroomGcode(stemDiameter, stemHeight, capDiameter, capHeight, layerHeight, speed) {
-    const shape = new Mushroom();
-    return shape.generateGcode(
-        { stemDiameter, stemHeight, capDiameter, capHeight },
-        layerHeight,
-        speed
-    );
 }

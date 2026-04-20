@@ -211,6 +211,46 @@ class CalibrationEngine {
     }
 
     /**
+     * Update only the Z component of an existing measurement (used by Z calibration).
+     * Preserves XY actual/error values that were recorded during XY calibration,
+     * avoiding reference-frame shift when the reference was updated during B sweep transition.
+     * @param {number} c - C angle
+     * @param {number} b - B angle
+     * @param {number} actualZ - Actual Z position (already adjusted to XY reference frame)
+     */
+    updateZMeasurement(c, b, actualZ) {
+        const key = `${c}_${b}`;
+        const existing = this.measurements.get(key);
+
+        if (existing && !existing.skipped) {
+            // Preserve XY, only update Z
+            existing.actual.z = actualZ;
+            existing.error.z = actualZ - existing.expected.z;
+            existing.timestamp = Date.now();
+        } else {
+            // No existing XY measurement — record full measurement
+            this.recordMeasurement(c, b, {
+                x: this.referencePosition.x,
+                y: this.referencePosition.y,
+                z: actualZ
+            });
+            return;  // recordMeasurement already advances index and notifies
+        }
+
+        // Move to next point
+        this.currentIndex++;
+
+        // Notify callbacks
+        if (this.onProgressUpdate) {
+            this.onProgressUpdate(this.progressPercent, this.completedCount, this.totalPoints);
+        }
+
+        if (this.currentIndex >= this.totalPoints && this.onMeasurementComplete) {
+            this.onMeasurementComplete();
+        }
+    }
+
+    /**
      * Get measurement for specific C/B
      */
     getMeasurement(c, b) {

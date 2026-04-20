@@ -30,9 +30,10 @@ class ShapeBase {
      * @param {Object} params - Shape parameters
      * @param {number} layerHeight - Layer height in mm
      * @param {number} speed - Print speed in mm/min
+     * @param {number} nozzleDiameter - Nozzle diameter in mm
      * @returns {string[]} Array of G-code lines
      */
-    generateGcode(params, layerHeight, speed) {
+    generateGcode(params, layerHeight, speed, nozzleDiameter) {
         throw new Error('generateGcode must be implemented by subclass');
     }
 
