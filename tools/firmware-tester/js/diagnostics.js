@@ -1,5 +1,5 @@
 /**
- * Diagnostics step — runs M115, M122, M119, M105 and reports pass/fail per check.
+ * Diagnostics step. Runs M115, M122, M119, M105 and reports pass/fail per check.
  * Doesn't move any motor. Safe to run before the mechanism is even fully assembled.
  */
 
@@ -84,7 +84,7 @@ class StepDiagnostics {
             this.app.results.drivers = 'fail';
         }
 
-        // 3. Endstop initial state — none should be triggered
+        // 3. Endstop initial state. None should be triggered.
         try {
             this.setStatus('endstops', '⋯', 'Querying...', '');
             const ends = await printer.queryEndstops();
@@ -118,7 +118,7 @@ class StepDiagnostics {
                 this.setStatus('thermistors', '✓', `Hot-end ${t.toFixed(1)}°C, bed ${b.toFixed(1)}°C`, 'pass');
                 this.app.results.thermistors = 'pass';
             } else {
-                const detail = `Hot-end ${t === null ? '?' : t}°C, bed ${b === null ? '?' : b}°C — expected 5–50°C`;
+                const detail = `Hot-end ${t === null ? '?' : t}°C, bed ${b === null ? '?' : b}°C; expected 5 to 50°C`;
                 this.setStatus('thermistors', '✗', detail, 'fail');
                 this.app.results.thermistors = 'fail';
             }

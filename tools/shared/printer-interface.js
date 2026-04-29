@@ -722,7 +722,7 @@ class PrinterInterface {
         const raw = await this.sendCommandAndCapture('M122', 5000);
         const brokenAxes = [];
 
-        // Look for the "Test connection" row Marlin emits — values are "OK" or include "READ" errors.
+        // Look for the "Test connection" row Marlin emits; values are "OK" or include "READ" errors.
         // Also detect the well-known UART-broken signature "0xFFFFFFFF".
         const testLine = raw.split('\n').find(l => /test\s+connection/i.test(l));
         if (testLine) {

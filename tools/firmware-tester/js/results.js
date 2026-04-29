@@ -25,6 +25,27 @@ class StepResults {
     enter() {
         this.renderSummary();
         this.computeCorrections();
+        this.renderNextSteps();
+    }
+
+    /** Show either the "all-passed" message or the step-by-step Load instructions. */
+    renderNextSteps() {
+        const passedEl = document.getElementById('nextStepsAllPassed');
+        const correctionsEl = document.getElementById('nextStepsCorrections');
+        const hasCorrections = !!this.correctedConfig || this.hasUnactionableCorrections();
+        if (passedEl) passedEl.classList.toggle('hidden', hasCorrections);
+        if (correctionsEl) correctionsEl.classList.toggle('hidden', !hasCorrections);
+    }
+
+    /** True if the test found problems but no JSON was loaded so we can't auto-correct. */
+    hasUnactionableCorrections() {
+        const r = this.app.results;
+        const stepperReversed = Object.values(r.stepperDir).some(v => v === 'reversed');
+        const homingReversed = Object.values(r.homing).some(v => v === 'reversed');
+        const extruderReversed = r.extruderDir === 'reversed';
+        const stepsCalibrated = r.extruderStepsPerMm !== null;
+        const endstopFlipped = Object.values(r.endstopLogic || {}).some(v => v === 'flip');
+        return stepperReversed || homingReversed || extruderReversed || stepsCalibrated || endstopFlipped;
     }
 
     renderSummary() {
@@ -51,7 +72,6 @@ class StepResults {
             { label: 'X homing direction',           state: r.homing.x },
             { label: 'Y homing direction',           state: r.homing.y },
             { label: 'Z homing direction',           state: r.homing.z },
-            { label: 'B homing direction',           state: r.homing.b },
             { label: 'Extruder direction',           state: r.extruderDir },
             { label: 'E-steps calibration',          state: r.extruderStepsPerMm !== null ? `→ ${r.extruderStepsPerMm.toFixed(2)} steps/mm` : 'skipped' },
         ];
@@ -77,6 +97,7 @@ class StepResults {
         if (state === 'reversed') return '✗ reversed';
         if (state === 'skipped') return 'skipped';
         if (state === 'skipped-no-endstop') return 'skipped (no endstop)';
+        if (state === 'no-config') return 'no JSON loaded';
         if (state === 'timeout') return 'timed out';
         if (state === 'no-report') return 'not reported';
         return String(state);
@@ -125,6 +146,15 @@ class StepResults {
             if (r.homing[axis] === 'reversed') {
                 corrections.push({ key: flipMap[axis].homeKey, kind: 'flip-sign', label: `${flipMap[axis].label} home direction` });
             }
+        }
+        const endstopLogicMap = {
+            x: 'endstopX', y: 'endstopY', z: 'endstopZ', b: 'endstopB', c: 'endstopC',
+        };
+        for (const [axis, val] of Object.entries(r.endstopLogic || {})) {
+            if (val !== 'flip') continue;
+            const key = endstopLogicMap[axis];
+            if (!key) continue;
+            corrections.push({ key, kind: 'flip-string', label: `${axis.toUpperCase()} endstop logic level` });
         }
         if (r.extruderDir === 'reversed') {
             corrections.push({ key: 'invertE', kind: 'flip-bool', label: 'Extruder direction' });
@@ -175,6 +205,9 @@ class StepResults {
                 if (!Number.isNaN(current)) out[c.key] = -current;
             } else if (c.kind === 'set-value') {
                 out[c.key] = c.value;
+            } else if (c.kind === 'flip-string') {
+                if (out[c.key] === 'HIGH')      out[c.key] = 'LOW';
+                else if (out[c.key] === 'LOW')  out[c.key] = 'HIGH';
             }
         }
         return out;

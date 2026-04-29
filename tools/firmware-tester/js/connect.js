@@ -1,5 +1,5 @@
 /**
- * Connect step — wraps StepConnectBase with the Firmware Tester's specifics:
+ * Connect step. Wraps StepConnectBase with the Firmware Tester's specifics:
  * - Optional JSON config upload from the Firmware Builder
  * - Doesn't run G49/M667 (the firmware tester wants to see raw firmware behaviour)
  */
@@ -9,7 +9,7 @@ class StepConnect {
         this.app = app;
         this.base = new StepConnectBase(app, {
             hasCamera: false,
-            initializePrinter: false,    // don't issue G49/M667 — we want raw firmware behaviour
+            initializePrinter: false,    // don't issue G49/M667; we want raw firmware behaviour
             canProceed: () => app.testMode || app.printer.isConnected(),
         });
     }

@@ -39,7 +39,7 @@ class StepExtruder {
     }
 
     enter() {
-        // Allow proceeding any time on this step — extruder tests are optional.
+        // Allow proceeding any time on this step. Extruder tests are optional.
         const nextBtn = document.getElementById('nextBtn');
         if (nextBtn) nextBtn.disabled = false;
     }
@@ -78,7 +78,7 @@ class StepExtruder {
 
         try {
             await this.app.printer.sendCommandAndWait('G91', 3000);
-            // 100 mm at 1 mm/s — slow enough to avoid skipping if the steps/mm is very off.
+            // 100 mm at 1 mm/s, slow enough to avoid skipping if the steps/mm is very off.
             await this.app.printer.sendCommandAndWait('G1 E100 F60', 240000);
             await this.app.printer.sendCommandAndWait('G90', 3000);
             this.updateCalculateButton();

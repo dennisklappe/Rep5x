@@ -1,28 +1,30 @@
 /**
- * Homing direction test.
+ * Homing direction step.
  *
- * For each axis with a confirmed-working endstop, run G28 on that axis only and
- * ask the user whether the carriage moved toward the endstop. If it moved away,
- * the home_dir setting in the firmware is the wrong sign for the physical
- * endstop placement.
+ * Asks the user where each linear endstop physically sits (MIN side or MAX
+ * side) and compares that to the firmware's home-direction setting from the
+ * uploaded Firmware Builder JSON. A mismatch means the configured xHomeDir /
+ * yHomeDir / zHomeDir is reversed and would drive the carriage away from the
+ * endstop on G28; the corrected JSON will flip the sign.
  *
- * We skip axes where the previous endstop step reported failure or skip — there's
- * no point homing if the endstop itself doesn't work, and the user has been warned
- * about this already.
+ * Important: this step intentionally sends NO motor commands. Running G28
+ * with a reversed home direction will keep moving until something physically
+ * stops it (frame, belt skip, motor mount). The check here is config-vs-
+ * physical-reality only.
+ *
+ * B is centred-home (the microswitch sits at B=0, with travel either side),
+ * so MIN/MAX doesn't apply; the endstop walk-through in step 3 covers it.
  */
 
 const HOMING_AXES = [
-    { axis: 'x', cmd: 'G28 X', label: 'X' },
-    { axis: 'y', cmd: 'G28 Y', label: 'Y' },
-    { axis: 'z', cmd: 'G28 Z', label: 'Z' },
-    { axis: 'b', cmd: 'G28 B', label: 'B' },
+    { axis: 'x', dirKey: 'xHomeDir' },
+    { axis: 'y', dirKey: 'yHomeDir' },
+    { axis: 'z', dirKey: 'zHomeDir' },
 ];
 
 class StepHoming {
     constructor(app) {
         this.app = app;
-        this.currentIndex = -1;
-        this.completed = false;
     }
 
     register(stepIndex) {
@@ -30,128 +32,83 @@ class StepHoming {
             enter: () => this.enter(),
         });
 
-        const startBtn = document.getElementById('startHomingBtn');
         const skipBtn = document.getElementById('skipHomingBtn');
-        const moveBtn = document.getElementById('homingMoveBtn');
-        const yesBtn = document.getElementById('homingYesBtn');
-        const noBtn = document.getElementById('homingNoBtn');
+        if (skipBtn) skipBtn.addEventListener('click', () => this.skipRemaining());
 
-        if (startBtn) startBtn.addEventListener('click', () => this.start());
-        if (skipBtn) skipBtn.addEventListener('click', () => this.skip());
-        if (moveBtn) moveBtn.addEventListener('click', () => this.sendHome());
-        if (yesBtn) yesBtn.addEventListener('click', () => this.recordResult('pass'));
-        if (noBtn) noBtn.addEventListener('click', () => this.recordResult('reversed'));
+        document.querySelectorAll('.homing-side-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const axis = btn.dataset.axis;
+                const side = btn.dataset.side;
+                this.recordSide(axis, side);
+            });
+        });
     }
 
     enter() {
+        const noticeEl = document.getElementById('homingNoConfigNotice');
+        const fbConfigPresent = !!this.app.fbConfig;
+        if (noticeEl) noticeEl.classList.toggle('hidden', fbConfigPresent);
+
+        // Render the firmware's expected side as a hint per axis (read from FB config).
+        for (const cfg of HOMING_AXES) {
+            const hint = document.getElementById(`homingHint-${cfg.axis}`);
+            if (!hint) continue;
+            if (!fbConfigPresent) {
+                hint.textContent = '(needs uploaded JSON to evaluate)';
+                continue;
+            }
+            const fbDir = parseInt(this.app.fbConfig[cfg.dirKey], 10);
+            if (fbDir === 1)        hint.textContent = `Firmware homes toward MAX (${cfg.dirKey} = +1)`;
+            else if (fbDir === -1)  hint.textContent = `Firmware homes toward MIN (${cfg.dirKey} = -1)`;
+            else                    hint.textContent = `Firmware ${cfg.dirKey} not set in JSON`;
+        }
+
+        // Allow proceeding any time on this step; it's purely informational.
         const nextBtn = document.getElementById('nextBtn');
-        if (nextBtn) nextBtn.disabled = !this.completed;
+        if (nextBtn) nextBtn.disabled = false;
     }
 
-    async start() {
-        const startBtn = document.getElementById('startHomingBtn');
-        if (startBtn) startBtn.disabled = true;
-        this.currentIndex = -1;
-        await this.advance();
+    recordSide(axis, side) {
+        const cfg = HOMING_AXES.find(a => a.axis === axis);
+        if (!cfg) return;
+
+        const fbDir = this.app.fbConfig ? parseInt(this.app.fbConfig[cfg.dirKey], 10) : null;
+        let verdict;
+        if (fbDir !== 1 && fbDir !== -1) {
+            verdict = 'no-config';
+        } else {
+            const expectedSide = fbDir === 1 ? 'max' : 'min';
+            verdict = side === expectedSide ? 'pass' : 'reversed';
+        }
+
+        this.app.results.homing[axis] = verdict;
+        this.app.results.homingUserSide = this.app.results.homingUserSide || {};
+        this.app.results.homingUserSide[axis] = side;
+
+        this.setResult(axis, verdict);
     }
 
-    skip() {
-        for (let i = Math.max(this.currentIndex, 0); i < HOMING_AXES.length; i++) {
-            const axis = HOMING_AXES[i].axis;
-            if (this.app.results.homing[axis] === null) {
-                this.app.results.homing[axis] = 'skipped';
-                this.setResult(axis, 'skipped');
+    skipRemaining() {
+        for (const cfg of HOMING_AXES) {
+            if (this.app.results.homing[cfg.axis] === null) {
+                this.app.results.homing[cfg.axis] = 'skipped';
+                this.setResult(cfg.axis, 'skipped');
             }
         }
-        this.finish();
-    }
-
-    async advance() {
-        this.currentIndex++;
-        if (this.currentIndex >= HOMING_AXES.length) {
-            this.finish();
-            return;
-        }
-
-        const cfg = HOMING_AXES[this.currentIndex];
-        // Auto-skip if the endstop step didn't pass for this axis.
-        const endstopOk = this.app.results.endstopWalk[cfg.axis] === 'pass';
-        if (!endstopOk) {
-            this.app.results.homing[cfg.axis] = 'skipped-no-endstop';
-            this.setResult(cfg.axis, 'skipped-no-endstop');
-            this.advance();
-            return;
-        }
-
-        const labelEl = document.getElementById('homingAxisLabel');
-        const promptEl = document.getElementById('homingPrompt');
-        const buttonsEl = document.getElementById('homingButtons');
-        if (labelEl) labelEl.textContent = `${cfg.label} axis`;
-        if (promptEl) promptEl.textContent = `Click "Send G28 for this axis" — the carriage should move toward the ${cfg.label} endstop.`;
-        if (buttonsEl) buttonsEl.classList.remove('hidden');
-
-        this.setResult(cfg.axis, 'ready');
-        this.setButtonState({ moveEnabled: true, yesEnabled: false, noEnabled: false });
-    }
-
-    async sendHome() {
-        const cfg = HOMING_AXES[this.currentIndex];
-        if (!cfg) return;
-        this.setButtonState({ moveEnabled: false, yesEnabled: false, noEnabled: false });
-        try {
-            await this.app.printer.sendCommandAndWait(cfg.cmd, 60000);
-            this.setButtonState({ moveEnabled: false, yesEnabled: true, noEnabled: true });
-        } catch (err) {
-            this.setResult(cfg.axis, 'error');
-            this.app.results.homing[cfg.axis] = 'fail';
-            setTimeout(() => this.advance(), 1000);
-        }
-    }
-
-    recordResult(verdict) {
-        const cfg = HOMING_AXES[this.currentIndex];
-        if (!cfg) return;
-        this.app.results.homing[cfg.axis] = verdict;
-        this.setResult(cfg.axis, verdict);
-        this.advance();
-    }
-
-    setButtonState({ moveEnabled, yesEnabled, noEnabled }) {
-        const moveBtn = document.getElementById('homingMoveBtn');
-        const yesBtn = document.getElementById('homingYesBtn');
-        const noBtn = document.getElementById('homingNoBtn');
-        if (moveBtn) moveBtn.disabled = !moveEnabled;
-        if (yesBtn) yesBtn.disabled = !yesEnabled;
-        if (noBtn) noBtn.disabled = !noEnabled;
     }
 
     setResult(axis, state) {
         const el = document.getElementById(`homingResult-${axis}`);
         if (!el) return;
         const map = {
-            'pending':            { text: 'pending', cls: '' },
-            'ready':              { text: 'in progress', cls: 'waiting' },
-            'pass':               { text: '✓ moved toward endstop', cls: 'pass' },
-            'reversed':           { text: '✗ moved away (home dir reversed)', cls: 'fail' },
-            'error':              { text: 'error', cls: 'fail' },
-            'skipped':            { text: 'skipped', cls: 'skipped' },
-            'skipped-no-endstop': { text: 'skipped (endstop didn\'t pass)', cls: 'skipped' },
+            'pending':   { text: 'pending', cls: '' },
+            'pass':      { text: '✓ matches firmware', cls: 'pass' },
+            'reversed':  { text: '✗ reversed (will be flipped in JSON)', cls: 'fail' },
+            'no-config': { text: 'no JSON loaded', cls: 'skipped' },
+            'skipped':   { text: 'skipped', cls: 'skipped' },
         };
         const v = map[state] || map['pending'];
         el.textContent = v.text;
-        el.className = `homing-result ${v.cls}`;
-    }
-
-    finish() {
-        this.completed = true;
-        const promptEl = document.getElementById('homingPrompt');
-        const labelEl = document.getElementById('homingAxisLabel');
-        const buttonsEl = document.getElementById('homingButtons');
-        if (promptEl) promptEl.textContent = 'Homing direction tests complete.';
-        if (labelEl) labelEl.textContent = '—';
-        if (buttonsEl) buttonsEl.classList.add('hidden');
-
-        const nextBtn = document.getElementById('nextBtn');
-        if (nextBtn) nextBtn.disabled = false;
+        el.className = `homing-result text-xs ${v.cls}`;
     }
 }

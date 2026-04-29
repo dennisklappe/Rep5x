@@ -24,14 +24,15 @@ const app = {
         drivers: null,
         endstopsInitial: null,
         thermistors: null,
-        endstopWalk: { x: null, y: null, z: null, b: null, c: null },
-        stepperDir: { x: null, y: null, z: null, c: null, b: null }, // 'pass'|'reversed'|null
-        homing:     { x: null, y: null, z: null, b: null },
+        endstopWalk:  { x: null, y: null, z: null, b: null, c: null },
+        endstopLogic: {}, // axis => 'flip' if pre-flight read showed the logic-level inverted
+        stepperDir:   { x: null, y: null, z: null, c: null, b: null }, // 'pass'|'reversed'|null
+        homing:       { x: null, y: null, z: null },
         extruderDir: null,
         extruderStepsPerMm: null, // null if skipped, number if calibrated
     },
 
-    /** Step modules — assigned during init(). */
+    /** Step modules, assigned during init(). */
     steps: {},
 };
 
@@ -83,7 +84,7 @@ function tryAutoLoadFbConfig() {
         if (!raw) return;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== 'object') return;
-        // Firmware Builder exports as { _meta, config } — accept either shape.
+        // Firmware Builder exports as { _meta, config }; accept either shape.
         app.fbConfig = parsed.config ? parsed.config : parsed;
         app.fbConfigFilename = 'firmware-builder-config.json';
         const filenameEl = document.getElementById('configFilename');

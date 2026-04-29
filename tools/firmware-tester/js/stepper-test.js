@@ -13,7 +13,7 @@
 const STEPPER_AXES = [
     { axis: 'x', invertKey: 'invertX', moveCmd: 'G1 X10 F600',  prompt: 'Sending +10 mm on X. The X carriage should move toward what you consider +X (right by convention).' },
     { axis: 'y', invertKey: 'invertY', moveCmd: 'G1 Y10 F600',  prompt: 'Sending +10 mm on Y. The Y carriage / bed should move toward what you consider +Y (away from you by convention).' },
-    { axis: 'z', invertKey: 'invertZ', moveCmd: 'G1 Z5 F300',   prompt: 'Sending +5 mm on Z. Z should move toward Z-max (up for bed-down, down for bed-up systems — match your home direction).' },
+    { axis: 'z', invertKey: 'invertZ', moveCmd: 'G1 Z5 F300',   prompt: 'Sending +5 mm on Z. Z should move toward Z-max (up for bed-down, down for bed-up systems; match your home direction).' },
     { axis: 'c', invertKey: 'invertC', moveCmd: 'G1 C30 F1500', prompt: 'Sending +30° on C. The build plate should rotate counter-clockwise viewed from above.' },
     { axis: 'b', invertKey: 'invertB', moveCmd: 'G1 B15 F1500', prompt: 'Sending +15° on B. The B-arm should tilt to the +B direction defined for your build (typically left when viewed from front).' },
 ];
@@ -147,7 +147,7 @@ class StepSteppers {
         const labelEl = document.getElementById('stepperAxisLabel');
         const buttonsEl = document.getElementById('stepperButtons');
         if (promptEl) promptEl.textContent = 'Stepper direction tests complete.';
-        if (labelEl) labelEl.textContent = '—';
+        if (labelEl) labelEl.textContent = '–';
         if (buttonsEl) buttonsEl.classList.add('hidden');
 
         const nextBtn = document.getElementById('nextBtn');

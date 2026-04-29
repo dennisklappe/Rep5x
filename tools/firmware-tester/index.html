@@ -61,7 +61,7 @@
                         <h3 class="text-2xl font-bold text-gray-900 mb-2">Firmware tester</h3>
                         <p class="text-gray-600 max-w-2xl mx-auto">
                             Run this right after flashing a firmware built by the Firmware Builder.
-                            It walks you through verifying drivers, endstops, stepper directions, homing direction, and the extruder &mdash;
+                            It walks you through verifying drivers, endstops, stepper directions, homing direction, and the extruder &ndash;
                             and produces a corrected configuration if anything is wired backwards.
                         </p>
                     </div>
@@ -86,9 +86,12 @@
                                     <span class="status-dot disconnected" id="serialStatus"></span>
                                     <span class="ml-2 text-sm" id="serialStatusText">Not connected</span>
                                 </div>
-                                <button id="connectBtn" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">
-                                    Connect
-                                </button>
+                                <div class="flex items-center gap-3">
+                                    <span id="baudSelector"></span>
+                                    <button id="connectBtn" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">
+                                        Connect
+                                    </button>
+                                </div>
                             </div>
                             <p class="text-xs text-gray-500">
                                 Connect via USB serial. The port should appear after you click "Connect".
@@ -99,7 +102,7 @@
                         <div class="border border-gray-200 rounded-xl p-6 mb-6">
                             <h4 class="font-semibold text-gray-900 mb-2">Configuration (optional)</h4>
                             <p class="text-xs text-gray-500 mb-3">
-                                Upload the JSON you exported from the Firmware Builder so the tester can compare expected wiring against what the printer reports, and produce a corrected file if anything is reversed. You can run the tests without it &mdash; the tester just won't be able to suggest a fix.
+                                Upload the JSON you exported from the Firmware Builder so the tester can compare expected wiring against what the printer reports, and produce a corrected file if anything is reversed. You can run the tests without it &ndash; the tester just won't be able to suggest a fix.
                             </p>
                             <div class="flex items-center gap-2">
                                 <input type="file" id="configUpload" accept=".json,application/json" class="hidden">
@@ -195,18 +198,65 @@
                     <div class="text-center mb-6">
                         <h3 class="text-2xl font-bold text-gray-900 mb-2">Endstop walk-through</h3>
                         <p class="text-gray-600 max-w-2xl mx-auto">
-                            For each endstop, manually press or trigger it when prompted.
-                            The tester polls M119 and confirms the state changes, so a wrong logic level or unwired switch is caught here.
+                            Step 1: with nothing pressing any endstop, the tester reads the initial state via M119 to check the firmware's logic-level (HIGH/LOW) configuration.
+                            Step 2: for each endstop in turn, manually press or trigger it; the tester confirms the state changes.
                         </p>
                     </div>
 
                     <div class="max-w-xl mx-auto">
+                        <!-- Pre-flight: nothing should be pressed -->
+                        <div id="endstopPreflight" class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-700">
+                                <strong>Before starting:</strong> make sure nothing is pressing or blocking any endstop.
+                                With everything free, the M119 reading should show every axis as <code>open</code>.
+                                If something reads <code>TRIGGERED</code> instead, the logic level (HIGH/LOW) in the firmware is most likely inverted and can be flipped in the corrected JSON.
+                            </div>
+
+                            <div class="space-y-2 mb-4" id="endstopInitial">
+                                <div class="flex justify-between items-center text-sm" data-axis="x">
+                                    <span>X endstop</span>
+                                    <span class="endstop-initial text-xs" id="endstopInitial-x">unread</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="y">
+                                    <span>Y endstop</span>
+                                    <span class="endstop-initial text-xs" id="endstopInitial-y">unread</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="z">
+                                    <span>Z endstop</span>
+                                    <span class="endstop-initial text-xs" id="endstopInitial-z">unread</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="b">
+                                    <span>B endstop (microswitch)</span>
+                                    <span class="endstop-initial text-xs" id="endstopInitial-b">unread</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="c">
+                                    <span>C homing sensor (optical)</span>
+                                    <span class="endstop-initial text-xs" id="endstopInitial-c">unread</span>
+                                </div>
+                            </div>
+
+                            <div id="endstopInversionNotice" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-sm text-yellow-700 hidden">
+                                <p class="mb-2"><strong>Some endstops read TRIGGERED with nothing pressing them.</strong> Likely the firmware's logic level is inverted on these axes.</p>
+                                <div id="endstopInversionList" class="space-y-2"></div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button id="readInitialBtn" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
+                                    Read initial state
+                                </button>
+                                <button id="rereadInitialBtn" class="btn-secondary py-2 px-4 rounded-lg font-medium text-sm hidden">
+                                    Re-read
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Walk-through panel -->
                         <div class="border border-gray-200 rounded-xl p-6 mb-6">
                             <div class="mb-4 flex items-center justify-between">
                                 <h4 class="font-semibold text-gray-900">Currently testing</h4>
-                                <span id="endstopAxisLabel" class="text-sm text-gray-500">&mdash;</span>
+                                <span id="endstopAxisLabel" class="text-sm text-gray-500">&ndash;</span>
                             </div>
-                            <p id="endstopPrompt" class="text-gray-700 mb-4">Click "Start endstop test" to begin.</p>
+                            <p id="endstopPrompt" class="text-gray-700 mb-4">Read the initial state above, then click "Start walk-through".</p>
 
                             <div class="space-y-2 mb-4" id="endstopResults">
                                 <div class="flex justify-between items-center text-sm" data-axis="x">
@@ -232,8 +282,8 @@
                             </div>
 
                             <div class="flex gap-3">
-                                <button id="startEndstopBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
-                                    Start endstop test
+                                <button id="startEndstopBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium" disabled>
+                                    Start walk-through
                                 </button>
                                 <button id="skipEndstopBtn" class="btn-secondary py-3 px-6 rounded-lg font-medium">
                                     Skip remaining
@@ -258,7 +308,7 @@
                         <div class="border border-gray-200 rounded-xl p-6 mb-4">
                             <div class="mb-4 flex items-center justify-between">
                                 <h4 class="font-semibold text-gray-900">Currently testing</h4>
-                                <span id="stepperAxisLabel" class="text-sm text-gray-500">&mdash;</span>
+                                <span id="stepperAxisLabel" class="text-sm text-gray-500">&ndash;</span>
                             </div>
                             <p id="stepperPrompt" class="text-gray-700 mb-4">Click "Start stepper test" to begin.</p>
 
@@ -316,63 +366,71 @@
                     <div class="text-center mb-6">
                         <h3 class="text-2xl font-bold text-gray-900 mb-2">Homing direction</h3>
                         <p class="text-gray-600 max-w-2xl mx-auto">
-                            For each axis with a confirmed endstop, send a homing move and check it travels toward the endstop.
-                            If it travels away, the home direction in the firmware is reversed.
+                            For each linear axis, tell the tester where the endstop is physically located.
+                            The tester compares your answer to the home direction in the uploaded JSON
+                            and flags any mismatch. No motor moves: a reversed home direction would otherwise
+                            drive the carriage into the frame.
                         </p>
                     </div>
 
                     <div class="max-w-xl mx-auto">
+                        <div id="homingNoConfigNotice" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-sm text-yellow-700 hidden">
+                            No Firmware Builder JSON was uploaded, so the tester can't tell which way the firmware homes. Skip this step or go back to Connect and upload the config.
+                        </div>
+
                         <div class="border border-gray-200 rounded-xl p-6 mb-4">
-                            <div class="mb-4 flex items-center justify-between">
-                                <h4 class="font-semibold text-gray-900">Currently testing</h4>
-                                <span id="homingAxisLabel" class="text-sm text-gray-500">&mdash;</span>
+                            <div class="space-y-4" id="homingAxisRows">
+                                <div class="homing-axis-row" data-axis="x">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900">X endstop side</div>
+                                            <div class="text-xs text-gray-500" id="homingHint-x">&nbsp;</div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button class="homing-side-btn btn-secondary text-xs px-3 py-1 rounded" data-axis="x" data-side="min">MIN side</button>
+                                            <button class="homing-side-btn btn-secondary text-xs px-3 py-1 rounded" data-axis="x" data-side="max">MAX side</button>
+                                        </div>
+                                        <span class="homing-result text-xs" id="homingResult-x">pending</span>
+                                    </div>
+                                </div>
+                                <div class="homing-axis-row" data-axis="y">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900">Y endstop side</div>
+                                            <div class="text-xs text-gray-500" id="homingHint-y">&nbsp;</div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button class="homing-side-btn btn-secondary text-xs px-3 py-1 rounded" data-axis="y" data-side="min">MIN side</button>
+                                            <button class="homing-side-btn btn-secondary text-xs px-3 py-1 rounded" data-axis="y" data-side="max">MAX side</button>
+                                        </div>
+                                        <span class="homing-result text-xs" id="homingResult-y">pending</span>
+                                    </div>
+                                </div>
+                                <div class="homing-axis-row" data-axis="z">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex-1">
+                                            <div class="font-medium text-gray-900">Z endstop side</div>
+                                            <div class="text-xs text-gray-500" id="homingHint-z">&nbsp;</div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button class="homing-side-btn btn-secondary text-xs px-3 py-1 rounded" data-axis="z" data-side="min">MIN (Z=0)</button>
+                                            <button class="homing-side-btn btn-secondary text-xs px-3 py-1 rounded" data-axis="z" data-side="max">MAX (Z-max)</button>
+                                        </div>
+                                        <span class="homing-result text-xs" id="homingResult-z">pending</span>
+                                    </div>
+                                </div>
                             </div>
-                            <p id="homingPrompt" class="text-gray-700 mb-4">Click "Start homing test" to begin.</p>
 
-                            <div id="homingButtons" class="flex gap-3 mb-4 hidden">
-                                <button id="homingMoveBtn" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
-                                    Send G28 for this axis
-                                </button>
-                                <button id="homingYesBtn" class="flex-1 btn-success py-2 rounded-lg font-medium text-sm" disabled>
-                                    Toward endstop ✓
-                                </button>
-                                <button id="homingNoBtn" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
-                                    Wrong way ✗
-                                </button>
-                            </div>
-
-                            <div class="space-y-2" id="homingResults">
-                                <div class="flex justify-between items-center text-sm" data-axis="x">
-                                    <span>X axis homing</span>
-                                    <span class="homing-result" id="homingResult-x">pending</span>
-                                </div>
-                                <div class="flex justify-between items-center text-sm" data-axis="y">
-                                    <span>Y axis homing</span>
-                                    <span class="homing-result" id="homingResult-y">pending</span>
-                                </div>
-                                <div class="flex justify-between items-center text-sm" data-axis="z">
-                                    <span>Z axis homing</span>
-                                    <span class="homing-result" id="homingResult-z">pending</span>
-                                </div>
-                                <div class="flex justify-between items-center text-sm" data-axis="b">
-                                    <span>B axis homing</span>
-                                    <span class="homing-result" id="homingResult-b">pending</span>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 flex gap-3">
-                                <button id="startHomingBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
-                                    Start homing test
-                                </button>
-                                <button id="skipHomingBtn" class="btn-secondary py-3 px-6 rounded-lg font-medium">
-                                    Skip
+                            <div class="mt-4">
+                                <button id="skipHomingBtn" class="w-full btn-secondary py-2 rounded-lg font-medium text-sm">
+                                    Skip remaining
                                 </button>
                             </div>
                         </div>
 
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
-                            <strong>Caution:</strong> if the stepper direction test for an axis was reversed, fix that first (re-flash with the corrected config) before homing &mdash; otherwise homing can drive the carriage into the frame.
-                        </div>
+                        <p class="text-xs text-gray-500">
+                            B is centred-home (no MIN/MAX choice), so the homing-direction check doesn't apply. The endstop walk-through already verified the B microswitch in step 3.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -432,7 +490,7 @@
                                     Calculate corrected steps/mm
                                 </button>
                                 <div id="extrudeCalResult" class="text-sm text-gray-700 hidden">
-                                    Corrected steps/mm: <span id="extrudeCalValue" class="font-mono font-medium">&mdash;</span>
+                                    Corrected steps/mm: <span id="extrudeCalValue" class="font-mono font-medium">&ndash;</span>
                                 </div>
                             </div>
                         </div>
@@ -487,13 +545,22 @@
                                 </svg>
                                 <div class="text-sm text-blue-700">
                                     <p class="font-medium">Next steps</p>
-                                    <p class="mt-1">
-                                        If everything passed, continue to
+                                    <p class="mt-1" id="nextStepsAllPassed">
+                                        Everything passed. Continue to
                                         <a href="../printer-setup/" class="underline font-medium">Printer Setup</a>
-                                        for kinematic calibration. If anything was reversed, re-import the corrected JSON into the
-                                        <a href="../firmware-builder/" class="underline font-medium">Firmware Builder</a>
-                                        and re-flash.
+                                        for kinematic calibration.
                                     </p>
+                                    <div class="mt-1 hidden" id="nextStepsCorrections">
+                                        <p>Some checks failed. Apply the corrected configuration as follows:</p>
+                                        <ol class="list-decimal list-inside mt-2 space-y-1">
+                                            <li>Click <strong>Download corrected JSON</strong> above.</li>
+                                            <li>Open the
+                                                <a href="../firmware-builder/" class="underline font-medium">Firmware Builder</a>.</li>
+                                            <li>Click the <strong>Load</strong> button at the top of the Firmware Builder, then select the corrected JSON you just downloaded.</li>
+                                            <li>Step through the wizard to the end and re-build the firmware. Flash the new <code>firmware.bin</code> to the printer.</li>
+                                            <li>Re-run this Firmware Tester to confirm every check now passes.</li>
+                                        </ol>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -528,6 +595,7 @@
     <script src="../shared/footer.js"></script>
     <script src="../shared/wizard-framework.js"></script>
     <script src="../shared/printer-interface.js"></script>
+    <script src="../shared/baud-selector.js"></script>
     <script src="../shared/step-connect-base.js"></script>
     <script src="../shared/toast-notification.js"></script>
     <!-- Tool-specific scripts -->
@@ -539,5 +607,6 @@
     <script src="js/extruder-test.js"></script>
     <script src="js/results.js"></script>
     <script src="js/app.js"></script>
+    <script>BaudSelector.mount('baudSelector');</script>
 </body>
 </html>
