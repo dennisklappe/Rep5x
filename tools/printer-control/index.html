@@ -33,6 +33,7 @@
                         <input type="checkbox" id="testModeToggle" class="form-checkbox h-4 w-4 text-primary rounded">
                         Test mode
                     </label>
+                    <span id="baudSelector"></span>
                     <button id="connectBtn" class="btn-primary px-5 py-2.5 rounded-lg font-medium flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -373,8 +374,10 @@
     <script src="../shared/storage-manager.js"></script>
     <script src="../shared/footer.js"></script>
     <script src="../shared/printer-interface.js"></script>
+    <script src="../shared/baud-selector.js"></script>
     <!-- Tool-specific scripts -->
     <script src="js/app.js"></script>
+    <script>BaudSelector.mount('baudSelector');</script>
 </body>
 
 </html>
