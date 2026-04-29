@@ -92,9 +92,12 @@
                                     <span class="status-dot disconnected" id="serialStatus"></span>
                                     <span class="ml-2 text-sm" id="serialStatusText">Not connected</span>
                                 </div>
-                                <button id="connectBtn" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">
-                                    Connect
-                                </button>
+                                <div class="flex items-center gap-3">
+                                    <span id="baudSelector"></span>
+                                    <button id="connectBtn" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">
+                                        Connect
+                                    </button>
+                                </div>
                             </div>
                             <p class="text-xs text-gray-500">
                                 Connect via USB serial to control and configure your printer.
@@ -846,6 +849,7 @@
     <script src="../shared/footer.js"></script>
     <script src="../shared/wizard-framework.js"></script>
     <script src="../shared/printer-interface.js"></script>
+    <script src="../shared/baud-selector.js"></script>
     <!-- Tool-specific scripts -->
     <script src="../shared/step-connect-base.js"></script>
     <script src="js/connect.js"></script>
@@ -856,5 +860,6 @@
     <script src="js/z-axis.js"></script>
     <script src="js/apply.js"></script>
     <script src="js/app.js"></script>
+    <script>BaudSelector.mount('baudSelector');</script>
 </body>
 </html>
