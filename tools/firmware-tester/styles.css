@@ -1,0 +1,48 @@
+/* Firmware Tester — minimal tool-specific styles, mostly piggy-backs on shared/styles.css */
+
+.diag-status {
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #9ca3af;
+    min-width: 1.5rem;
+    text-align: center;
+}
+.diag-status.pass { color: #10b981; }
+.diag-status.fail { color: #ef4444; }
+
+.diag-check {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+.diag-check:last-child { border-bottom: 0; }
+
+.endstop-result,
+.stepper-result,
+.homing-result,
+.extruder-result {
+    color: #9ca3af;
+    font-weight: 500;
+}
+.endstop-result.pass,
+.stepper-result.pass,
+.homing-result.pass,
+.extruder-result.pass {
+    color: #10b981;
+}
+.endstop-result.fail,
+.stepper-result.fail,
+.homing-result.fail,
+.extruder-result.fail {
+    color: #ef4444;
+}
+.endstop-result.waiting,
+.stepper-result.waiting,
+.homing-result.waiting {
+    color: #f59e0b;
+}
+.endstop-result.skipped,
+.stepper-result.skipped,
+.homing-result.skipped {
+    color: #6b7280;
+    font-style: italic;
+}

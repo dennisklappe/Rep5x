@@ -895,6 +895,14 @@ function exportConfig(showToastNotification = true) {
     // Download as JSON using shared utility
     downloadJSON(exportData, filename);
 
+    // Also stash the config in localStorage so the Firmware Tester can pick it up
+    // automatically, without forcing the user to re-upload the file.
+    try {
+        localStorage.setItem('rep5x_firmware_builder_config', JSON.stringify(exportData));
+    } catch (e) {
+        console.warn('Could not save firmware config to localStorage:', e);
+    }
+
     // Show feedback toast
     if (showToastNotification) {
         showToast('Configuration saved', 'save');

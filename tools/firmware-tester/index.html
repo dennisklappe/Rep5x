@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rep5x Firmware Tester</title>
+    <meta name="description" content="Verify a freshly flashed Rep5x firmware: drivers, endstops, stepper directions, homing, and extrusion">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="../shared/styles.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://rep5x.com/favicon.ico">
+</head>
+<body class="bg-gray-50 min-h-screen" data-tool-name="Firmware Tester">
+    <div id="shared-header"></div>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Progress Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Firmware tester</h2>
+                <span id="stepCounter" class="text-sm text-gray-500">Step 1 of 7</span>
+            </div>
+
+            <div id="progressBar" class="flex items-center justify-center mb-4">
+                <div class="step-indicator active" data-step="0">1</div>
+                <div class="step-connector" data-connector="0"></div>
+                <div class="step-indicator" data-step="1">2</div>
+                <div class="step-connector" data-connector="1"></div>
+                <div class="step-indicator" data-step="2">3</div>
+                <div class="step-connector" data-connector="2"></div>
+                <div class="step-indicator" data-step="3">4</div>
+                <div class="step-connector" data-connector="3"></div>
+                <div class="step-indicator" data-step="4">5</div>
+                <div class="step-connector" data-connector="4"></div>
+                <div class="step-indicator" data-step="5">6</div>
+                <div class="step-connector" data-connector="5"></div>
+                <div class="step-indicator" data-step="6">7</div>
+            </div>
+
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 14.3%"></div>
+            </div>
+
+            <div class="flex justify-between mt-3 text-xs text-gray-500">
+                <span class="w-14 text-center">Connect</span>
+                <span class="w-14 text-center">Diagnostics</span>
+                <span class="w-14 text-center">Endstops</span>
+                <span class="w-14 text-center">Steppers</span>
+                <span class="w-14 text-center">Homing</span>
+                <span class="w-14 text-center">Extruder</span>
+                <span class="w-14 text-center">Results</span>
+            </div>
+        </div>
+
+        <!-- Wizard Container -->
+        <div id="wizardContainer">
+            <!-- Step 0: Connect -->
+            <div id="step-0" class="wizard-step active animate-in">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Firmware tester</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            Run this right after flashing a firmware built by the Firmware Builder.
+                            It walks you through verifying drivers, endstops, stepper directions, homing direction, and the extruder &mdash;
+                            and produces a corrected configuration if anything is wired backwards.
+                        </p>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
+                        <div class="flex gap-3">
+                            <svg class="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div class="text-sm text-blue-700">
+                                <p><strong>Run this before Printer Setup.</strong></p>
+                                <p class="mt-1">Catch reversed motors, wrong endstop logic, or bad UART comms here, before kinematic calibration depends on them.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="max-w-md mx-auto">
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Connect to printer</h4>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <span class="status-dot disconnected" id="serialStatus"></span>
+                                    <span class="ml-2 text-sm" id="serialStatusText">Not connected</span>
+                                </div>
+                                <button id="connectBtn" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">
+                                    Connect
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                Connect via USB serial. The port should appear after you click "Connect".
+                            </p>
+                        </div>
+
+                        <!-- Optional config upload -->
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-2">Configuration (optional)</h4>
+                            <p class="text-xs text-gray-500 mb-3">
+                                Upload the JSON you exported from the Firmware Builder so the tester can compare expected wiring against what the printer reports, and produce a corrected file if anything is reversed. You can run the tests without it &mdash; the tester just won't be able to suggest a fix.
+                            </p>
+                            <div class="flex items-center gap-2">
+                                <input type="file" id="configUpload" accept=".json,application/json" class="hidden">
+                                <button id="configUploadBtn" class="btn-secondary px-3 py-2 rounded-lg text-sm font-medium">
+                                    Choose JSON file
+                                </button>
+                                <span id="configFilename" class="text-xs text-gray-500">No file selected</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center">
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="testModeToggle" class="form-checkbox h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary">
+                                <span class="text-sm text-gray-600">Test mode (simulate without hardware)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1: Diagnostics -->
+            <div id="step-1" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Diagnostics</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            Check that the firmware is alive, all six stepper drivers respond on UART, no endstops are stuck triggered, and both thermistors read sensible room-temperature values.
+                        </p>
+                    </div>
+
+                    <div class="max-w-2xl mx-auto">
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <div class="space-y-4" id="diagChecks">
+                                <div class="diag-check" data-check="firmware">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="font-medium text-gray-900">Firmware identifier (M115)</div>
+                                            <div class="text-xs text-gray-500" id="diag-firmware-detail">Pending...</div>
+                                        </div>
+                                        <span class="diag-status" id="diag-firmware-status">○</span>
+                                    </div>
+                                </div>
+                                <div class="diag-check" data-check="drivers">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="font-medium text-gray-900">TMC drivers (M122)</div>
+                                            <div class="text-xs text-gray-500" id="diag-drivers-detail">Pending...</div>
+                                        </div>
+                                        <span class="diag-status" id="diag-drivers-status">○</span>
+                                    </div>
+                                </div>
+                                <div class="diag-check" data-check="endstops">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="font-medium text-gray-900">Endstops untriggered (M119)</div>
+                                            <div class="text-xs text-gray-500" id="diag-endstops-detail">Pending...</div>
+                                        </div>
+                                        <span class="diag-status" id="diag-endstops-status">○</span>
+                                    </div>
+                                </div>
+                                <div class="diag-check" data-check="thermistors">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="font-medium text-gray-900">Thermistors (M105)</div>
+                                            <div class="text-xs text-gray-500" id="diag-thermistors-detail">Pending...</div>
+                                        </div>
+                                        <span class="diag-status" id="diag-thermistors-status">○</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 flex gap-3">
+                                <button id="runDiagBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
+                                    Run diagnostics
+                                </button>
+                                <button id="rerunDiagBtn" class="btn-secondary py-3 px-6 rounded-lg font-medium hidden">
+                                    Re-run
+                                </button>
+                            </div>
+                        </div>
+
+                        <details class="text-xs text-gray-500">
+                            <summary class="cursor-pointer hover:text-gray-700">Show raw responses</summary>
+                            <pre id="diagRawOutput" class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded font-mono whitespace-pre-wrap"></pre>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Endstops walk-through -->
+            <div id="step-2" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Endstop walk-through</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            For each endstop, manually press or trigger it when prompted.
+                            The tester polls M119 and confirms the state changes, so a wrong logic level or unwired switch is caught here.
+                        </p>
+                    </div>
+
+                    <div class="max-w-xl mx-auto">
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <div class="mb-4 flex items-center justify-between">
+                                <h4 class="font-semibold text-gray-900">Currently testing</h4>
+                                <span id="endstopAxisLabel" class="text-sm text-gray-500">&mdash;</span>
+                            </div>
+                            <p id="endstopPrompt" class="text-gray-700 mb-4">Click "Start endstop test" to begin.</p>
+
+                            <div class="space-y-2 mb-4" id="endstopResults">
+                                <div class="flex justify-between items-center text-sm" data-axis="x">
+                                    <span>X endstop</span>
+                                    <span class="endstop-result" id="endstopResult-x">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="y">
+                                    <span>Y endstop</span>
+                                    <span class="endstop-result" id="endstopResult-y">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="z">
+                                    <span>Z endstop</span>
+                                    <span class="endstop-result" id="endstopResult-z">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="b">
+                                    <span>B endstop (microswitch on rotating arm)</span>
+                                    <span class="endstop-result" id="endstopResult-b">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="c">
+                                    <span>C homing sensor (optical)</span>
+                                    <span class="endstop-result" id="endstopResult-c">pending</span>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button id="startEndstopBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
+                                    Start endstop test
+                                </button>
+                                <button id="skipEndstopBtn" class="btn-secondary py-3 px-6 rounded-lg font-medium">
+                                    Skip remaining
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Stepper directions -->
+            <div id="step-3" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Stepper direction tests</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            The tester sends a small relative move on each axis and asks whether it moved in the expected direction. A "no" flips the corresponding invert flag in the corrected configuration.
+                        </p>
+                    </div>
+
+                    <div class="max-w-xl mx-auto">
+                        <div class="border border-gray-200 rounded-xl p-6 mb-4">
+                            <div class="mb-4 flex items-center justify-between">
+                                <h4 class="font-semibold text-gray-900">Currently testing</h4>
+                                <span id="stepperAxisLabel" class="text-sm text-gray-500">&mdash;</span>
+                            </div>
+                            <p id="stepperPrompt" class="text-gray-700 mb-4">Click "Start stepper test" to begin.</p>
+
+                            <div id="stepperButtons" class="flex gap-3 mb-4 hidden">
+                                <button id="stepperMoveBtn" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
+                                    Send move
+                                </button>
+                                <button id="stepperYesBtn" class="flex-1 btn-success py-2 rounded-lg font-medium text-sm" disabled>
+                                    Correct ✓
+                                </button>
+                                <button id="stepperNoBtn" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
+                                    Reversed ✗
+                                </button>
+                            </div>
+
+                            <div class="space-y-2" id="stepperResults">
+                                <div class="flex justify-between items-center text-sm" data-axis="x">
+                                    <span>X axis</span>
+                                    <span class="stepper-result" id="stepperResult-x">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="y">
+                                    <span>Y axis</span>
+                                    <span class="stepper-result" id="stepperResult-y">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="z">
+                                    <span>Z axis</span>
+                                    <span class="stepper-result" id="stepperResult-z">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="c">
+                                    <span>C axis (yaw)</span>
+                                    <span class="stepper-result" id="stepperResult-c">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="b">
+                                    <span>B axis (tilt)</span>
+                                    <span class="stepper-result" id="stepperResult-b">pending</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 flex gap-3">
+                                <button id="startStepperBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
+                                    Start stepper test
+                                </button>
+                                <button id="skipStepperBtn" class="btn-secondary py-3 px-6 rounded-lg font-medium">
+                                    Skip remaining
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Homing direction -->
+            <div id="step-4" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Homing direction</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            For each axis with a confirmed endstop, send a homing move and check it travels toward the endstop.
+                            If it travels away, the home direction in the firmware is reversed.
+                        </p>
+                    </div>
+
+                    <div class="max-w-xl mx-auto">
+                        <div class="border border-gray-200 rounded-xl p-6 mb-4">
+                            <div class="mb-4 flex items-center justify-between">
+                                <h4 class="font-semibold text-gray-900">Currently testing</h4>
+                                <span id="homingAxisLabel" class="text-sm text-gray-500">&mdash;</span>
+                            </div>
+                            <p id="homingPrompt" class="text-gray-700 mb-4">Click "Start homing test" to begin.</p>
+
+                            <div id="homingButtons" class="flex gap-3 mb-4 hidden">
+                                <button id="homingMoveBtn" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
+                                    Send G28 for this axis
+                                </button>
+                                <button id="homingYesBtn" class="flex-1 btn-success py-2 rounded-lg font-medium text-sm" disabled>
+                                    Toward endstop ✓
+                                </button>
+                                <button id="homingNoBtn" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
+                                    Wrong way ✗
+                                </button>
+                            </div>
+
+                            <div class="space-y-2" id="homingResults">
+                                <div class="flex justify-between items-center text-sm" data-axis="x">
+                                    <span>X axis homing</span>
+                                    <span class="homing-result" id="homingResult-x">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="y">
+                                    <span>Y axis homing</span>
+                                    <span class="homing-result" id="homingResult-y">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="z">
+                                    <span>Z axis homing</span>
+                                    <span class="homing-result" id="homingResult-z">pending</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm" data-axis="b">
+                                    <span>B axis homing</span>
+                                    <span class="homing-result" id="homingResult-b">pending</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 flex gap-3">
+                                <button id="startHomingBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
+                                    Start homing test
+                                </button>
+                                <button id="skipHomingBtn" class="btn-secondary py-3 px-6 rounded-lg font-medium">
+                                    Skip
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
+                            <strong>Caution:</strong> if the stepper direction test for an axis was reversed, fix that first (re-flash with the corrected config) before homing &mdash; otherwise homing can drive the carriage into the frame.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Extruder -->
+            <div id="step-5" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Extruder</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            Confirm the extruder turns in the right direction, and optionally calibrate steps/mm by extruding a known length.
+                        </p>
+                    </div>
+
+                    <div class="max-w-xl mx-auto">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-sm text-yellow-700">
+                            <strong>Hot-end must be at temperature.</strong>
+                            Cold extrusion is blocked by Marlin's safety check (M302 disables it but isn't recommended).
+                            Heat the hot-end to at least 180&deg;C before extruding plastic, or remove the filament and run the test dry to just observe motor direction.
+                        </div>
+
+                        <div class="border border-gray-200 rounded-xl p-6 mb-4">
+                            <h4 class="font-semibold text-gray-900 mb-3">Extrusion direction test</h4>
+                            <p class="text-sm text-gray-600 mb-4">Sends <code class="bg-gray-100 px-1 rounded">G91</code> then <code class="bg-gray-100 px-1 rounded">G1 E5 F100</code> to extrude 5&nbsp;mm.</p>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-gray-700">Result</span>
+                                <span id="extruderDirResult" class="extruder-result">pending</span>
+                            </div>
+                            <div class="flex gap-3">
+                                <button id="extruderDirBtn" class="flex-1 btn-primary py-2 rounded-lg font-medium text-sm">
+                                    Send extrude
+                                </button>
+                                <button id="extruderDirYesBtn" class="flex-1 btn-success py-2 rounded-lg font-medium text-sm" disabled>
+                                    Forward ✓
+                                </button>
+                                <button id="extruderDirNoBtn" class="flex-1 btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
+                                    Reversed ✗
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-xl p-6 mb-4">
+                            <h4 class="font-semibold text-gray-900 mb-3">E-steps calibration <span class="text-xs font-normal text-gray-500">(optional)</span></h4>
+                            <p class="text-sm text-gray-600 mb-3">
+                                Mark the filament 120&nbsp;mm from the extruder inlet. Click "Extrude 100mm" and measure how much filament was actually pulled in. The tester will compute corrected steps/mm.
+                            </p>
+                            <div class="flex flex-col gap-3">
+                                <button id="extrudeCalBtn" class="btn-primary py-2 rounded-lg font-medium text-sm">
+                                    Extrude 100mm
+                                </button>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-sm text-gray-700 flex-1">Filament actually pulled in:</label>
+                                    <input id="extrudeMeasured" type="number" step="0.1" min="0" max="200" class="border border-gray-300 rounded px-2 py-1 text-sm w-24" placeholder="100">
+                                    <span class="text-sm text-gray-700">mm</span>
+                                </div>
+                                <button id="extrudeCalculateBtn" class="btn-secondary py-2 rounded-lg font-medium text-sm" disabled>
+                                    Calculate corrected steps/mm
+                                </button>
+                                <div id="extrudeCalResult" class="text-sm text-gray-700 hidden">
+                                    Corrected steps/mm: <span id="extrudeCalValue" class="font-mono font-medium">&mdash;</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="skipExtruderBtn" class="w-full btn-secondary py-2 rounded-lg font-medium text-sm">
+                            Skip extruder tests
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6: Results -->
+            <div id="step-6" class="wizard-step">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Results</h3>
+                        <p class="text-gray-600 max-w-2xl mx-auto">
+                            Summary of every test, plus a corrected configuration if the tester found anything reversed.
+                        </p>
+                    </div>
+
+                    <div class="max-w-3xl mx-auto">
+                        <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Test summary</h4>
+                            <div id="resultsSummary" class="space-y-2 text-sm"></div>
+                        </div>
+
+                        <div id="correctionsPanel" class="border border-gray-200 rounded-xl p-6 mb-6 hidden">
+                            <h4 class="font-semibold text-gray-900 mb-2">Corrections detected</h4>
+                            <p class="text-sm text-gray-600 mb-4">
+                                These settings differ between what the firmware was built with and what the hardware actually does.
+                                Re-flash with the corrected configuration.
+                            </p>
+                            <div id="correctionsList" class="space-y-2 text-sm font-mono mb-4"></div>
+                            <div id="configActions" class="flex gap-3 hidden">
+                                <button id="downloadConfigBtn" class="flex-1 btn-primary py-3 rounded-lg font-medium">
+                                    Download corrected JSON
+                                </button>
+                                <button id="copyConfigBtn" class="flex-1 btn-secondary py-3 rounded-lg font-medium">
+                                    Copy to clipboard
+                                </button>
+                            </div>
+                            <div id="noConfigNotice" class="text-sm text-gray-500 italic hidden">
+                                No JSON config was uploaded at the start, so a corrected file can't be generated. Re-run the tester from the Connect step with your Firmware Builder JSON to get a fix.
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex gap-3">
+                                <svg class="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div class="text-sm text-blue-700">
+                                    <p class="font-medium">Next steps</p>
+                                    <p class="mt-1">
+                                        If everything passed, continue to
+                                        <a href="../printer-setup/" class="underline font-medium">Printer Setup</a>
+                                        for kinematic calibration. If anything was reversed, re-import the corrected JSON into the
+                                        <a href="../firmware-builder/" class="underline font-medium">Firmware Builder</a>
+                                        and re-flash.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex justify-between mt-6">
+            <button id="prevBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium flex items-center gap-2" style="visibility: hidden;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Previous
+            </button>
+            <button id="nextBtn" class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center gap-2" disabled>
+                Next
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </div>
+    </main>
+
+    <div id="shared-footer"></div>
+
+    <!-- Shared components -->
+    <script src="../shared/theme.js"></script>
+    <script src="../shared/storage-manager.js"></script>
+    <script src="../shared/header.js"></script>
+    <script src="../shared/footer.js"></script>
+    <script src="../shared/wizard-framework.js"></script>
+    <script src="../shared/printer-interface.js"></script>
+    <script src="../shared/step-connect-base.js"></script>
+    <script src="../shared/toast-notification.js"></script>
+    <!-- Tool-specific scripts -->
+    <script src="js/connect.js"></script>
+    <script src="js/diagnostics.js"></script>
+    <script src="js/endstop-test.js"></script>
+    <script src="js/stepper-test.js"></script>
+    <script src="js/homing-test.js"></script>
+    <script src="js/extruder-test.js"></script>
+    <script src="js/results.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
