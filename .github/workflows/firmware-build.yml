@@ -228,6 +228,9 @@ jobs:
             # Set default brightness (already uncommented + indented)
             sed -i "s|^[[:space:]]*#define CASE_LIGHT_DEFAULT_BRIGHTNESS .*|  #define CASE_LIGHT_DEFAULT_BRIGHTNESS $CASE_LIGHT_BRIGHTNESS|" marlin/Marlin/Configuration_adv.h
 
+            # Keep the light off at power-up (base config defaults it on)
+            sed -i 's|^[[:space:]]*#define CASE_LIGHT_DEFAULT_ON .*|  #define CASE_LIGHT_DEFAULT_ON false|' marlin/Marlin/Configuration_adv.h
+
             echo "Enabled case light LED on pin $LED_PIN (brightness $CASE_LIGHT_BRIGHTNESS)"
           else
             echo "Case light disabled"

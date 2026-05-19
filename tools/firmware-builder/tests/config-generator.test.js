@@ -58,7 +58,15 @@ check('case light enabled emits CASE_LIGHT_ENABLE', () => {
   }));
   assert.ok(out.includes('#define CASE_LIGHT_ENABLE'), 'missing CASE_LIGHT_ENABLE');
   assert.ok(out.includes('#define CASE_LIGHT_DEFAULT_BRIGHTNESS 200'), 'missing brightness');
-  assert.ok(out.includes('#define CASE_LIGHT_PIN'), 'missing CASE_LIGHT_PIN');
+  assert.ok(out.includes('#define CASE_LIGHT_PIN PD13'), 'CASE_LIGHT_PIN should default to PD13');
+  assert.ok(out.includes('#define CASE_LIGHT_DEFAULT_ON false'), 'case light should default off');
+});
+
+check('case light pin honours pinOverrides.led', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({
+    caseLightEnabled: true, pinOverrides: { led: 'PD15' }
+  }));
+  assert.ok(out.includes('#define CASE_LIGHT_PIN PD15'), 'CASE_LIGHT_PIN should use pinOverrides.led');
 });
 
 check('case light disabled omits CASE_LIGHT_ENABLE', () => {
