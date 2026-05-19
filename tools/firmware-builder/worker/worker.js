@@ -137,6 +137,8 @@ async function handleBuildRequest(request, env, corsHeaders) {
     // Case light LED
     caseLightEnabled: body.caseLightEnabled,
     caseLightBrightness: body.caseLightBrightness,
+    // Advanced pin assignments (resolved MCU pins)
+    pinOverrides: body.pinOverrides,
     // IK parameters
     ikLC: body.ikLC,
     ikLB: body.ikLB,
@@ -312,6 +314,8 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     // Case light LED
     caseLightEnabled: buildData.caseLightEnabled,
     caseLightBrightness: buildData.caseLightBrightness,
+    // Advanced pin assignments (resolved MCU pins)
+    pinOverrides: buildData.pinOverrides,
     // IK parameters
     ikLC: buildData.ikLC,
     ikLB: buildData.ikLB,
