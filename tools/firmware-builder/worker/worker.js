@@ -130,6 +130,10 @@ async function handleBuildRequest(request, env, corsHeaders) {
     endstopZ: body.endstopZ,
     endstopC: body.endstopC,
     endstopB: body.endstopB,
+    // Sensorless XY homing
+    xyHomingMode: body.xyHomingMode,
+    stallSensitivityX: body.stallSensitivityX,
+    stallSensitivityY: body.stallSensitivityY,
     // IK parameters
     ikLC: body.ikLC,
     ikLB: body.ikLB,
@@ -298,6 +302,10 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     endstopZ: buildData.endstopZ,
     endstopC: buildData.endstopC,
     endstopB: buildData.endstopB,
+    // Sensorless XY homing
+    xyHomingMode: buildData.xyHomingMode,
+    stallSensitivityX: buildData.stallSensitivityX,
+    stallSensitivityY: buildData.stallSensitivityY,
     // IK parameters
     ikLC: buildData.ikLC,
     ikLB: buildData.ikLB,
