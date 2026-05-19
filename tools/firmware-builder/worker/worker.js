@@ -139,6 +139,9 @@ async function handleBuildRequest(request, env, corsHeaders) {
     caseLightBrightness: body.caseLightBrightness,
     // Advanced pin assignments (resolved MCU pins)
     pinOverrides: body.pinOverrides,
+    // Dual Z steppers
+    dualZ: body.dualZ,
+    zMultiEndstops: body.zMultiEndstops,
     // IK parameters
     ikLC: body.ikLC,
     ikLB: body.ikLB,
@@ -316,6 +319,9 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     caseLightBrightness: buildData.caseLightBrightness,
     // Advanced pin assignments (resolved MCU pins)
     pinOverrides: buildData.pinOverrides,
+    // Dual Z steppers
+    dualZ: buildData.dualZ,
+    zMultiEndstops: buildData.zMultiEndstops,
     // IK parameters
     ikLC: buildData.ikLC,
     ikLB: buildData.ikLB,

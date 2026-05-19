@@ -90,5 +90,26 @@ check('fan pin overrides appear in Configuration_adv.h', () => {
   assert.ok(out.includes('#define CONTROLLER_FAN_PIN PD12'), 'missing CONTROLLER_FAN_PIN');
 });
 
+check('dual Z emits Z2_DRIVER_TYPE matching the Z driver', () => {
+  const out = ConfigGenerator.generateConfigurationH(baseConfig({ dualZ: true, driverZ: 'TMC2209' }));
+  assert.ok(out.includes('#define Z2_DRIVER_TYPE TMC2209'), 'missing Z2_DRIVER_TYPE');
+});
+
+check('single Z leaves Z2_DRIVER_TYPE commented', () => {
+  const out = ConfigGenerator.generateConfigurationH(baseConfig({ dualZ: false }));
+  assert.ok(!out.includes('\n#define Z2_DRIVER_TYPE'), 'Z2 should not be enabled');
+});
+
+check('independent Z endstops emit Z_MULTI_ENDSTOPS', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ dualZ: true, zMultiEndstops: true }));
+  assert.ok(out.includes('#define Z_MULTI_ENDSTOPS'), 'missing Z_MULTI_ENDSTOPS');
+  assert.ok(out.includes('#define Z2_STOP_PIN PG11'), 'missing Z2_STOP_PIN');
+});
+
+check('synced dual Z omits Z_MULTI_ENDSTOPS', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ dualZ: true, zMultiEndstops: false }));
+  assert.ok(!out.includes('#define Z_MULTI_ENDSTOPS'), 'should not enable multi endstops');
+});
+
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed > 0 ? 1 : 0);

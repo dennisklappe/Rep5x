@@ -91,6 +91,10 @@ const wizardState = {
         driverB: 'TMC2208',
         driverE: 'TMC2208',
 
+        // Step 4: Dual Z steppers
+        dualZ: false,
+        zMultiEndstops: false,
+
         // Step 4: Motors - Socket assignment
         socketX: 'MOTOR0',
         socketY: 'MOTOR1',
@@ -297,7 +301,8 @@ function setupInputListeners() {
         { id: 'invertZ', key: 'invertZ' },
         { id: 'invertC', key: 'invertC' },
         { id: 'invertB', key: 'invertB' },
-        { id: 'invertE', key: 'invertE' }
+        { id: 'invertE', key: 'invertE' },
+        { id: 'zMultiEndstops', key: 'zMultiEndstops' }
     ];
 
     checkboxInputs.forEach(({ id, key }) => {
@@ -547,6 +552,15 @@ function updateCaseLight() {
     const enabled = document.getElementById('caseLightEnabled').checked;
     wizardState.config.caseLightEnabled = enabled;
     document.getElementById('caseLightOptions').classList.toggle('hidden', !enabled);
+}
+
+/**
+ * Show or hide the dual-Z options and sync the enabled state.
+ */
+function updateDualZ() {
+    const enabled = document.getElementById('dualZ').checked;
+    wizardState.config.dualZ = enabled;
+    document.getElementById('dualZOptions').classList.toggle('hidden', !enabled);
 }
 
 // Remembers X/Y driver choices made before sensorless homing forced them to TMC2209.
@@ -897,6 +911,9 @@ async function buildFirmware() {
             driverC: config.driverC,
             driverB: config.driverB,
             driverE: config.driverE,
+            // Dual Z steppers
+            dualZ: config.dualZ,
+            zMultiEndstops: config.zMultiEndstops,
             // Motor sockets
             socketX: config.socketX,
             socketY: config.socketY,
@@ -1269,6 +1286,15 @@ function applyImportedConfig(config) {
         const el = document.getElementById(field);
         if (el) el.value = config[field];
     });
+
+    // === Dual Z Steppers ===
+    if (config.dualZ != null) {
+        document.getElementById('dualZ').checked = config.dualZ;
+    }
+    if (config.zMultiEndstops != null) {
+        document.getElementById('zMultiEndstops').checked = config.zMultiEndstops;
+    }
+    updateDualZ();
 
     // === Motor Sockets ===
     const socketFields = ['socketX', 'socketY', 'socketZ', 'socketC', 'socketB', 'socketE'];

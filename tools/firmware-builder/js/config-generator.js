@@ -207,6 +207,7 @@ ${(() => {
 #define X_DRIVER_TYPE  ${config.driverX || 'TMC2208'}
 #define Y_DRIVER_TYPE  ${config.driverY || 'TMC2208'}
 #define Z_DRIVER_TYPE  ${config.driverZ || 'TMC2208'}
+${config.dualZ ? `#define Z2_DRIVER_TYPE ${config.driverZ || 'TMC2208'}` : '//#define Z2_DRIVER_TYPE A4988'}
 #define I_DRIVER_TYPE  ${config.driverC || 'TMC2208'}
 #define J_DRIVER_TYPE  ${config.driverB || 'TMC2208'}
 #define E0_DRIVER_TYPE ${config.driverE || 'TMC2208'}
@@ -528,6 +529,12 @@ ${config.xyHomingMode === 'sensorless' ? `
   #define X_STALL_SENSITIVITY ${config.stallSensitivityX != null ? config.stallSensitivityX : 8}
   #define Y_STALL_SENSITIVITY ${config.stallSensitivityY != null ? config.stallSensitivityY : 8}
 #endif` : '// Sensorless homing disabled - using physical endstops'}
+${config.dualZ && config.zMultiEndstops ? `
+// Independent Z endstops - auto-square the gantry when homing
+#define Z_MULTI_ENDSTOPS
+#if ENABLED(Z_MULTI_ENDSTOPS)
+  #define Z2_STOP_PIN PG11  // Z2-STOP header
+#endif` : ''}
 
 //===========================================================================
 //============================= LCD / Controller ============================

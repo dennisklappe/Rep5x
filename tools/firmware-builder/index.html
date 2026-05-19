@@ -538,6 +538,27 @@
                         </div>
 
                         <div class="section-divider">
+                            <span>Dual Z steppers</span>
+                        </div>
+
+                        <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                            <input type="checkbox" id="dualZ" class="w-4 h-4 text-primary rounded" onchange="updateDualZ()">
+                            <span class="text-sm">Use a second Z stepper motor</span>
+                        </label>
+                        <div id="dualZOptions" class="hidden mt-4 space-y-4">
+                            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p class="text-sm text-blue-800">
+                                    The second Z motor runs in sync with Z and uses the same driver type. Plug it into the <strong>MOTOR3</strong> driver slot on the Octopus.
+                                </p>
+                            </div>
+                            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
+                                <input type="checkbox" id="zMultiEndstops" class="w-4 h-4 text-primary rounded">
+                                <span class="text-sm">Independent Z endstops (auto-square the gantry when homing)</span>
+                            </label>
+                            <p class="text-xs text-gray-400">With independent endstops, wire the second Z endstop to the <strong>Z2-STOP</strong> header. Leave off to share a single Z endstop.</p>
+                        </div>
+
+                        <div class="section-divider">
                             <span>Steps per unit</span>
                         </div>
 

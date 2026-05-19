@@ -278,6 +278,27 @@ jobs:
             echo "Set CONTROLLER_FAN_PIN to $PIN_FAN_CONTROLLER"
           fi
 
+          # === DUAL Z STEPPERS ===
+          DUAL_Z=$(echo "$CUSTOMIZATIONS" | jq -r '.dualZ // empty')
+          if [ "$DUAL_Z" = "true" ]; then
+            # Z2 runs in sync with Z and uses the same driver type
+            Z2_DRIVER=$(echo "$CUSTOMIZATIONS" | jq -r '.driverZ // "TMC2208"')
+            sed -i "s|^//#define Z2_DRIVER_TYPE.*|#define Z2_DRIVER_TYPE $Z2_DRIVER|" marlin/Marlin/Configuration.h
+            echo "Enabled dual Z steppers (Z2 driver $Z2_DRIVER)"
+
+            Z_MULTI=$(echo "$CUSTOMIZATIONS" | jq -r '.zMultiEndstops // empty')
+            if [ "$Z_MULTI" = "true" ]; then
+              # Independent Z endstops: enable Z_MULTI_ENDSTOPS + the Z2-STOP header
+              sed -i 's|^[[:space:]]*//#define Z_MULTI_ENDSTOPS|  #define Z_MULTI_ENDSTOPS|' marlin/Marlin/Configuration_adv.h
+              sed -i 's|^[[:space:]]*//#define Z2_STOP_PIN .*|    #define Z2_STOP_PIN PG11|' marlin/Marlin/Configuration_adv.h
+              echo "Enabled independent Z endstops (Z2_STOP_PIN PG11)"
+            else
+              echo "Z2 shares the single Z endstop"
+            fi
+          else
+            echo "Single Z stepper"
+          fi
+
           # === IK PARAMETERS ===
           IK_LC=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLC // empty')
           IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')
