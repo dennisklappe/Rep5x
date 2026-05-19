@@ -79,6 +79,10 @@ const wizardState = {
         display: 'btt_mini_12864',
         neopixelColor: 'green',
 
+        // Step 3: Case light LED
+        caseLightEnabled: false,
+        caseLightBrightness: 105,
+
         // Step 4: Motors - Drivers
         driverX: 'TMC2208',
         driverY: 'TMC2208',
@@ -205,7 +209,8 @@ function setupInputListeners() {
         { id: 'bRange', key: 'bRange' },
         { id: 'segmentsPerSecond', key: 'segmentsPerSecond' },
         { id: 'stallSensitivityX', key: 'stallSensitivityX' },
-        { id: 'stallSensitivityY', key: 'stallSensitivityY' }
+        { id: 'stallSensitivityY', key: 'stallSensitivityY' },
+        { id: 'caseLightBrightness', key: 'caseLightBrightness' }
     ];
 
     numericInputs.forEach(({ id, key }) => {
@@ -414,6 +419,15 @@ function updateAdjustedValues() {
         wizardState.config.yBedSize = yInput;
         wizardState.config.zMaxPos = zInput;
     }
+}
+
+/**
+ * Show or hide the case-light options and sync the enabled state.
+ */
+function updateCaseLight() {
+    const enabled = document.getElementById('caseLightEnabled').checked;
+    wizardState.config.caseLightEnabled = enabled;
+    document.getElementById('caseLightOptions').classList.toggle('hidden', !enabled);
 }
 
 // Remembers X/Y driver choices made before sensorless homing forced them to TMC2209.
@@ -795,6 +809,9 @@ async function buildFirmware() {
             xyHomingMode: config.xyHomingMode,
             stallSensitivityX: config.stallSensitivityX,
             stallSensitivityY: config.stallSensitivityY,
+            // Case light LED
+            caseLightEnabled: config.caseLightEnabled,
+            caseLightBrightness: config.caseLightBrightness,
             // IK parameters
             ikLC: config.ikLC,
             ikLB: config.ikLB,
@@ -1095,6 +1112,15 @@ function applyImportedConfig(config) {
             btn.style.boxShadow = '0 0 0 3px rgba(50, 215, 75, 0.5)';
         }
     });
+
+    // === Case Light ===
+    if (config.caseLightEnabled != null) {
+        document.getElementById('caseLightEnabled').checked = config.caseLightEnabled;
+    }
+    if (config.caseLightBrightness != null) {
+        document.getElementById('caseLightBrightness').value = config.caseLightBrightness;
+    }
+    updateCaseLight();
 
     // === Stepper Drivers ===
     const driverFields = ['driverX', 'driverY', 'driverZ', 'driverC', 'driverB', 'driverE'];
