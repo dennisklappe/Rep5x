@@ -410,16 +410,16 @@
 
                     <div class="mt-6 max-w-2xl mx-auto">
                         <div class="section-divider">
-                            <span>Case light</span>
+                            <span>Build volume light</span>
                         </div>
                         <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
                             <input type="checkbox" id="caseLightEnabled" class="w-4 h-4 text-primary rounded" onchange="updateCaseLight()">
-                            <span class="text-sm">Enable a controllable LED (case light, M355)</span>
+                            <span class="text-sm">Enable a controllable LED to light the build volume (M355)</span>
                         </label>
                         <div id="caseLightOptions" class="hidden mt-4">
                             <label class="block text-sm text-gray-600 mb-1">Default brightness (0&ndash;255)</label>
                             <input type="number" id="caseLightBrightness" class="config-input w-full" value="105" min="0" max="255" step="1">
-                            <p class="text-xs text-gray-400 mt-1">Off by default at power-up. Leave this section unchecked if your printer has no LED.</p>
+                            <p class="text-xs text-gray-400 mt-1">Off by default at power-up. Leave this section unchecked if your printer has no build-volume LED.</p>
                         </div>
                     </div>
                 </div>
