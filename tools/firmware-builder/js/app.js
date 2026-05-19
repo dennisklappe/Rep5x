@@ -137,7 +137,7 @@ const wizardState = {
 
 /**
  * Functions assignable in the advanced pin panel.
- * `kind` selects which board header map applies ('endstop' or 'fan').
+ * `kind` selects which board pin list applies ('endstop' or 'fan').
  */
 const advancedPinFunctions = [
     { key: 'endstopX', label: 'X endstop', kind: 'endstop' },
@@ -147,7 +147,7 @@ const advancedPinFunctions = [
     { key: 'endstopB', label: 'B-axis endstop', kind: 'endstop' },
     { key: 'fanHotend', label: 'Hotend / auto fan', kind: 'fan' },
     { key: 'fanController', label: 'Controller fan', kind: 'fan' },
-    { key: 'led', label: 'Case light LED', kind: 'fan' }
+    { key: 'led', label: 'Build volume LED', kind: 'fan' }
 ];
 
 // Neopixel color definitions
@@ -459,28 +459,22 @@ function toggleAdvancedPins() {
 }
 
 /**
- * Initialise pinAssignments with the current board's defaults for any
- * function the user has not explicitly set.
+ * Fill in any pin assignment the user has not set with the board default.
+ * Each assignment is a single MCU pin name.
  */
 function initPinAssignments() {
     const defaults = BoardPins.getDefaults(wizardState.config.board);
     const assignments = wizardState.config.pinAssignments;
     advancedPinFunctions.forEach(fn => {
-        if (!assignments[fn.key]) {
-            assignments[fn.key] = { header: defaults[fn.key], raw: '' };
+        if (typeof assignments[fn.key] !== 'string' || !assignments[fn.key]) {
+            assignments[fn.key] = defaults[fn.key];
         }
     });
 }
 
 /**
- * Escape a value for safe interpolation into an HTML attribute.
- */
-function escapeAttr(value) {
-    return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-
-/**
  * Build the advanced pin panel rows from board-pins.js.
+ * Each row is a function label and a dropdown of the board's MCU pins.
  */
 function renderAdvancedPinPanel() {
     initPinAssignments();
@@ -489,18 +483,16 @@ function renderAdvancedPinPanel() {
     if (!container) return;
 
     container.innerHTML = advancedPinFunctions.map(fn => {
-        const map = fn.kind === 'fan' ? board.fanHeaders : board.endstopHeaders;
+        const pins = fn.kind === 'fan' ? board.fanPins : board.endstopPins;
         const current = wizardState.config.pinAssignments[fn.key];
-        const options = Object.keys(map).map(label =>
-            `<option value="${label}"${label === current.header ? ' selected' : ''}>${label} (${map[label]})</option>`
+        const options = pins.map(pin =>
+            `<option value="${pin}"${pin === current ? ' selected' : ''}>${pin}</option>`
         ).join('');
         return `
-            <div class="grid grid-cols-3 gap-3 items-center">
+            <div class="grid grid-cols-2 gap-3 items-center">
                 <label class="text-sm text-gray-600">${fn.label}</label>
-                <select class="config-input text-sm" data-pin-fn="${fn.key}" data-pin-field="header"
+                <select class="config-input text-sm" data-pin-fn="${fn.key}"
                     onchange="updatePinAssignment(this)">${options}</select>
-                <input type="text" class="config-input text-sm" data-pin-fn="${fn.key}" data-pin-field="raw"
-                    placeholder="raw pin (optional)" value="${escapeAttr(current.raw)}" oninput="updatePinAssignment(this)">
             </div>`;
     }).join('');
 
@@ -508,27 +500,31 @@ function renderAdvancedPinPanel() {
 }
 
 /**
- * Persist a single dropdown / raw-field change into wizard state.
+ * Persist a pin-dropdown change into wizard state.
  */
 function updatePinAssignment(element) {
-    const key = element.dataset.pinFn;
-    const field = element.dataset.pinField;
-    wizardState.config.pinAssignments[key][field] = element.value;
+    wizardState.config.pinAssignments[element.dataset.pinFn] = element.value;
     checkPinConflicts();
 }
 
 /**
- * Resolve every assignment to a pin and show a warning on collisions.
+ * Collect the advanced pin assignments as a functionName -> pin map.
+ * @returns {Object}
  */
-function checkPinConflicts() {
-    const boardId = wizardState.config.board;
+function resolvePinOverrides() {
+    const assignments = wizardState.config.pinAssignments;
     const resolved = {};
     advancedPinFunctions.forEach(fn => {
-        const a = wizardState.config.pinAssignments[fn.key];
-        resolved[fn.key] = BoardPins.resolvePin(boardId, fn.kind, a.header, a.raw);
+        resolved[fn.key] = assignments[fn.key];
     });
+    return resolved;
+}
 
-    const conflicts = BoardPins.findConflicts(resolved);
+/**
+ * Warn when two functions are assigned the same pin.
+ */
+function checkPinConflicts() {
+    const conflicts = BoardPins.findConflicts(resolvePinOverrides());
     const warning = document.getElementById('pinConflictWarning');
     if (!warning) return;
 
@@ -542,20 +538,6 @@ function checkPinConflicts() {
     } else {
         warning.classList.add('hidden');
     }
-}
-
-/**
- * Resolve all advanced pin assignments to final MCU pin values.
- * @returns {Object} map of functionName -> pin string
- */
-function resolvePinOverrides() {
-    const boardId = wizardState.config.board;
-    const resolved = {};
-    advancedPinFunctions.forEach(fn => {
-        const a = wizardState.config.pinAssignments[fn.key] || { header: '', raw: '' };
-        resolved[fn.key] = BoardPins.resolvePin(boardId, fn.kind, a.header, a.raw);
-    });
-    return resolved;
 }
 
 /**

@@ -7,31 +7,26 @@ function check(name, fn) {
   catch (e) { failed++; console.log('FAIL ' + name + ': ' + e.message); }
 }
 
-check('octopus_v1.1 board exists with header maps', () => {
+check('octopus_v1.1 board exposes endstop and fan pin lists', () => {
   const b = BoardPins.boards['octopus_v1.1'];
   assert.ok(b, 'board missing');
-  assert.strictEqual(b.endstopHeaders['X-STOP'], 'PG6');
-  assert.strictEqual(b.fanHeaders['Fan0'], 'PA8');
+  assert.ok(b.endstopPins.includes('PG6'), 'endstop pins missing PG6');
+  assert.ok(b.fanPins.includes('PA8'), 'fan pins missing PA8');
 });
 
-check('resolvePin uses the header map', () => {
-  const pin = BoardPins.resolvePin('octopus_v1.1', 'endstop', 'Z-STOP', '');
-  assert.strictEqual(pin, 'PG10');
-});
-
-check('resolvePin raw override wins over the header', () => {
-  const pin = BoardPins.resolvePin('octopus_v1.1', 'endstop', 'Z-STOP', 'PB7');
-  assert.strictEqual(pin, 'PB7');
-});
-
-check('getDefaults returns per-function header defaults', () => {
+check('getDefaults returns per-function pin defaults', () => {
   const d = BoardPins.getDefaults('octopus_v1.1');
-  assert.strictEqual(d.endstopC, 'E1DET');
-  assert.strictEqual(d.endstopB, 'E2DET');
+  assert.strictEqual(d.endstopX, 'PG6');
+  assert.strictEqual(d.endstopC, 'PG13');
+  assert.strictEqual(d.endstopB, 'PG14');
+});
+
+check('getDefaults falls back to octopus_v1.1 for an unknown board', () => {
+  assert.strictEqual(BoardPins.getDefaults('nope').endstopX, 'PG6');
 });
 
 check('findConflicts flags two functions on the same pin', () => {
-  const conflicts = BoardPins.findConflicts({ endstopX: 'PG6', endstopY: 'PG6', fanPart: 'PA8' });
+  const conflicts = BoardPins.findConflicts({ endstopX: 'PG6', endstopY: 'PG6', fanHotend: 'PE5' });
   assert.strictEqual(conflicts.length, 1);
   assert.deepStrictEqual(conflicts[0].sort(), ['endstopX', 'endstopY']);
 });

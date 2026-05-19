@@ -770,7 +770,7 @@
                             </button>
                             <div id="advancedPinsBody" class="hidden p-4 pt-0 space-y-6">
                                 <p class="text-xs text-gray-500">
-                                    Prefilled with the defaults for your board. Change a dropdown to use a different connector, or type a raw pin (e.g. <code>PG6</code>) to override it entirely.
+                                    Each function is assigned to an MCU pin, prefilled with the Rep5x tutorial wiring. Change a pin if your board is wired differently &mdash; a warning shows if two functions share a pin.
                                 </p>
                                 <div id="advancedPinRows" class="space-y-4"></div>
                                 <div id="pinConflictWarning" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -915,7 +915,7 @@
 
                             <div class="grid md:grid-cols-2 gap-4">
                                 <button onclick="downloadConfigFiles()" class="btn-outline p-4 rounded-xl flex items-center gap-4 text-left">
-                                    <div class="w-12 h-12 bg-primary bg-opacity-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(50, 215, 75, 0.12)">
                                         <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                         </svg>
