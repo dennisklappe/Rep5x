@@ -86,6 +86,15 @@ const ConfigGenerator = {
         lines.push('#define I_HOME_DIR -1  // C-axis homes to MIN');
         lines.push('#define J_HOME_DIR -1  // B-axis homes to MIN');
         lines.push('');
+        lines.push('// === XY Homing Method ===');
+        if (config.xyHomingMode === 'sensorless') {
+            lines.push('#define SENSORLESS_HOMING  // StallGuard (TMC2209)');
+            lines.push(`#define X_STALL_SENSITIVITY ${config.stallSensitivityX != null ? config.stallSensitivityX : 8}`);
+            lines.push(`#define Y_STALL_SENSITIVITY ${config.stallSensitivityY != null ? config.stallSensitivityY : 8}`);
+        } else {
+            lines.push('// XY homing uses physical endstops');
+        }
+        lines.push('');
         lines.push('// === Steps Per Unit ===');
         lines.push(`#define DEFAULT_AXIS_STEPS_PER_UNIT { ${config.stepsX}, ${config.stepsY}, ${config.stepsZ}, ${config.stepsC}, ${config.stepsB}, ${config.stepsE} }`);
         lines.push('');
@@ -502,8 +511,15 @@ ${display.needsNeopixel ? `#define NEOPIXEL_LED
 
 // @section homing
 
-#define HOMING_BUMP_MM      { 5, 5, 3, 5, 2 }
+#define HOMING_BUMP_MM      ${config.xyHomingMode === 'sensorless' ? '{ 0, 0, 3, 5, 2 }' : '{ 5, 5, 3, 5, 2 }'}
 #define HOMING_BUMP_DIVISOR { 2, 2, 4, 2, 4 }
+${config.xyHomingMode === 'sensorless' ? `
+// Sensorless XY homing (StallGuard) - requires TMC2209 on X and Y
+#define SENSORLESS_HOMING
+#if ENABLED(SENSORLESS_HOMING)
+  #define X_STALL_SENSITIVITY ${config.stallSensitivityX != null ? config.stallSensitivityX : 8}
+  #define Y_STALL_SENSITIVITY ${config.stallSensitivityY != null ? config.stallSensitivityY : 8}
+#endif` : '// Sensorless homing disabled - using physical endstops'}
 
 //===========================================================================
 //============================= LCD / Controller ============================
