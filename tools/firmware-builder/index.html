@@ -755,6 +755,29 @@
                                 </select>
                             </div>
                         </div>
+
+                        <div class="section-divider">
+                            <span>Advanced</span>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg">
+                            <button type="button" onclick="toggleAdvancedPins()"
+                                class="w-full flex items-center justify-between p-4 text-left">
+                                <span class="text-sm font-medium text-gray-900">Advanced: pin assignments</span>
+                                <svg id="advancedPinsChevron" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="advancedPinsBody" class="hidden p-4 pt-0 space-y-6">
+                                <p class="text-xs text-gray-500">
+                                    Prefilled with the defaults for your board. Change a dropdown to use a different connector, or type a raw pin (e.g. <code>PG6</code>) to override it entirely.
+                                </p>
+                                <div id="advancedPinRows" class="space-y-4"></div>
+                                <div id="pinConflictWarning" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <p class="text-sm text-red-800"></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -971,6 +994,7 @@
 
     <!-- Tool-specific scripts -->
     <script src="js/config-generator.js"></script>
+    <script src="js/board-pins.js"></script>
     <script src="js/app.js"></script>
 </body>
 
