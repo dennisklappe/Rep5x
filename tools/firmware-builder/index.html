@@ -538,103 +538,6 @@
                         </div>
 
                         <div class="section-divider">
-                            <span>Motor socket assignment</span>
-                        </div>
-
-                        <!-- Motor socket assignment -->
-                        <div class="grid grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">X motor</label>
-                                <select id="socketX" class="config-input w-full text-sm">
-                                    <option value="MOTOR0" selected>MOTOR0</option>
-                                    <option value="MOTOR1">MOTOR1</option>
-                                    <option value="MOTOR2_1">MOTOR2_1</option>
-                                    <option value="MOTOR3">MOTOR3</option>
-                                    <option value="MOTOR4">MOTOR4</option>
-                                    <option value="MOTOR5">MOTOR5</option>
-                                    <option value="MOTOR6">MOTOR6</option>
-                                    <option value="MOTOR7">MOTOR7</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Y motor</label>
-                                <select id="socketY" class="config-input w-full text-sm">
-                                    <option value="MOTOR0">MOTOR0</option>
-                                    <option value="MOTOR1" selected>MOTOR1</option>
-                                    <option value="MOTOR2_1">MOTOR2_1</option>
-                                    <option value="MOTOR3">MOTOR3</option>
-                                    <option value="MOTOR4">MOTOR4</option>
-                                    <option value="MOTOR5">MOTOR5</option>
-                                    <option value="MOTOR6">MOTOR6</option>
-                                    <option value="MOTOR7">MOTOR7</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">Z motor</label>
-                                <select id="socketZ" class="config-input w-full text-sm">
-                                    <option value="MOTOR0">MOTOR0</option>
-                                    <option value="MOTOR1">MOTOR1</option>
-                                    <option value="MOTOR2_1" selected>MOTOR2_1</option>
-                                    <option value="MOTOR3">MOTOR3</option>
-                                    <option value="MOTOR4">MOTOR4</option>
-                                    <option value="MOTOR5">MOTOR5</option>
-                                    <option value="MOTOR6">MOTOR6</option>
-                                    <option value="MOTOR7">MOTOR7</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">C motor (yaw)</label>
-                                <select id="socketC" class="config-input w-full text-sm">
-                                    <option value="MOTOR0">MOTOR0</option>
-                                    <option value="MOTOR1">MOTOR1</option>
-                                    <option value="MOTOR2_1">MOTOR2_1</option>
-                                    <option value="MOTOR3">MOTOR3</option>
-                                    <option value="MOTOR4" selected>MOTOR4</option>
-                                    <option value="MOTOR5">MOTOR5</option>
-                                    <option value="MOTOR6">MOTOR6</option>
-                                    <option value="MOTOR7">MOTOR7</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">B motor (tilt)</label>
-                                <select id="socketB" class="config-input w-full text-sm">
-                                    <option value="MOTOR0">MOTOR0</option>
-                                    <option value="MOTOR1">MOTOR1</option>
-                                    <option value="MOTOR2_1">MOTOR2_1</option>
-                                    <option value="MOTOR3">MOTOR3</option>
-                                    <option value="MOTOR4">MOTOR4</option>
-                                    <option value="MOTOR5" selected>MOTOR5</option>
-                                    <option value="MOTOR6">MOTOR6</option>
-                                    <option value="MOTOR7">MOTOR7</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm text-gray-600 mb-1">E motor</label>
-                                <select id="socketE" class="config-input w-full text-sm">
-                                    <option value="MOTOR0">MOTOR0</option>
-                                    <option value="MOTOR1">MOTOR1</option>
-                                    <option value="MOTOR2_1">MOTOR2_1</option>
-                                    <option value="MOTOR3" selected>MOTOR3</option>
-                                    <option value="MOTOR4">MOTOR4</option>
-                                    <option value="MOTOR5">MOTOR5</option>
-                                    <option value="MOTOR6">MOTOR6</option>
-                                    <option value="MOTOR7">MOTOR7</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <div class="flex gap-3">
-                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <p class="text-sm text-blue-800">
-                                    <strong>Default assignment:</strong> X=MOTOR0, Y=MOTOR1, Z=MOTOR2_1, E=MOTOR3, C=MOTOR4, B=MOTOR5. This matches the standard Rep5x wiring for BTT Octopus.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="section-divider">
                             <span>Steps per unit</span>
                         </div>
 
@@ -763,18 +666,115 @@
                         <div class="border border-gray-200 rounded-lg">
                             <button type="button" onclick="toggleAdvancedPins()"
                                 class="w-full flex items-center justify-between p-4 text-left">
-                                <span class="text-sm font-medium text-gray-900">Advanced: pin assignments</span>
+                                <span class="text-sm font-medium text-gray-900">Advanced: pins &amp; motor sockets</span>
                                 <svg id="advancedPinsChevron" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
                             <div id="advancedPinsBody" class="hidden p-4 pt-0 space-y-6">
-                                <p class="text-xs text-gray-500">
-                                    Each function is assigned to an MCU pin, prefilled with the Rep5x tutorial wiring. Change a pin if your board is wired differently &mdash; a warning shows if two functions share a pin.
-                                </p>
-                                <div id="advancedPinRows" class="space-y-4"></div>
-                                <div id="pinConflictWarning" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg">
-                                    <p class="text-sm text-red-800"></p>
+                                <div>
+                                    <h5 class="text-sm font-medium text-gray-900 mb-1">Pin assignments</h5>
+                                    <p class="text-xs text-gray-500 mb-3">
+                                        Each function is assigned to an MCU pin, prefilled with the Rep5x tutorial wiring. Change a pin if your board is wired differently &mdash; a warning shows if two functions share a pin.
+                                    </p>
+                                    <div id="advancedPinRows" class="space-y-4"></div>
+                                    <div id="pinConflictWarning" class="hidden mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <p class="text-sm text-red-800"></p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 class="text-sm font-medium text-gray-900 mb-1">Motor sockets</h5>
+                                    <p class="text-xs text-gray-500 mb-3">Which driver slot each axis is plugged into.</p>
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="block text-sm text-gray-600 mb-1">X motor</label>
+                                            <select id="socketX" class="config-input w-full text-sm">
+                                                <option value="MOTOR0" selected>MOTOR0</option>
+                                                <option value="MOTOR1">MOTOR1</option>
+                                                <option value="MOTOR2_1">MOTOR2_1</option>
+                                                <option value="MOTOR3">MOTOR3</option>
+                                                <option value="MOTOR4">MOTOR4</option>
+                                                <option value="MOTOR5">MOTOR5</option>
+                                                <option value="MOTOR6">MOTOR6</option>
+                                                <option value="MOTOR7">MOTOR7</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm text-gray-600 mb-1">Y motor</label>
+                                            <select id="socketY" class="config-input w-full text-sm">
+                                                <option value="MOTOR0">MOTOR0</option>
+                                                <option value="MOTOR1" selected>MOTOR1</option>
+                                                <option value="MOTOR2_1">MOTOR2_1</option>
+                                                <option value="MOTOR3">MOTOR3</option>
+                                                <option value="MOTOR4">MOTOR4</option>
+                                                <option value="MOTOR5">MOTOR5</option>
+                                                <option value="MOTOR6">MOTOR6</option>
+                                                <option value="MOTOR7">MOTOR7</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm text-gray-600 mb-1">Z motor</label>
+                                            <select id="socketZ" class="config-input w-full text-sm">
+                                                <option value="MOTOR0">MOTOR0</option>
+                                                <option value="MOTOR1">MOTOR1</option>
+                                                <option value="MOTOR2_1" selected>MOTOR2_1</option>
+                                                <option value="MOTOR3">MOTOR3</option>
+                                                <option value="MOTOR4">MOTOR4</option>
+                                                <option value="MOTOR5">MOTOR5</option>
+                                                <option value="MOTOR6">MOTOR6</option>
+                                                <option value="MOTOR7">MOTOR7</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm text-gray-600 mb-1">C motor (yaw)</label>
+                                            <select id="socketC" class="config-input w-full text-sm">
+                                                <option value="MOTOR0">MOTOR0</option>
+                                                <option value="MOTOR1">MOTOR1</option>
+                                                <option value="MOTOR2_1">MOTOR2_1</option>
+                                                <option value="MOTOR3">MOTOR3</option>
+                                                <option value="MOTOR4" selected>MOTOR4</option>
+                                                <option value="MOTOR5">MOTOR5</option>
+                                                <option value="MOTOR6">MOTOR6</option>
+                                                <option value="MOTOR7">MOTOR7</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm text-gray-600 mb-1">B motor (tilt)</label>
+                                            <select id="socketB" class="config-input w-full text-sm">
+                                                <option value="MOTOR0">MOTOR0</option>
+                                                <option value="MOTOR1">MOTOR1</option>
+                                                <option value="MOTOR2_1">MOTOR2_1</option>
+                                                <option value="MOTOR3">MOTOR3</option>
+                                                <option value="MOTOR4">MOTOR4</option>
+                                                <option value="MOTOR5" selected>MOTOR5</option>
+                                                <option value="MOTOR6">MOTOR6</option>
+                                                <option value="MOTOR7">MOTOR7</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm text-gray-600 mb-1">E motor</label>
+                                            <select id="socketE" class="config-input w-full text-sm">
+                                                <option value="MOTOR0">MOTOR0</option>
+                                                <option value="MOTOR1">MOTOR1</option>
+                                                <option value="MOTOR2_1">MOTOR2_1</option>
+                                                <option value="MOTOR3" selected>MOTOR3</option>
+                                                <option value="MOTOR4">MOTOR4</option>
+                                                <option value="MOTOR5">MOTOR5</option>
+                                                <option value="MOTOR6">MOTOR6</option>
+                                                <option value="MOTOR7">MOTOR7</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <div class="flex gap-3">
+                                            <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <p class="text-sm text-blue-800">
+                                                <strong>Default assignment:</strong> X=MOTOR0, Y=MOTOR1, Z=MOTOR2_1, E=MOTOR3, C=MOTOR4, B=MOTOR5. This matches the standard Rep5x wiring for BTT Octopus.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
