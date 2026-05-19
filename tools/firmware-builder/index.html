@@ -562,7 +562,7 @@
                         <div id="dualZOptions" class="hidden mt-4 space-y-4">
                             <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p class="text-sm text-blue-800">
-                                    The second Z motor runs in sync with Z and uses the same driver type. Plug it into the <strong>MOTOR3</strong> driver slot on the Octopus.
+                                    The second Z motor runs in sync with Z and uses the same driver type. Pick its driver slot under <strong>Advanced &#9656; Motor sockets</strong> below (default MOTOR7).
                                 </p>
                             </div>
                             <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary">
@@ -797,6 +797,19 @@
                                                 <option value="MOTOR5">MOTOR5</option>
                                                 <option value="MOTOR6">MOTOR6</option>
                                                 <option value="MOTOR7">MOTOR7</option>
+                                            </select>
+                                        </div>
+                                        <div id="socketZ2Cell" class="hidden">
+                                            <label class="block text-sm text-gray-600 mb-1">Z2 motor (dual Z)</label>
+                                            <select id="socketZ2" class="config-input w-full text-sm">
+                                                <option value="MOTOR0">MOTOR0</option>
+                                                <option value="MOTOR1">MOTOR1</option>
+                                                <option value="MOTOR2_1">MOTOR2_1</option>
+                                                <option value="MOTOR3">MOTOR3</option>
+                                                <option value="MOTOR4">MOTOR4</option>
+                                                <option value="MOTOR5">MOTOR5</option>
+                                                <option value="MOTOR6">MOTOR6</option>
+                                                <option value="MOTOR7" selected>MOTOR7</option>
                                             </select>
                                         </div>
                                     </div>

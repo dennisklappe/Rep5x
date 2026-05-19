@@ -18,6 +18,19 @@ const octopusEndstopPins = ['PG6', 'PG9', 'PG10', 'PG11', 'PG12', 'PG13', 'PG14'
 // Fan header pins on the BTT Octopus (Fan0..Fan5).
 const octopusFanPins = ['PA8', 'PE5', 'PD12', 'PD13', 'PD14', 'PD15'];
 
+// MOTOR slot -> driver pins on the BTT Octopus (step / dir / enable / TMC UART).
+const octopusMotorSlots = {
+    MOTOR0:   { step: 'PF13', dir: 'PF12', enable: 'PF14', uart: 'PC4'  },
+    MOTOR1:   { step: 'PG0',  dir: 'PG1',  enable: 'PF15', uart: 'PD11' },
+    MOTOR2:   { step: 'PF11', dir: 'PG3',  enable: 'PG5',  uart: 'PC6'  },
+    MOTOR2_1: { step: 'PF11', dir: 'PG3',  enable: 'PG5',  uart: 'PC6'  },
+    MOTOR3:   { step: 'PG4',  dir: 'PC1',  enable: 'PA0',  uart: 'PC7'  },
+    MOTOR4:   { step: 'PF9',  dir: 'PF10', enable: 'PG2',  uart: 'PF2'  },
+    MOTOR5:   { step: 'PC13', dir: 'PF0',  enable: 'PF1',  uart: 'PE4'  },
+    MOTOR6:   { step: 'PE2',  dir: 'PE3',  enable: 'PD4',  uart: 'PE1'  },
+    MOTOR7:   { step: 'PE6',  dir: 'PA14', enable: 'PE0',  uart: 'PD3'  }
+};
+
 // Default pin per assignable function (Rep5x tutorial wiring). Endstop C/B
 // match the base config's I_MIN_PIN (PG13) and J_MIN_PIN (PG14).
 const octopusDefaults = {
@@ -27,6 +40,8 @@ const octopusDefaults = {
 };
 
 const BoardPins = {
+    motorSlots: octopusMotorSlots,
+
     boards: {
         'octopus_v1.1': {
             endstopPins: octopusEndstopPins,

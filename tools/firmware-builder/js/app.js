@@ -103,6 +103,7 @@ const wizardState = {
         socketC: 'MOTOR4',
         socketB: 'MOTOR5',
         socketE: 'MOTOR3',
+        socketZ2: 'MOTOR7',
 
         // Step 4: Motors - Steps per unit
         stepsX: 80,
@@ -278,6 +279,7 @@ function setupInputListeners() {
         { id: 'socketC', key: 'socketC' },
         { id: 'socketB', key: 'socketB' },
         { id: 'socketE', key: 'socketE' },
+        { id: 'socketZ2', key: 'socketZ2' },
         { id: 'endstopX', key: 'endstopX' },
         { id: 'endstopY', key: 'endstopY' },
         { id: 'endstopZ', key: 'endstopZ' },
@@ -527,6 +529,36 @@ function resolvePinOverrides() {
 }
 
 /**
+ * Motor-socket overrides for the build, keyed by Marlin board-logical name.
+ * Only axes whose socket differs from the Rep5x default are included, so a
+ * default config produces no overrides (build identical to ignoring sockets).
+ * Z2 is always included when dual Z is on - it must move off the board's
+ * default Z2 slot (MOTOR3, used by the Rep5x extruder).
+ */
+function resolveMotorOverrides() {
+    const c = wizardState.config;
+    const slots = BoardPins.motorSlots;
+    const axes = [
+        { socket: c.socketX, logical: 'X',  def: 'MOTOR0' },
+        { socket: c.socketY, logical: 'Y',  def: 'MOTOR1' },
+        { socket: c.socketZ, logical: 'Z',  def: 'MOTOR2_1' },
+        { socket: c.socketE, logical: 'E0', def: 'MOTOR3' },
+        { socket: c.socketC, logical: 'E1', def: 'MOTOR4' },
+        { socket: c.socketB, logical: 'E2', def: 'MOTOR5' }
+    ];
+    const out = {};
+    axes.forEach(a => {
+        if (a.socket && a.socket !== a.def && slots[a.socket]) {
+            out[a.logical] = slots[a.socket];
+        }
+    });
+    if (c.dualZ && c.socketZ2 && slots[c.socketZ2]) {
+        out.Z2 = slots[c.socketZ2];
+    }
+    return out;
+}
+
+/**
  * Warn when two functions are assigned the same pin.
  */
 function checkPinConflicts() {
@@ -562,6 +594,8 @@ function updateDualZ() {
     const enabled = document.getElementById('dualZ').checked;
     wizardState.config.dualZ = enabled;
     document.getElementById('dualZOptions').classList.toggle('hidden', !enabled);
+    const z2Cell = document.getElementById('socketZ2Cell');
+    if (z2Cell) z2Cell.classList.toggle('hidden', !enabled);
 }
 
 // Remembers X/Y driver choices made before sensorless homing forced them to TMC2209.
@@ -952,6 +986,8 @@ async function buildFirmware() {
             caseLightPin: config.caseLightPin,
             // Advanced pin assignments (resolved to MCU pins)
             pinOverrides: resolvePinOverrides(),
+            // Motor socket overrides (board-logical name -> pins)
+            motorOverrides: resolveMotorOverrides(),
             // IK parameters
             ikLC: config.ikLC,
             ikLB: config.ikLB,
@@ -1302,7 +1338,7 @@ function applyImportedConfig(config) {
     updateDualZ();
 
     // === Motor Sockets ===
-    const socketFields = ['socketX', 'socketY', 'socketZ', 'socketC', 'socketB', 'socketE'];
+    const socketFields = ['socketX', 'socketY', 'socketZ', 'socketC', 'socketB', 'socketE', 'socketZ2'];
     socketFields.forEach(field => {
         const el = document.getElementById(field);
         if (el) el.value = config[field];

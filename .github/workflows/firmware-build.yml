@@ -299,6 +299,19 @@ jobs:
             echo "Single Z stepper"
           fi
 
+          # === MOTOR SOCKET OVERRIDES ===
+          # Re-map motor driver pins in the cloned board pin file. Only axes
+          # the user changed from the Rep5x default appear in motorOverrides.
+          BOARD_PINS=marlin/Marlin/src/pins/stm32f4/pins_BTT_OCTOPUS_V1_common.h
+          echo "$CUSTOMIZATIONS" | jq -r '(.motorOverrides // {}) | to_entries[] | "\(.key) \(.value.step) \(.value.dir) \(.value.enable) \(.value.uart)"' | while read -r LOGICAL STEP DIR ENABLE UART; do
+            [ -z "$LOGICAL" ] && continue
+            sed -i "s|^#define ${LOGICAL}_STEP_PIN .*|#define ${LOGICAL}_STEP_PIN  ${STEP}  // Rep5x Firmware Builder|" "$BOARD_PINS"
+            sed -i "s|^#define ${LOGICAL}_DIR_PIN .*|#define ${LOGICAL}_DIR_PIN  ${DIR}  // Rep5x Firmware Builder|" "$BOARD_PINS"
+            sed -i "s|^#define ${LOGICAL}_ENABLE_PIN .*|#define ${LOGICAL}_ENABLE_PIN  ${ENABLE}  // Rep5x Firmware Builder|" "$BOARD_PINS"
+            sed -i "s|^[[:space:]]*#define ${LOGICAL}_SERIAL_TX_PIN .*|  #define ${LOGICAL}_SERIAL_TX_PIN  ${UART}  // Rep5x Firmware Builder|" "$BOARD_PINS"
+            echo "Remapped motor ${LOGICAL} -> STEP ${STEP} DIR ${DIR} ENABLE ${ENABLE} UART ${UART}"
+          done
+
           # === IK PARAMETERS ===
           IK_LC=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLC // empty')
           IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')

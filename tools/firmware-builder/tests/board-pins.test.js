@@ -36,5 +36,11 @@ check('findConflicts returns empty when all pins differ', () => {
   assert.strictEqual(conflicts.length, 0);
 });
 
+check('motorSlots maps MOTOR slots to driver pins', () => {
+  assert.strictEqual(BoardPins.motorSlots.MOTOR0.step, 'PF13');
+  assert.strictEqual(BoardPins.motorSlots.MOTOR7.step, 'PE6');
+  assert.deepStrictEqual(BoardPins.motorSlots.MOTOR2_1, BoardPins.motorSlots.MOTOR2);
+});
+
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed > 0 ? 1 : 0);

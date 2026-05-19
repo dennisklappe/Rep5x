@@ -143,6 +143,8 @@ async function handleBuildRequest(request, env, corsHeaders) {
     // Dual Z steppers
     dualZ: body.dualZ,
     zMultiEndstops: body.zMultiEndstops,
+    // Motor socket overrides
+    motorOverrides: body.motorOverrides,
     // IK parameters
     ikLC: body.ikLC,
     ikLB: body.ikLB,
@@ -324,6 +326,8 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     // Dual Z steppers
     dualZ: buildData.dualZ,
     zMultiEndstops: buildData.zMultiEndstops,
+    // Motor socket overrides
+    motorOverrides: buildData.motorOverrides,
     // IK parameters
     ikLC: buildData.ikLC,
     ikLB: buildData.ikLB,
