@@ -192,6 +192,27 @@ jobs:
             echo "Set B endstop hit state to $ENDSTOP_B"
           fi
 
+          # === SENSORLESS XY HOMING ===
+          XY_HOMING_MODE=$(echo "$CUSTOMIZATIONS" | jq -r '.xyHomingMode // empty')
+          if [ "$XY_HOMING_MODE" = "sensorless" ]; then
+            STALL_X=$(echo "$CUSTOMIZATIONS" | jq -r '.stallSensitivityX // 8')
+            STALL_Y=$(echo "$CUSTOMIZATIONS" | jq -r '.stallSensitivityY // 8')
+
+            # Enable SENSORLESS_HOMING (commented + indented inside the TMC block)
+            sed -i 's|^[[:space:]]*//#define SENSORLESS_HOMING.*|  #define SENSORLESS_HOMING|' marlin/Marlin/Configuration_adv.h
+
+            # Set X/Y stall sensitivities (the X2_/Y2_ lines reference these, leave them)
+            sed -i "s|^[[:space:]]*#define X_STALL_SENSITIVITY .*|    #define X_STALL_SENSITIVITY  $STALL_X|" marlin/Marlin/Configuration_adv.h
+            sed -i "s|^[[:space:]]*#define Y_STALL_SENSITIVITY .*|    #define Y_STALL_SENSITIVITY  $STALL_Y|" marlin/Marlin/Configuration_adv.h
+
+            # Marlin recommends zero homing bump for sensorless axes
+            sed -i 's|^#define HOMING_BUMP_MM .*|#define HOMING_BUMP_MM      { 0, 0, 3, 5, 2 }|' marlin/Marlin/Configuration_adv.h
+
+            echo "Enabled sensorless XY homing (X sensitivity=$STALL_X, Y sensitivity=$STALL_Y)"
+          else
+            echo "XY homing uses physical endstops"
+          fi
+
           # === IK PARAMETERS ===
           IK_LC=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLC // empty')
           IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')
