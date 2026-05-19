@@ -185,9 +185,17 @@ const ConfigGenerator = {
   #define MOTHERBOARD ${board.define}
 #endif
 
-// Rep5x: Custom pin definitions for rotation axis endstops
-#define I_MIN_PIN ${board.iMinPin}   // C-axis endstop
-#define J_MIN_PIN ${board.jMinPin}   // B-axis endstop
+// Rep5x: Custom pin definitions for axis endstops
+${(() => {
+  const p = config.pinOverrides || {};
+  const lines = [];
+  lines.push(`#define I_MIN_PIN ${p.endstopC || board.iMinPin}   // C-axis endstop`);
+  lines.push(`#define J_MIN_PIN ${p.endstopB || board.jMinPin}   // B-axis endstop`);
+  if (p.endstopX) lines.push(`#ifndef X_MIN_PIN\n  #define X_MIN_PIN ${p.endstopX}\n#endif`);
+  if (p.endstopY) lines.push(`#ifndef Y_MIN_PIN\n  #define Y_MIN_PIN ${p.endstopY}\n#endif`);
+  if (p.endstopZ) lines.push(`#ifndef Z_MIN_PIN\n  #define Z_MIN_PIN ${p.endstopZ}\n#endif`);
+  return lines.join('\n');
+})()}
 
 #define SERIAL_PORT -1
 #define BAUDRATE 250000
@@ -583,6 +591,20 @@ ${config.caseLightEnabled ? `
   #define CASE_LIGHT_DEFAULT_BRIGHTNESS ${config.caseLightBrightness != null ? config.caseLightBrightness : 105}
   #define CASE_LIGHT_MENU
 #endif` : '// Case light disabled'}
+
+//===========================================================================
+//============================= Fan Pin Overrides ===========================
+//===========================================================================
+${(() => {
+  const p = config.pinOverrides || {};
+  const lines = [];
+  if (p.fanHotend) lines.push(`#define E0_AUTO_FAN_PIN ${p.fanHotend}`);
+  if (p.fanController) {
+    lines.push('#define USE_CONTROLLER_FAN');
+    lines.push(`#define CONTROLLER_FAN_PIN ${p.fanController}`);
+  }
+  return lines.length ? lines.join('\n') : '// No fan pin overrides';
+})()}
 
 //===========================================================================
 //=============================== Stepper Drivers ===========================

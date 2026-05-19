@@ -66,5 +66,21 @@ check('case light disabled omits CASE_LIGHT_ENABLE', () => {
   assert.ok(!out.includes('#define CASE_LIGHT_ENABLE'), 'should not enable case light');
 });
 
+check('endstop pin overrides appear in Configuration.h', () => {
+  const out = ConfigGenerator.generateConfigurationH(baseConfig({
+    pinOverrides: { endstopX: 'PG6', endstopC: 'PG13', fanHotend: 'PE5' }
+  }));
+  assert.ok(out.includes('#define X_MIN_PIN PG6'), 'missing X_MIN_PIN override');
+  assert.ok(out.includes('#define I_MIN_PIN PG13'), 'missing I_MIN_PIN override');
+});
+
+check('fan pin overrides appear in Configuration_adv.h', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({
+    pinOverrides: { fanHotend: 'PE5', fanController: 'PD12' }
+  }));
+  assert.ok(out.includes('#define E0_AUTO_FAN_PIN PE5'), 'missing E0_AUTO_FAN_PIN');
+  assert.ok(out.includes('#define CONTROLLER_FAN_PIN PD12'), 'missing CONTROLLER_FAN_PIN');
+});
+
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed > 0 ? 1 : 0);
