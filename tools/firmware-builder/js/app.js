@@ -473,6 +473,13 @@ function initPinAssignments() {
 }
 
 /**
+ * Escape a value for safe interpolation into an HTML attribute.
+ */
+function escapeAttr(value) {
+    return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+/**
  * Build the advanced pin panel rows from board-pins.js.
  */
 function renderAdvancedPinPanel() {
@@ -493,7 +500,7 @@ function renderAdvancedPinPanel() {
                 <select class="config-input text-sm" data-pin-fn="${fn.key}" data-pin-field="header"
                     onchange="updatePinAssignment(this)">${options}</select>
                 <input type="text" class="config-input text-sm" data-pin-fn="${fn.key}" data-pin-field="raw"
-                    placeholder="raw pin (optional)" value="${current.raw}" oninput="updatePinAssignment(this)">
+                    placeholder="raw pin (optional)" value="${escapeAttr(current.raw)}" oninput="updatePinAssignment(this)">
             </div>`;
     }).join('');
 
