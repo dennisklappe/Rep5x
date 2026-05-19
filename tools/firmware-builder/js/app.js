@@ -70,6 +70,11 @@ const wizardState = {
         yHomeDir: -1,     // Set by preset
         zHomeDir: 1,      // Always MAX for Rep5x
 
+        // Step 2: XY homing method
+        xyHomingMode: 'endstops',  // 'endstops' or 'sensorless'
+        stallSensitivityX: 8,
+        stallSensitivityY: 8,
+
         // Step 4: Display
         display: 'btt_mini_12864',
         neopixelColor: 'green',
@@ -198,7 +203,9 @@ function setupInputListeners() {
         { id: 'ikLB', key: 'ikLB' },
         { id: 'cHomePos', key: 'cHomePos' },
         { id: 'bRange', key: 'bRange' },
-        { id: 'segmentsPerSecond', key: 'segmentsPerSecond' }
+        { id: 'segmentsPerSecond', key: 'segmentsPerSecond' },
+        { id: 'stallSensitivityX', key: 'stallSensitivityX' },
+        { id: 'stallSensitivityY', key: 'stallSensitivityY' }
     ];
 
     numericInputs.forEach(({ id, key }) => {
@@ -406,6 +413,44 @@ function updateAdjustedValues() {
         wizardState.config.xBedSize = xInput;
         wizardState.config.yBedSize = yInput;
         wizardState.config.zMaxPos = zInput;
+    }
+}
+
+/**
+ * Apply the XY homing-method choice.
+ * Sensorless homing requires StallGuard drivers, so X/Y drivers are forced
+ * to TMC2209 and locked, and the stall-sensitivity inputs are revealed.
+ */
+function updateXyHomingMode() {
+    const mode = document.getElementById('xyHomingMode').value;
+    wizardState.config.xyHomingMode = mode;
+
+    const options = document.getElementById('sensorlessOptions');
+    const sameDriverAll = document.getElementById('sameDriverAll');
+    const driverX = document.getElementById('driverX');
+    const driverY = document.getElementById('driverY');
+
+    if (mode === 'sensorless') {
+        options.classList.remove('hidden');
+
+        // Sensorless needs per-axis drivers, so leave "same for all" mode.
+        if (sameDriverAll.checked) {
+            sameDriverAll.checked = false;
+            toggleSameDriverAll();
+        }
+        sameDriverAll.disabled = true;
+
+        ['X', 'Y'].forEach(axis => {
+            const select = document.getElementById('driver' + axis);
+            select.value = 'TMC2209';
+            select.disabled = true;
+            wizardState.config['driver' + axis] = 'TMC2209';
+        });
+    } else {
+        options.classList.add('hidden');
+        sameDriverAll.disabled = false;
+        driverX.disabled = false;
+        driverY.disabled = false;
     }
 }
 
@@ -723,6 +768,10 @@ async function buildFirmware() {
             endstopZ: config.endstopZ,
             endstopC: config.endstopC,
             endstopB: config.endstopB,
+            // Sensorless XY homing
+            xyHomingMode: config.xyHomingMode,
+            stallSensitivityX: config.stallSensitivityX,
+            stallSensitivityY: config.stallSensitivityY,
             // IK parameters
             ikLC: config.ikLC,
             ikLB: config.ikLB,
@@ -983,6 +1032,18 @@ function applyImportedConfig(config) {
     document.getElementById('yHomeDir').value = config.yHomeDir;
     document.getElementById('zHomeDir').value = config.zHomeDir;
     updateZHomingWarning();
+
+    // === XY Homing Method ===
+    if (config.xyHomingMode) {
+        document.getElementById('xyHomingMode').value = config.xyHomingMode;
+    }
+    if (config.stallSensitivityX != null) {
+        document.getElementById('stallSensitivityX').value = config.stallSensitivityX;
+    }
+    if (config.stallSensitivityY != null) {
+        document.getElementById('stallSensitivityY').value = config.stallSensitivityY;
+    }
+    updateXyHomingMode();
 
     // === Display Selection ===
     const displayCards = document.querySelectorAll('#step3 .option-card');
