@@ -233,6 +233,48 @@ jobs:
             echo "Case light disabled"
           fi
 
+          # === ADVANCED PIN OVERRIDES (endstops + fans) ===
+          PIN_ENDSTOP_X=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopX // empty')
+          PIN_ENDSTOP_Y=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopY // empty')
+          PIN_ENDSTOP_Z=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopZ // empty')
+          PIN_ENDSTOP_C=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopC // empty')
+          PIN_ENDSTOP_B=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopB // empty')
+
+          # C and B endstops already have #define lines in the base config
+          if [ -n "$PIN_ENDSTOP_C" ]; then
+            sed -i "s|^#define I_MIN_PIN .*|#define I_MIN_PIN $PIN_ENDSTOP_C   // C-axis endstop (Rep5x Firmware Builder)|" marlin/Marlin/Configuration.h
+            echo "Set I_MIN_PIN (C endstop) to $PIN_ENDSTOP_C"
+          fi
+          if [ -n "$PIN_ENDSTOP_B" ]; then
+            sed -i "s|^#define J_MIN_PIN .*|#define J_MIN_PIN $PIN_ENDSTOP_B   // B-axis endstop (Rep5x Firmware Builder)|" marlin/Marlin/Configuration.h
+            echo "Set J_MIN_PIN (B endstop) to $PIN_ENDSTOP_B"
+          fi
+
+          # X/Y/Z endstops: append guarded overrides after the J_MIN_PIN line
+          for AXIS_PIN in "X_MIN_PIN:$PIN_ENDSTOP_X" "Y_MIN_PIN:$PIN_ENDSTOP_Y" "Z_MIN_PIN:$PIN_ENDSTOP_Z"; do
+            DEF_NAME="${AXIS_PIN%%:*}"
+            DEF_VAL="${AXIS_PIN##*:}"
+            if [ -n "$DEF_VAL" ]; then
+              sed -i "/^#define J_MIN_PIN /a #ifndef $DEF_NAME\\n  #define $DEF_NAME $DEF_VAL  // Rep5x Firmware Builder\\n#endif" marlin/Marlin/Configuration.h
+              echo "Set $DEF_NAME to $DEF_VAL"
+            fi
+          done
+
+          # Hotend / auto fan -> E0_AUTO_FAN_PIN (settable define in Configuration_adv.h)
+          PIN_FAN_HOTEND=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.fanHotend // empty')
+          if [ -n "$PIN_FAN_HOTEND" ]; then
+            sed -i "s|^#define E0_AUTO_FAN_PIN .*|#define E0_AUTO_FAN_PIN $PIN_FAN_HOTEND  // Rep5x Firmware Builder|" marlin/Marlin/Configuration_adv.h
+            echo "Set E0_AUTO_FAN_PIN to $PIN_FAN_HOTEND"
+          fi
+
+          # Controller fan -> enable USE_CONTROLLER_FAN + set its pin
+          PIN_FAN_CONTROLLER=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.fanController // empty')
+          if [ -n "$PIN_FAN_CONTROLLER" ]; then
+            sed -i 's|^//#define USE_CONTROLLER_FAN|#define USE_CONTROLLER_FAN|' marlin/Marlin/Configuration_adv.h
+            sed -i "s|^[[:space:]]*//#define CONTROLLER_FAN_PIN .*|  #define CONTROLLER_FAN_PIN $PIN_FAN_CONTROLLER  // Rep5x Firmware Builder|" marlin/Marlin/Configuration_adv.h
+            echo "Set CONTROLLER_FAN_PIN to $PIN_FAN_CONTROLLER"
+          fi
+
           # === IK PARAMETERS ===
           IK_LC=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLC // empty')
           IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')
