@@ -416,6 +416,9 @@ function updateAdjustedValues() {
     }
 }
 
+// Remembers X/Y driver choices made before sensorless homing forced them to TMC2209.
+let preSensorlessDrivers = null;
+
 /**
  * Apply the XY homing-method choice.
  * Sensorless homing requires StallGuard drivers, so X/Y drivers are forced
@@ -433,6 +436,14 @@ function updateXyHomingMode() {
     if (mode === 'sensorless') {
         options.classList.remove('hidden');
 
+        // Remember the user's driver choice so it can be restored on switch-back.
+        if (!preSensorlessDrivers) {
+            preSensorlessDrivers = {
+                x: wizardState.config.driverX,
+                y: wizardState.config.driverY
+            };
+        }
+
         // Sensorless needs per-axis drivers, so leave "same for all" mode.
         if (sameDriverAll.checked) {
             sameDriverAll.checked = false;
@@ -440,6 +451,8 @@ function updateXyHomingMode() {
         }
         sameDriverAll.disabled = true;
 
+        // Force X/Y to a StallGuard-capable driver and lock these selectors
+        // (the driver selectors live on the Motors step).
         ['X', 'Y'].forEach(axis => {
             const select = document.getElementById('driver' + axis);
             select.value = 'TMC2209';
@@ -448,6 +461,16 @@ function updateXyHomingMode() {
         });
     } else {
         options.classList.add('hidden');
+
+        // Restore the driver choice that sensorless mode overrode.
+        if (preSensorlessDrivers) {
+            driverX.value = preSensorlessDrivers.x;
+            driverY.value = preSensorlessDrivers.y;
+            wizardState.config.driverX = preSensorlessDrivers.x;
+            wizardState.config.driverY = preSensorlessDrivers.y;
+            preSensorlessDrivers = null;
+        }
+
         sameDriverAll.disabled = false;
         driverX.disabled = false;
         driverY.disabled = false;
