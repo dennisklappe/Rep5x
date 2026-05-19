@@ -52,5 +52,19 @@ check('stall sensitivity defaults to 8 when omitted', () => {
   assert.ok(out.includes('#define Y_STALL_SENSITIVITY 8'), 'Y sensitivity should default to 8');
 });
 
+check('case light enabled emits CASE_LIGHT_ENABLE', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({
+    caseLightEnabled: true, caseLightBrightness: 200
+  }));
+  assert.ok(out.includes('#define CASE_LIGHT_ENABLE'), 'missing CASE_LIGHT_ENABLE');
+  assert.ok(out.includes('#define CASE_LIGHT_DEFAULT_BRIGHTNESS 200'), 'missing brightness');
+  assert.ok(out.includes('#define CASE_LIGHT_PIN'), 'missing CASE_LIGHT_PIN');
+});
+
+check('case light disabled omits CASE_LIGHT_ENABLE', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ caseLightEnabled: false }));
+  assert.ok(!out.includes('#define CASE_LIGHT_ENABLE'), 'should not enable case light');
+});
+
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed > 0 ? 1 : 0);

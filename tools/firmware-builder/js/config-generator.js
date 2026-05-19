@@ -570,6 +570,21 @@ ${config.xyHomingMode === 'sensorless' ? `
 #endif
 
 //===========================================================================
+//============================= Case Light ==================================
+//===========================================================================
+
+// @section extras
+${config.caseLightEnabled ? `
+#define CASE_LIGHT_ENABLE
+#if ENABLED(CASE_LIGHT_ENABLE)
+  #define CASE_LIGHT_PIN ${config.caseLightPin || 'PD13'}
+  #define INVERT_CASE_LIGHT false
+  #define CASE_LIGHT_DEFAULT_ON false
+  #define CASE_LIGHT_DEFAULT_BRIGHTNESS ${config.caseLightBrightness != null ? config.caseLightBrightness : 105}
+  #define CASE_LIGHT_MENU
+#endif` : '// Case light disabled'}
+
+//===========================================================================
 //=============================== Stepper Drivers ===========================
 //===========================================================================
 
