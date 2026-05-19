@@ -127,9 +127,28 @@ const wizardState = {
         ikLB: 52.87,
         cHomePos: 0,  // C axis coordinate at home switch
         bRange: 135,  // B axis travel limit (±degrees)
-        segmentsPerSecond: 200
+        segmentsPerSecond: 200,
+
+        // Step 4: Advanced pin assignments
+        // Each function: { header: <label>, raw: <raw pin or ''> }
+        pinAssignments: {}
     }
 };
+
+/**
+ * Functions assignable in the advanced pin panel.
+ * `kind` selects which board header map applies ('endstop' or 'fan').
+ */
+const advancedPinFunctions = [
+    { key: 'endstopX', label: 'X endstop', kind: 'endstop' },
+    { key: 'endstopY', label: 'Y endstop', kind: 'endstop' },
+    { key: 'endstopZ', label: 'Z endstop', kind: 'endstop' },
+    { key: 'endstopC', label: 'C-axis endstop', kind: 'endstop' },
+    { key: 'endstopB', label: 'B-axis endstop', kind: 'endstop' },
+    { key: 'fanHotend', label: 'Hotend / auto fan', kind: 'fan' },
+    { key: 'fanController', label: 'Controller fan', kind: 'fan' },
+    { key: 'led', label: 'Case light LED', kind: 'fan' }
+];
 
 // Neopixel color definitions
 const neopixelColors = {
@@ -186,6 +205,9 @@ function initWizard() {
 
     // Set up input change listeners
     setupInputListeners();
+
+    // Build the advanced pin panel from the board map
+    renderAdvancedPinPanel();
 }
 
 /**
@@ -322,6 +344,11 @@ function selectOption(element, category) {
             neopixelOptions.style.display = value === 'btt_mini_12864' ? 'block' : 'none';
         }
     }
+
+    // Re-render the advanced pin panel against the newly selected board
+    if (category === 'board') {
+        renderAdvancedPinPanel();
+    }
 }
 
 /**
@@ -418,6 +445,95 @@ function updateAdjustedValues() {
         wizardState.config.xBedSize = xInput;
         wizardState.config.yBedSize = yInput;
         wizardState.config.zMaxPos = zInput;
+    }
+}
+
+/**
+ * Expand or collapse the advanced pin panel.
+ */
+function toggleAdvancedPins() {
+    const body = document.getElementById('advancedPinsBody');
+    const chevron = document.getElementById('advancedPinsChevron');
+    const hidden = body.classList.toggle('hidden');
+    chevron.style.transform = hidden ? '' : 'rotate(180deg)';
+}
+
+/**
+ * Initialise pinAssignments with the current board's defaults for any
+ * function the user has not explicitly set.
+ */
+function initPinAssignments() {
+    const defaults = BoardPins.getDefaults(wizardState.config.board);
+    const assignments = wizardState.config.pinAssignments;
+    advancedPinFunctions.forEach(fn => {
+        if (!assignments[fn.key]) {
+            assignments[fn.key] = { header: defaults[fn.key], raw: '' };
+        }
+    });
+}
+
+/**
+ * Build the advanced pin panel rows from board-pins.js.
+ */
+function renderAdvancedPinPanel() {
+    initPinAssignments();
+    const board = BoardPins.boards[wizardState.config.board] || BoardPins.boards['octopus_v1.1'];
+    const container = document.getElementById('advancedPinRows');
+    if (!container) return;
+
+    container.innerHTML = advancedPinFunctions.map(fn => {
+        const map = fn.kind === 'fan' ? board.fanHeaders : board.endstopHeaders;
+        const current = wizardState.config.pinAssignments[fn.key];
+        const options = Object.keys(map).map(label =>
+            `<option value="${label}"${label === current.header ? ' selected' : ''}>${label} (${map[label]})</option>`
+        ).join('');
+        return `
+            <div class="grid grid-cols-3 gap-3 items-center">
+                <label class="text-sm text-gray-600">${fn.label}</label>
+                <select class="config-input text-sm" data-pin-fn="${fn.key}" data-pin-field="header"
+                    onchange="updatePinAssignment(this)">${options}</select>
+                <input type="text" class="config-input text-sm" data-pin-fn="${fn.key}" data-pin-field="raw"
+                    placeholder="raw pin (optional)" value="${current.raw}" oninput="updatePinAssignment(this)">
+            </div>`;
+    }).join('');
+
+    checkPinConflicts();
+}
+
+/**
+ * Persist a single dropdown / raw-field change into wizard state.
+ */
+function updatePinAssignment(element) {
+    const key = element.dataset.pinFn;
+    const field = element.dataset.pinField;
+    wizardState.config.pinAssignments[key][field] = element.value;
+    checkPinConflicts();
+}
+
+/**
+ * Resolve every assignment to a pin and show a warning on collisions.
+ */
+function checkPinConflicts() {
+    const boardId = wizardState.config.board;
+    const resolved = {};
+    advancedPinFunctions.forEach(fn => {
+        const a = wizardState.config.pinAssignments[fn.key];
+        resolved[fn.key] = BoardPins.resolvePin(boardId, fn.kind, a.header, a.raw);
+    });
+
+    const conflicts = BoardPins.findConflicts(resolved);
+    const warning = document.getElementById('pinConflictWarning');
+    if (!warning) return;
+
+    if (conflicts.length > 0) {
+        const labelOf = key => (advancedPinFunctions.find(f => f.key === key) || {}).label || key;
+        const text = conflicts
+            .map(group => group.map(labelOf).join(' + '))
+            .join('; ');
+        warning.querySelector('p').textContent = 'Pin conflict: ' + text + ' share the same pin.';
+        warning.classList.remove('hidden');
+    } else {
+        warning.classList.add('hidden');
     }
 }
 
