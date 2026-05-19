@@ -134,6 +134,9 @@ async function handleBuildRequest(request, env, corsHeaders) {
     xyHomingMode: body.xyHomingMode,
     stallSensitivityX: body.stallSensitivityX,
     stallSensitivityY: body.stallSensitivityY,
+    // Case light LED
+    caseLightEnabled: body.caseLightEnabled,
+    caseLightBrightness: body.caseLightBrightness,
     // IK parameters
     ikLC: body.ikLC,
     ikLB: body.ikLB,
@@ -306,6 +309,9 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     xyHomingMode: buildData.xyHomingMode,
     stallSensitivityX: buildData.stallSensitivityX,
     stallSensitivityY: buildData.stallSensitivityY,
+    // Case light LED
+    caseLightEnabled: buildData.caseLightEnabled,
+    caseLightBrightness: buildData.caseLightBrightness,
     // IK parameters
     ikLC: buildData.ikLC,
     ikLB: buildData.ikLB,
