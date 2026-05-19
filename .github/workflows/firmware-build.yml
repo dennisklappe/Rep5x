@@ -213,6 +213,26 @@ jobs:
             echo "XY homing uses physical endstops"
           fi
 
+          # === CASE LIGHT LED ===
+          CASE_LIGHT_ENABLED=$(echo "$CUSTOMIZATIONS" | jq -r '.caseLightEnabled // empty')
+          if [ "$CASE_LIGHT_ENABLED" = "true" ]; then
+            CASE_LIGHT_BRIGHTNESS=$(echo "$CUSTOMIZATIONS" | jq -r '.caseLightBrightness // 105')
+            LED_PIN=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.led // "PD13"')
+
+            # Enable the feature (commented at column 0 in the base config)
+            sed -i 's|^//#define CASE_LIGHT_ENABLE|#define CASE_LIGHT_ENABLE|' marlin/Marlin/Configuration_adv.h
+
+            # Set the LED pin (commented + indented inside the CASE_LIGHT block)
+            sed -i "s|^[[:space:]]*//#define CASE_LIGHT_PIN .*|  #define CASE_LIGHT_PIN $LED_PIN|" marlin/Marlin/Configuration_adv.h
+
+            # Set default brightness (already uncommented + indented)
+            sed -i "s|^[[:space:]]*#define CASE_LIGHT_DEFAULT_BRIGHTNESS .*|  #define CASE_LIGHT_DEFAULT_BRIGHTNESS $CASE_LIGHT_BRIGHTNESS|" marlin/Marlin/Configuration_adv.h
+
+            echo "Enabled case light LED on pin $LED_PIN (brightness $CASE_LIGHT_BRIGHTNESS)"
+          else
+            echo "Case light disabled"
+          fi
+
           # === IK PARAMETERS ===
           IK_LC=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLC // empty')
           IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')
