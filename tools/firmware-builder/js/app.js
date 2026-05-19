@@ -82,6 +82,7 @@ const wizardState = {
         // Step 3: Case light LED
         caseLightEnabled: false,
         caseLightBrightness: 105,
+        caseLightPin: 'PD13',
 
         // Step 4: Motors - Drivers
         driverX: 'TMC2208',
@@ -150,8 +151,7 @@ const advancedPinFunctions = [
     { key: 'endstopC', label: 'C-axis endstop', kind: 'endstop' },
     { key: 'endstopB', label: 'B-axis endstop', kind: 'endstop' },
     { key: 'fanHotend', label: 'Hotend / auto fan', kind: 'fan' },
-    { key: 'fanController', label: 'Controller fan', kind: 'fan' },
-    { key: 'led', label: 'Build volume LED', kind: 'fan' }
+    { key: 'fanController', label: 'Controller fan', kind: 'fan' }
 ];
 
 // Neopixel color definitions
@@ -282,7 +282,8 @@ function setupInputListeners() {
         { id: 'endstopY', key: 'endstopY' },
         { id: 'endstopZ', key: 'endstopZ' },
         { id: 'endstopC', key: 'endstopC' },
-        { id: 'endstopB', key: 'endstopB' }
+        { id: 'endstopB', key: 'endstopB' },
+        { id: 'caseLightPin', key: 'caseLightPin' }
     ];
 
     selectInputsString.forEach(({ id, key }) => {
@@ -948,6 +949,7 @@ async function buildFirmware() {
             // Case light LED
             caseLightEnabled: config.caseLightEnabled,
             caseLightBrightness: config.caseLightBrightness,
+            caseLightPin: config.caseLightPin,
             // Advanced pin assignments (resolved to MCU pins)
             pinOverrides: resolvePinOverrides(),
             // IK parameters
@@ -1257,6 +1259,9 @@ function applyImportedConfig(config) {
     }
     if (config.caseLightBrightness != null) {
         document.getElementById('caseLightBrightness').value = config.caseLightBrightness;
+    }
+    if (config.caseLightPin) {
+        document.getElementById('caseLightPin').value = config.caseLightPin;
     }
     updateCaseLight();
 

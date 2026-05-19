@@ -62,11 +62,11 @@ check('case light enabled emits CASE_LIGHT_ENABLE', () => {
   assert.ok(out.includes('#define CASE_LIGHT_DEFAULT_ON false'), 'case light should default off');
 });
 
-check('case light pin honours pinOverrides.led', () => {
+check('case light pin honours caseLightPin', () => {
   const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({
-    caseLightEnabled: true, pinOverrides: { led: 'PD15' }
+    caseLightEnabled: true, caseLightPin: 'PD15'
   }));
-  assert.ok(out.includes('#define CASE_LIGHT_PIN PD15'), 'CASE_LIGHT_PIN should use pinOverrides.led');
+  assert.ok(out.includes('#define CASE_LIGHT_PIN PD15'), 'CASE_LIGHT_PIN should use caseLightPin');
 });
 
 check('case light disabled omits CASE_LIGHT_ENABLE', () => {

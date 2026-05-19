@@ -23,8 +23,7 @@ const octopusFanPins = ['PA8', 'PE5', 'PD12', 'PD13', 'PD14', 'PD15'];
 const octopusDefaults = {
     endstopX: 'PG6', endstopY: 'PG9', endstopZ: 'PG10',
     endstopC: 'PG13', endstopB: 'PG14',
-    fanHotend: 'PE5', fanController: 'PD12',
-    led: 'PD13'
+    fanHotend: 'PE5', fanController: 'PD12'
 };
 
 const BoardPins = {

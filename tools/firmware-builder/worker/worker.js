@@ -137,6 +137,7 @@ async function handleBuildRequest(request, env, corsHeaders) {
     // Case light LED
     caseLightEnabled: body.caseLightEnabled,
     caseLightBrightness: body.caseLightBrightness,
+    caseLightPin: body.caseLightPin,
     // Advanced pin assignments (resolved MCU pins)
     pinOverrides: body.pinOverrides,
     // Dual Z steppers
@@ -317,6 +318,7 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     // Case light LED
     caseLightEnabled: buildData.caseLightEnabled,
     caseLightBrightness: buildData.caseLightBrightness,
+    caseLightPin: buildData.caseLightPin,
     // Advanced pin assignments (resolved MCU pins)
     pinOverrides: buildData.pinOverrides,
     // Dual Z steppers
