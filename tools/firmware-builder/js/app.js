@@ -545,6 +545,20 @@ function checkPinConflicts() {
 }
 
 /**
+ * Resolve all advanced pin assignments to final MCU pin values.
+ * @returns {Object} map of functionName -> pin string
+ */
+function resolvePinOverrides() {
+    const boardId = wizardState.config.board;
+    const resolved = {};
+    advancedPinFunctions.forEach(fn => {
+        const a = wizardState.config.pinAssignments[fn.key] || { header: '', raw: '' };
+        resolved[fn.key] = BoardPins.resolvePin(boardId, fn.kind, a.header, a.raw);
+    });
+    return resolved;
+}
+
+/**
  * Show or hide the case-light options and sync the enabled state.
  */
 function updateCaseLight() {
@@ -935,6 +949,8 @@ async function buildFirmware() {
             // Case light LED
             caseLightEnabled: config.caseLightEnabled,
             caseLightBrightness: config.caseLightBrightness,
+            // Advanced pin assignments (resolved to MCU pins)
+            pinOverrides: resolvePinOverrides(),
             // IK parameters
             ikLC: config.ikLC,
             ikLB: config.ikLB,
@@ -1244,6 +1260,14 @@ function applyImportedConfig(config) {
         document.getElementById('caseLightBrightness').value = config.caseLightBrightness;
     }
     updateCaseLight();
+
+    // === Advanced Pin Assignments ===
+    if (config.pinAssignments) {
+        wizardState.config.pinAssignments = config.pinAssignments;
+    } else {
+        wizardState.config.pinAssignments = {};
+    }
+    renderAdvancedPinPanel();
 
     // === Stepper Drivers ===
     const driverFields = ['driverX', 'driverY', 'driverZ', 'driverC', 'driverB', 'driverE'];
