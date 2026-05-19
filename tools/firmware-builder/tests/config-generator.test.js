@@ -32,5 +32,25 @@ check('endstop mode omits SENSORLESS_HOMING', () => {
   assert.ok(out.includes('{ 5, 5, 3, 5, 2 }'), 'HOMING_BUMP_MM should be default');
 });
 
+check('preview shows sensorless defines when sensorless', () => {
+  const out = ConfigGenerator.generatePreview(baseConfig({
+    xyHomingMode: 'sensorless', stallSensitivityX: 5, stallSensitivityY: 7
+  }));
+  assert.ok(out.includes('#define SENSORLESS_HOMING'), 'preview missing SENSORLESS_HOMING');
+  assert.ok(out.includes('#define X_STALL_SENSITIVITY 5'), 'preview missing X sensitivity');
+  assert.ok(out.includes('#define Y_STALL_SENSITIVITY 7'), 'preview missing Y sensitivity');
+});
+
+check('preview omits sensorless defines when endstops', () => {
+  const out = ConfigGenerator.generatePreview(baseConfig({ xyHomingMode: 'endstops' }));
+  assert.ok(!out.includes('#define SENSORLESS_HOMING'), 'preview should not show sensorless');
+});
+
+check('stall sensitivity defaults to 8 when omitted', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ xyHomingMode: 'sensorless' }));
+  assert.ok(out.includes('#define X_STALL_SENSITIVITY 8'), 'X sensitivity should default to 8');
+  assert.ok(out.includes('#define Y_STALL_SENSITIVITY 8'), 'Y sensitivity should default to 8');
+});
+
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed > 0 ? 1 : 0);
