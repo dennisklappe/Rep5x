@@ -130,6 +130,21 @@ async function handleBuildRequest(request, env, corsHeaders) {
     endstopZ: body.endstopZ,
     endstopC: body.endstopC,
     endstopB: body.endstopB,
+    // Sensorless XY homing
+    xyHomingMode: body.xyHomingMode,
+    stallSensitivityX: body.stallSensitivityX,
+    stallSensitivityY: body.stallSensitivityY,
+    // Case light LED
+    caseLightEnabled: body.caseLightEnabled,
+    caseLightBrightness: body.caseLightBrightness,
+    caseLightPin: body.caseLightPin,
+    // Advanced pin assignments (resolved MCU pins)
+    pinOverrides: body.pinOverrides,
+    // Dual Z steppers
+    dualZ: body.dualZ,
+    zMultiEndstops: body.zMultiEndstops,
+    // Motor socket overrides
+    motorOverrides: body.motorOverrides,
     // IK parameters
     ikLC: body.ikLC,
     ikLB: body.ikLB,
@@ -298,6 +313,21 @@ async function handleConfigRequest(buildId, env, corsHeaders) {
     endstopZ: buildData.endstopZ,
     endstopC: buildData.endstopC,
     endstopB: buildData.endstopB,
+    // Sensorless XY homing
+    xyHomingMode: buildData.xyHomingMode,
+    stallSensitivityX: buildData.stallSensitivityX,
+    stallSensitivityY: buildData.stallSensitivityY,
+    // Case light LED
+    caseLightEnabled: buildData.caseLightEnabled,
+    caseLightBrightness: buildData.caseLightBrightness,
+    caseLightPin: buildData.caseLightPin,
+    // Advanced pin assignments (resolved MCU pins)
+    pinOverrides: buildData.pinOverrides,
+    // Dual Z steppers
+    dualZ: buildData.dualZ,
+    zMultiEndstops: buildData.zMultiEndstops,
+    // Motor socket overrides
+    motorOverrides: buildData.motorOverrides,
     // IK parameters
     ikLC: buildData.ikLC,
     ikLB: buildData.ikLB,

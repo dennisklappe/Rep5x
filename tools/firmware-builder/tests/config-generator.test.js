@@ -1,0 +1,115 @@
+const assert = require('assert');
+const ConfigGenerator = require('../js/config-generator.js');
+
+function baseConfig(overrides) {
+  return Object.assign({
+    board: 'octopus_v1.1', xBedSize: 200, yBedSize: 200, zMaxPos: 170,
+    xHomeDir: 1, yHomeDir: -1, zHomeDir: 1, display: 'none',
+    stepsX: 80, stepsY: 80, stepsZ: 400, stepsC: 26.6, stepsB: 26.6, stepsE: 415,
+    ikLC: 2.3, ikLB: 52.87, cHomePos: 0, bRange: 135, segmentsPerSecond: 200
+  }, overrides || {});
+}
+
+let passed = 0, failed = 0;
+function check(name, fn) {
+  try { fn(); passed++; console.log('PASS ' + name); }
+  catch (e) { failed++; console.log('FAIL ' + name + ': ' + e.message); }
+}
+
+check('sensorless mode emits SENSORLESS_HOMING', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({
+    xyHomingMode: 'sensorless', stallSensitivityX: 12, stallSensitivityY: 9
+  }));
+  assert.ok(out.includes('#define SENSORLESS_HOMING'), 'missing SENSORLESS_HOMING');
+  assert.ok(out.includes('#define X_STALL_SENSITIVITY 12'), 'missing X sensitivity');
+  assert.ok(out.includes('#define Y_STALL_SENSITIVITY 9'), 'missing Y sensitivity');
+  assert.ok(out.includes('{ 0, 0, 3, 5, 2 }'), 'HOMING_BUMP_MM not zeroed for XY');
+});
+
+check('endstop mode omits SENSORLESS_HOMING', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ xyHomingMode: 'endstops' }));
+  assert.ok(!out.includes('#define SENSORLESS_HOMING'), 'should not enable sensorless');
+  assert.ok(out.includes('{ 5, 5, 3, 5, 2 }'), 'HOMING_BUMP_MM should be default');
+});
+
+check('preview shows sensorless defines when sensorless', () => {
+  const out = ConfigGenerator.generatePreview(baseConfig({
+    xyHomingMode: 'sensorless', stallSensitivityX: 5, stallSensitivityY: 7
+  }));
+  assert.ok(out.includes('#define SENSORLESS_HOMING'), 'preview missing SENSORLESS_HOMING');
+  assert.ok(out.includes('#define X_STALL_SENSITIVITY 5'), 'preview missing X sensitivity');
+  assert.ok(out.includes('#define Y_STALL_SENSITIVITY 7'), 'preview missing Y sensitivity');
+});
+
+check('preview omits sensorless defines when endstops', () => {
+  const out = ConfigGenerator.generatePreview(baseConfig({ xyHomingMode: 'endstops' }));
+  assert.ok(!out.includes('#define SENSORLESS_HOMING'), 'preview should not show sensorless');
+});
+
+check('stall sensitivity defaults to 8 when omitted', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ xyHomingMode: 'sensorless' }));
+  assert.ok(out.includes('#define X_STALL_SENSITIVITY 8'), 'X sensitivity should default to 8');
+  assert.ok(out.includes('#define Y_STALL_SENSITIVITY 8'), 'Y sensitivity should default to 8');
+});
+
+check('case light enabled emits CASE_LIGHT_ENABLE', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({
+    caseLightEnabled: true, caseLightBrightness: 200
+  }));
+  assert.ok(out.includes('#define CASE_LIGHT_ENABLE'), 'missing CASE_LIGHT_ENABLE');
+  assert.ok(out.includes('#define CASE_LIGHT_DEFAULT_BRIGHTNESS 200'), 'missing brightness');
+  assert.ok(out.includes('#define CASE_LIGHT_PIN PD13'), 'CASE_LIGHT_PIN should default to PD13');
+  assert.ok(out.includes('#define CASE_LIGHT_DEFAULT_ON false'), 'case light should default off');
+});
+
+check('case light pin honours caseLightPin', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({
+    caseLightEnabled: true, caseLightPin: 'PD15'
+  }));
+  assert.ok(out.includes('#define CASE_LIGHT_PIN PD15'), 'CASE_LIGHT_PIN should use caseLightPin');
+});
+
+check('case light disabled omits CASE_LIGHT_ENABLE', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ caseLightEnabled: false }));
+  assert.ok(!out.includes('#define CASE_LIGHT_ENABLE'), 'should not enable case light');
+});
+
+check('endstop pin overrides appear in Configuration.h', () => {
+  const out = ConfigGenerator.generateConfigurationH(baseConfig({
+    pinOverrides: { endstopX: 'PG6', endstopC: 'PG13', fanHotend: 'PE5' }
+  }));
+  assert.ok(out.includes('#define X_MIN_PIN PG6'), 'missing X_MIN_PIN override');
+  assert.ok(out.includes('#define I_MIN_PIN PG13'), 'missing I_MIN_PIN override');
+});
+
+check('fan pin overrides appear in Configuration_adv.h', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({
+    pinOverrides: { fanHotend: 'PE5', fanController: 'PD12' }
+  }));
+  assert.ok(out.includes('#define E0_AUTO_FAN_PIN PE5'), 'missing E0_AUTO_FAN_PIN');
+  assert.ok(out.includes('#define CONTROLLER_FAN_PIN PD12'), 'missing CONTROLLER_FAN_PIN');
+});
+
+check('dual Z emits Z2_DRIVER_TYPE matching the Z driver', () => {
+  const out = ConfigGenerator.generateConfigurationH(baseConfig({ dualZ: true, driverZ: 'TMC2209' }));
+  assert.ok(out.includes('#define Z2_DRIVER_TYPE TMC2209'), 'missing Z2_DRIVER_TYPE');
+});
+
+check('single Z leaves Z2_DRIVER_TYPE commented', () => {
+  const out = ConfigGenerator.generateConfigurationH(baseConfig({ dualZ: false }));
+  assert.ok(!out.includes('\n#define Z2_DRIVER_TYPE'), 'Z2 should not be enabled');
+});
+
+check('independent Z endstops emit Z_MULTI_ENDSTOPS', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ dualZ: true, zMultiEndstops: true }));
+  assert.ok(out.includes('#define Z_MULTI_ENDSTOPS'), 'missing Z_MULTI_ENDSTOPS');
+  assert.ok(out.includes('#define Z2_STOP_PIN PG11'), 'missing Z2_STOP_PIN');
+});
+
+check('synced dual Z omits Z_MULTI_ENDSTOPS', () => {
+  const out = ConfigGenerator.generateConfigurationAdvH(baseConfig({ dualZ: true, zMultiEndstops: false }));
+  assert.ok(!out.includes('#define Z_MULTI_ENDSTOPS'), 'should not enable multi endstops');
+});
+
+console.log('\n' + passed + ' passed, ' + failed + ' failed');
+process.exit(failed > 0 ? 1 : 0);

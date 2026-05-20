@@ -86,6 +86,15 @@ const ConfigGenerator = {
         lines.push('#define I_HOME_DIR -1  // C-axis homes to MIN');
         lines.push('#define J_HOME_DIR -1  // B-axis homes to MIN');
         lines.push('');
+        lines.push('// === XY Homing Method ===');
+        if (config.xyHomingMode === 'sensorless') {
+            lines.push('#define SENSORLESS_HOMING  // StallGuard (TMC2209)');
+            lines.push(`#define X_STALL_SENSITIVITY ${config.stallSensitivityX != null ? config.stallSensitivityX : 8}`);
+            lines.push(`#define Y_STALL_SENSITIVITY ${config.stallSensitivityY != null ? config.stallSensitivityY : 8}`);
+        } else {
+            lines.push('// XY homing uses physical endstops');
+        }
+        lines.push('');
         lines.push('// === Steps Per Unit ===');
         lines.push(`#define DEFAULT_AXIS_STEPS_PER_UNIT { ${config.stepsX}, ${config.stepsY}, ${config.stepsZ}, ${config.stepsC}, ${config.stepsB}, ${config.stepsE} }`);
         lines.push('');
@@ -176,9 +185,17 @@ const ConfigGenerator = {
   #define MOTHERBOARD ${board.define}
 #endif
 
-// Rep5x: Custom pin definitions for rotation axis endstops
-#define I_MIN_PIN ${board.iMinPin}   // C-axis endstop
-#define J_MIN_PIN ${board.jMinPin}   // B-axis endstop
+// Rep5x: Custom pin definitions for axis endstops
+${(() => {
+  const p = config.pinOverrides || {};
+  const lines = [];
+  lines.push(`#define I_MIN_PIN ${p.endstopC || board.iMinPin}   // C-axis endstop`);
+  lines.push(`#define J_MIN_PIN ${p.endstopB || board.jMinPin}   // B-axis endstop`);
+  if (p.endstopX) lines.push(`#ifndef X_MIN_PIN\n  #define X_MIN_PIN ${p.endstopX}\n#endif`);
+  if (p.endstopY) lines.push(`#ifndef Y_MIN_PIN\n  #define Y_MIN_PIN ${p.endstopY}\n#endif`);
+  if (p.endstopZ) lines.push(`#ifndef Z_MIN_PIN\n  #define Z_MIN_PIN ${p.endstopZ}\n#endif`);
+  return lines.join('\n');
+})()}
 
 #define SERIAL_PORT -1
 #define BAUDRATE 250000
@@ -190,6 +207,7 @@ const ConfigGenerator = {
 #define X_DRIVER_TYPE  ${config.driverX || 'TMC2208'}
 #define Y_DRIVER_TYPE  ${config.driverY || 'TMC2208'}
 #define Z_DRIVER_TYPE  ${config.driverZ || 'TMC2208'}
+${config.dualZ ? `#define Z2_DRIVER_TYPE ${config.driverZ || 'TMC2208'}` : '//#define Z2_DRIVER_TYPE A4988'}
 #define I_DRIVER_TYPE  ${config.driverC || 'TMC2208'}
 #define J_DRIVER_TYPE  ${config.driverB || 'TMC2208'}
 #define E0_DRIVER_TYPE ${config.driverE || 'TMC2208'}
@@ -502,8 +520,21 @@ ${display.needsNeopixel ? `#define NEOPIXEL_LED
 
 // @section homing
 
-#define HOMING_BUMP_MM      { 5, 5, 3, 5, 2 }
+#define HOMING_BUMP_MM      ${config.xyHomingMode === 'sensorless' ? '{ 0, 0, 3, 5, 2 }' : '{ 5, 5, 3, 5, 2 }'}
 #define HOMING_BUMP_DIVISOR { 2, 2, 4, 2, 4 }
+${config.xyHomingMode === 'sensorless' ? `
+// Sensorless XY homing (StallGuard) - requires TMC2209 on X and Y
+#define SENSORLESS_HOMING
+#if ENABLED(SENSORLESS_HOMING)
+  #define X_STALL_SENSITIVITY ${config.stallSensitivityX != null ? config.stallSensitivityX : 8}
+  #define Y_STALL_SENSITIVITY ${config.stallSensitivityY != null ? config.stallSensitivityY : 8}
+#endif` : '// Sensorless homing disabled - using physical endstops'}
+${config.dualZ && config.zMultiEndstops ? `
+// Independent Z endstops - auto-square the gantry when homing
+#define Z_MULTI_ENDSTOPS
+#if ENABLED(Z_MULTI_ENDSTOPS)
+  #define Z2_STOP_PIN PG11  // Z2-STOP header
+#endif` : ''}
 
 //===========================================================================
 //============================= LCD / Controller ============================
@@ -552,6 +583,35 @@ ${display.needsNeopixel ? `#define NEOPIXEL_LED
   #define HOME_BEFORE_FILAMENT_CHANGE
   #define FILAMENT_LOAD_UNLOAD_GCODES
 #endif
+
+//===========================================================================
+//================================== Light ==================================
+//===========================================================================
+
+// @section extras
+${config.caseLightEnabled ? `
+#define CASE_LIGHT_ENABLE
+#if ENABLED(CASE_LIGHT_ENABLE)
+  #define CASE_LIGHT_PIN ${config.caseLightPin || 'PD13'}
+  #define INVERT_CASE_LIGHT false
+  #define CASE_LIGHT_DEFAULT_ON false
+  #define CASE_LIGHT_DEFAULT_BRIGHTNESS ${config.caseLightBrightness != null ? config.caseLightBrightness : 105}
+  #define CASE_LIGHT_MENU
+#endif` : '// Case light disabled'}
+
+//===========================================================================
+//============================= Fan Pin Overrides ===========================
+//===========================================================================
+${(() => {
+  const p = config.pinOverrides || {};
+  const lines = [];
+  if (p.fanHotend) lines.push(`#define E0_AUTO_FAN_PIN ${p.fanHotend}`);
+  if (p.fanController) {
+    lines.push('#define USE_CONTROLLER_FAN');
+    lines.push(`#define CONTROLLER_FAN_PIN ${p.fanController}`);
+  }
+  return lines.length ? lines.join('\n') : '// No fan pin overrides';
+})()}
 
 //===========================================================================
 //=============================== Stepper Drivers ===========================

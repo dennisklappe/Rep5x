@@ -70,9 +70,19 @@ const wizardState = {
         yHomeDir: -1,     // Set by preset
         zHomeDir: 1,      // Always MAX for Rep5x
 
+        // Step 2: XY homing method
+        xyHomingMode: 'endstops',  // 'endstops' or 'sensorless'
+        stallSensitivityX: 8,
+        stallSensitivityY: 8,
+
         // Step 4: Display
         display: 'btt_mini_12864',
         neopixelColor: 'green',
+
+        // Step 3: Case light LED
+        caseLightEnabled: false,
+        caseLightBrightness: 105,
+        caseLightPin: 'PD13',
 
         // Step 4: Motors - Drivers
         driverX: 'TMC2208',
@@ -82,6 +92,10 @@ const wizardState = {
         driverB: 'TMC2208',
         driverE: 'TMC2208',
 
+        // Step 4: Dual Z steppers
+        dualZ: false,
+        zMultiEndstops: false,
+
         // Step 4: Motors - Socket assignment
         socketX: 'MOTOR0',
         socketY: 'MOTOR1',
@@ -89,6 +103,7 @@ const wizardState = {
         socketC: 'MOTOR4',
         socketB: 'MOTOR5',
         socketE: 'MOTOR3',
+        socketZ2: 'MOTOR7',
 
         // Step 4: Motors - Steps per unit
         stepsX: 80,
@@ -118,9 +133,27 @@ const wizardState = {
         ikLB: 52.87,
         cHomePos: 0,  // C axis coordinate at home switch
         bRange: 135,  // B axis travel limit (±degrees)
-        segmentsPerSecond: 400
+        segmentsPerSecond: 400,
+
+        // Step 4: Advanced pin assignments
+        // Each function: { header: <label>, raw: <raw pin or ''> }
+        pinAssignments: {}
     }
 };
+
+/**
+ * Functions assignable in the advanced pin panel.
+ * `kind` selects which board pin list applies ('endstop' or 'fan').
+ */
+const advancedPinFunctions = [
+    { key: 'endstopX', label: 'X endstop', kind: 'endstop' },
+    { key: 'endstopY', label: 'Y endstop', kind: 'endstop' },
+    { key: 'endstopZ', label: 'Z endstop', kind: 'endstop' },
+    { key: 'endstopC', label: 'C-axis endstop', kind: 'endstop' },
+    { key: 'endstopB', label: 'B-axis endstop', kind: 'endstop' },
+    { key: 'fanHotend', label: 'Hotend / auto fan', kind: 'fan' },
+    { key: 'fanController', label: 'Controller fan', kind: 'fan' }
+];
 
 // Neopixel color definitions
 const neopixelColors = {
@@ -177,6 +210,9 @@ function initWizard() {
 
     // Set up input change listeners
     setupInputListeners();
+
+    // Build the advanced pin panel from the board map
+    renderAdvancedPinPanel();
 }
 
 /**
@@ -198,7 +234,10 @@ function setupInputListeners() {
         { id: 'ikLB', key: 'ikLB' },
         { id: 'cHomePos', key: 'cHomePos' },
         { id: 'bRange', key: 'bRange' },
-        { id: 'segmentsPerSecond', key: 'segmentsPerSecond' }
+        { id: 'segmentsPerSecond', key: 'segmentsPerSecond' },
+        { id: 'stallSensitivityX', key: 'stallSensitivityX' },
+        { id: 'stallSensitivityY', key: 'stallSensitivityY' },
+        { id: 'caseLightBrightness', key: 'caseLightBrightness' }
     ];
 
     numericInputs.forEach(({ id, key }) => {
@@ -240,11 +279,13 @@ function setupInputListeners() {
         { id: 'socketC', key: 'socketC' },
         { id: 'socketB', key: 'socketB' },
         { id: 'socketE', key: 'socketE' },
+        { id: 'socketZ2', key: 'socketZ2' },
         { id: 'endstopX', key: 'endstopX' },
         { id: 'endstopY', key: 'endstopY' },
         { id: 'endstopZ', key: 'endstopZ' },
         { id: 'endstopC', key: 'endstopC' },
-        { id: 'endstopB', key: 'endstopB' }
+        { id: 'endstopB', key: 'endstopB' },
+        { id: 'caseLightPin', key: 'caseLightPin' }
     ];
 
     selectInputsString.forEach(({ id, key }) => {
@@ -263,7 +304,8 @@ function setupInputListeners() {
         { id: 'invertZ', key: 'invertZ' },
         { id: 'invertC', key: 'invertC' },
         { id: 'invertB', key: 'invertB' },
-        { id: 'invertE', key: 'invertE' }
+        { id: 'invertE', key: 'invertE' },
+        { id: 'zMultiEndstops', key: 'zMultiEndstops' }
     ];
 
     checkboxInputs.forEach(({ id, key }) => {
@@ -309,6 +351,11 @@ function selectOption(element, category) {
         if (neopixelOptions) {
             neopixelOptions.style.display = value === 'btt_mini_12864' ? 'block' : 'none';
         }
+    }
+
+    // Re-render the advanced pin panel against the newly selected board
+    if (category === 'board') {
+        renderAdvancedPinPanel();
     }
 }
 
@@ -406,6 +453,209 @@ function updateAdjustedValues() {
         wizardState.config.xBedSize = xInput;
         wizardState.config.yBedSize = yInput;
         wizardState.config.zMaxPos = zInput;
+    }
+}
+
+/**
+ * Expand or collapse the advanced pin panel.
+ */
+function toggleAdvancedPins() {
+    const body = document.getElementById('advancedPinsBody');
+    const chevron = document.getElementById('advancedPinsChevron');
+    const hidden = body.classList.toggle('hidden');
+    chevron.style.transform = hidden ? '' : 'rotate(180deg)';
+}
+
+/**
+ * Fill in any pin assignment the user has not set with the board default.
+ * Each assignment is a single MCU pin name.
+ */
+function initPinAssignments() {
+    const defaults = BoardPins.getDefaults(wizardState.config.board);
+    const assignments = wizardState.config.pinAssignments;
+    advancedPinFunctions.forEach(fn => {
+        if (typeof assignments[fn.key] !== 'string' || !assignments[fn.key]) {
+            assignments[fn.key] = defaults[fn.key];
+        }
+    });
+}
+
+/**
+ * Build the advanced pin panel rows from board-pins.js.
+ * Each row is a function label and a dropdown of the board's MCU pins.
+ */
+function renderAdvancedPinPanel() {
+    initPinAssignments();
+    const board = BoardPins.boards[wizardState.config.board] || BoardPins.boards['octopus_v1.1'];
+    const container = document.getElementById('advancedPinRows');
+    if (!container) return;
+
+    container.innerHTML = advancedPinFunctions.map(fn => {
+        const pins = fn.kind === 'fan' ? board.fanPins : board.endstopPins;
+        const current = wizardState.config.pinAssignments[fn.key];
+        const options = pins.map(pin =>
+            `<option value="${pin}"${pin === current ? ' selected' : ''}>${pin}</option>`
+        ).join('');
+        return `
+            <div class="grid grid-cols-2 gap-3 items-center">
+                <label class="text-sm text-gray-600">${fn.label}</label>
+                <select class="config-input text-sm" data-pin-fn="${fn.key}"
+                    onchange="updatePinAssignment(this)">${options}</select>
+            </div>`;
+    }).join('');
+
+    checkPinConflicts();
+}
+
+/**
+ * Persist a pin-dropdown change into wizard state.
+ */
+function updatePinAssignment(element) {
+    wizardState.config.pinAssignments[element.dataset.pinFn] = element.value;
+    checkPinConflicts();
+}
+
+/**
+ * Collect the advanced pin assignments as a functionName -> pin map.
+ * @returns {Object}
+ */
+function resolvePinOverrides() {
+    const assignments = wizardState.config.pinAssignments;
+    const resolved = {};
+    advancedPinFunctions.forEach(fn => {
+        resolved[fn.key] = assignments[fn.key];
+    });
+    return resolved;
+}
+
+/**
+ * Motor-socket overrides for the build, keyed by Marlin board-logical name.
+ * Only axes whose socket differs from the Rep5x default are included, so a
+ * default config produces no overrides (build identical to ignoring sockets).
+ * Z2 is always included when dual Z is on - it must move off the board's
+ * default Z2 slot (MOTOR3, used by the Rep5x extruder).
+ */
+function resolveMotorOverrides() {
+    const c = wizardState.config;
+    const slots = BoardPins.motorSlots;
+    const axes = [
+        { socket: c.socketX, logical: 'X',  def: 'MOTOR0' },
+        { socket: c.socketY, logical: 'Y',  def: 'MOTOR1' },
+        { socket: c.socketZ, logical: 'Z',  def: 'MOTOR2_1' },
+        { socket: c.socketE, logical: 'E0', def: 'MOTOR3' },
+        { socket: c.socketC, logical: 'E1', def: 'MOTOR4' },
+        { socket: c.socketB, logical: 'E2', def: 'MOTOR5' }
+    ];
+    const out = {};
+    axes.forEach(a => {
+        if (a.socket && a.socket !== a.def && slots[a.socket]) {
+            out[a.logical] = slots[a.socket];
+        }
+    });
+    if (c.dualZ && c.socketZ2 && slots[c.socketZ2]) {
+        out.Z2 = slots[c.socketZ2];
+    }
+    return out;
+}
+
+/**
+ * Warn when two functions are assigned the same pin.
+ */
+function checkPinConflicts() {
+    const conflicts = BoardPins.findConflicts(resolvePinOverrides());
+    const warning = document.getElementById('pinConflictWarning');
+    if (!warning) return;
+
+    if (conflicts.length > 0) {
+        const labelOf = key => (advancedPinFunctions.find(f => f.key === key) || {}).label || key;
+        const text = conflicts
+            .map(group => group.map(labelOf).join(' + '))
+            .join('; ');
+        warning.querySelector('p').textContent = 'Pin conflict: ' + text + ' share the same pin.';
+        warning.classList.remove('hidden');
+    } else {
+        warning.classList.add('hidden');
+    }
+}
+
+/**
+ * Show or hide the case-light options and sync the enabled state.
+ */
+function updateCaseLight() {
+    const enabled = document.getElementById('caseLightEnabled').checked;
+    wizardState.config.caseLightEnabled = enabled;
+    document.getElementById('caseLightOptions').classList.toggle('hidden', !enabled);
+}
+
+/**
+ * Show or hide the dual-Z options and sync the enabled state.
+ */
+function updateDualZ() {
+    const enabled = document.getElementById('dualZ').checked;
+    wizardState.config.dualZ = enabled;
+    document.getElementById('dualZOptions').classList.toggle('hidden', !enabled);
+    const z2Cell = document.getElementById('socketZ2Cell');
+    if (z2Cell) z2Cell.classList.toggle('hidden', !enabled);
+}
+
+// Remembers X/Y driver choices made before sensorless homing forced them to TMC2209.
+let preSensorlessDrivers = null;
+
+/**
+ * Apply the XY homing-method choice.
+ * Sensorless homing requires StallGuard drivers, so X/Y drivers are forced
+ * to TMC2209 and locked, and the stall-sensitivity inputs are revealed.
+ */
+function updateXyHomingMode() {
+    const mode = document.getElementById('xyHomingMode').value;
+    wizardState.config.xyHomingMode = mode;
+
+    const options = document.getElementById('sensorlessOptions');
+    const sameDriverAll = document.getElementById('sameDriverAll');
+    const driverX = document.getElementById('driverX');
+    const driverY = document.getElementById('driverY');
+
+    if (mode === 'sensorless') {
+        options.classList.remove('hidden');
+
+        // Remember the user's driver choice so it can be restored on switch-back.
+        if (!preSensorlessDrivers) {
+            preSensorlessDrivers = {
+                x: wizardState.config.driverX,
+                y: wizardState.config.driverY
+            };
+        }
+
+        // Sensorless needs per-axis drivers, so leave "same for all" mode.
+        if (sameDriverAll.checked) {
+            sameDriverAll.checked = false;
+            toggleSameDriverAll();
+        }
+        sameDriverAll.disabled = true;
+
+        // Force X/Y to a StallGuard-capable driver and lock these selectors
+        // (the driver selectors live on the Motors step).
+        ['X', 'Y'].forEach(axis => {
+            const select = document.getElementById('driver' + axis);
+            select.value = 'TMC2209';
+            select.disabled = true;
+            wizardState.config['driver' + axis] = 'TMC2209';
+        });
+    } else {
+        options.classList.add('hidden');
+
+        // Restore the driver choice that sensorless mode overrode.
+        if (preSensorlessDrivers) {
+            driverX.value = preSensorlessDrivers.x;
+            driverY.value = preSensorlessDrivers.y;
+            wizardState.config.driverX = preSensorlessDrivers.x;
+            wizardState.config.driverY = preSensorlessDrivers.y;
+            preSensorlessDrivers = null;
+        }
+
+        sameDriverAll.disabled = false;
+        driverX.disabled = false;
+        driverY.disabled = false;
     }
 }
 
@@ -696,6 +946,9 @@ async function buildFirmware() {
             driverC: config.driverC,
             driverB: config.driverB,
             driverE: config.driverE,
+            // Dual Z steppers
+            dualZ: config.dualZ,
+            zMultiEndstops: config.zMultiEndstops,
             // Motor sockets
             socketX: config.socketX,
             socketY: config.socketY,
@@ -723,6 +976,18 @@ async function buildFirmware() {
             endstopZ: config.endstopZ,
             endstopC: config.endstopC,
             endstopB: config.endstopB,
+            // Sensorless XY homing
+            xyHomingMode: config.xyHomingMode,
+            stallSensitivityX: config.stallSensitivityX,
+            stallSensitivityY: config.stallSensitivityY,
+            // Case light LED
+            caseLightEnabled: config.caseLightEnabled,
+            caseLightBrightness: config.caseLightBrightness,
+            caseLightPin: config.caseLightPin,
+            // Advanced pin assignments (resolved to MCU pins)
+            pinOverrides: resolvePinOverrides(),
+            // Motor socket overrides (board-logical name -> pins)
+            motorOverrides: resolveMotorOverrides(),
             // IK parameters
             ikLC: config.ikLC,
             ikLB: config.ikLB,
@@ -984,6 +1249,18 @@ function applyImportedConfig(config) {
     document.getElementById('zHomeDir').value = config.zHomeDir;
     updateZHomingWarning();
 
+    // === XY Homing Method ===
+    if (config.xyHomingMode) {
+        document.getElementById('xyHomingMode').value = config.xyHomingMode;
+    }
+    if (config.stallSensitivityX != null) {
+        document.getElementById('stallSensitivityX').value = config.stallSensitivityX;
+    }
+    if (config.stallSensitivityY != null) {
+        document.getElementById('stallSensitivityY').value = config.stallSensitivityY;
+    }
+    updateXyHomingMode();
+
     // === Display Selection ===
     const displayCards = document.querySelectorAll('#step3 .option-card');
     displayCards.forEach(card => {
@@ -1012,6 +1289,26 @@ function applyImportedConfig(config) {
         }
     });
 
+    // === Case Light ===
+    if (config.caseLightEnabled != null) {
+        document.getElementById('caseLightEnabled').checked = config.caseLightEnabled;
+    }
+    if (config.caseLightBrightness != null) {
+        document.getElementById('caseLightBrightness').value = config.caseLightBrightness;
+    }
+    if (config.caseLightPin) {
+        document.getElementById('caseLightPin').value = config.caseLightPin;
+    }
+    updateCaseLight();
+
+    // === Advanced Pin Assignments ===
+    if (config.pinAssignments) {
+        wizardState.config.pinAssignments = config.pinAssignments;
+    } else {
+        wizardState.config.pinAssignments = {};
+    }
+    renderAdvancedPinPanel();
+
     // === Stepper Drivers ===
     const driverFields = ['driverX', 'driverY', 'driverZ', 'driverC', 'driverB', 'driverE'];
     const allSameDriver = driverFields.every(f => config[f] === config.driverX);
@@ -1031,8 +1328,17 @@ function applyImportedConfig(config) {
         if (el) el.value = config[field];
     });
 
+    // === Dual Z Steppers ===
+    if (config.dualZ != null) {
+        document.getElementById('dualZ').checked = config.dualZ;
+    }
+    if (config.zMultiEndstops != null) {
+        document.getElementById('zMultiEndstops').checked = config.zMultiEndstops;
+    }
+    updateDualZ();
+
     // === Motor Sockets ===
-    const socketFields = ['socketX', 'socketY', 'socketZ', 'socketC', 'socketB', 'socketE'];
+    const socketFields = ['socketX', 'socketY', 'socketZ', 'socketC', 'socketB', 'socketE', 'socketZ2'];
     socketFields.forEach(field => {
         const el = document.getElementById(field);
         if (el) el.value = config[field];

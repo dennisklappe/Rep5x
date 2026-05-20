@@ -192,6 +192,126 @@ jobs:
             echo "Set B endstop hit state to $ENDSTOP_B"
           fi
 
+          # === SENSORLESS XY HOMING ===
+          XY_HOMING_MODE=$(echo "$CUSTOMIZATIONS" | jq -r '.xyHomingMode // empty')
+          if [ "$XY_HOMING_MODE" = "sensorless" ]; then
+            STALL_X=$(echo "$CUSTOMIZATIONS" | jq -r '.stallSensitivityX // 8')
+            STALL_Y=$(echo "$CUSTOMIZATIONS" | jq -r '.stallSensitivityY // 8')
+
+            # Enable SENSORLESS_HOMING (commented + indented inside the TMC block)
+            sed -i 's|^[[:space:]]*//#define SENSORLESS_HOMING.*|  #define SENSORLESS_HOMING|' marlin/Marlin/Configuration_adv.h
+
+            # Set X/Y stall sensitivities (the X2_/Y2_ lines reference these, leave them)
+            sed -i "s|^[[:space:]]*#define X_STALL_SENSITIVITY .*|    #define X_STALL_SENSITIVITY  $STALL_X|" marlin/Marlin/Configuration_adv.h
+            sed -i "s|^[[:space:]]*#define Y_STALL_SENSITIVITY .*|    #define Y_STALL_SENSITIVITY  $STALL_Y|" marlin/Marlin/Configuration_adv.h
+
+            # Marlin recommends zero homing bump for sensorless axes
+            sed -i 's|^#define HOMING_BUMP_MM .*|#define HOMING_BUMP_MM      { 0, 0, 3, 5, 2 }|' marlin/Marlin/Configuration_adv.h
+
+            echo "Enabled sensorless XY homing (X sensitivity=$STALL_X, Y sensitivity=$STALL_Y)"
+          else
+            echo "XY homing uses physical endstops"
+          fi
+
+          # === CASE LIGHT LED ===
+          CASE_LIGHT_ENABLED=$(echo "$CUSTOMIZATIONS" | jq -r '.caseLightEnabled // empty')
+          if [ "$CASE_LIGHT_ENABLED" = "true" ]; then
+            CASE_LIGHT_BRIGHTNESS=$(echo "$CUSTOMIZATIONS" | jq -r '.caseLightBrightness // 105')
+            LED_PIN=$(echo "$CUSTOMIZATIONS" | jq -r '.caseLightPin // "PD13"')
+
+            # Enable the feature (commented at column 0 in the base config)
+            sed -i 's|^//#define CASE_LIGHT_ENABLE|#define CASE_LIGHT_ENABLE|' marlin/Marlin/Configuration_adv.h
+
+            # Set the LED pin (commented + indented inside the CASE_LIGHT block)
+            sed -i "s|^[[:space:]]*//#define CASE_LIGHT_PIN .*|  #define CASE_LIGHT_PIN $LED_PIN|" marlin/Marlin/Configuration_adv.h
+
+            # Set default brightness (already uncommented + indented)
+            sed -i "s|^[[:space:]]*#define CASE_LIGHT_DEFAULT_BRIGHTNESS .*|  #define CASE_LIGHT_DEFAULT_BRIGHTNESS $CASE_LIGHT_BRIGHTNESS|" marlin/Marlin/Configuration_adv.h
+
+            # Keep the light off at power-up (base config defaults it on)
+            sed -i 's|^[[:space:]]*#define CASE_LIGHT_DEFAULT_ON .*|  #define CASE_LIGHT_DEFAULT_ON false|' marlin/Marlin/Configuration_adv.h
+
+            echo "Enabled case light LED on pin $LED_PIN (brightness $CASE_LIGHT_BRIGHTNESS)"
+          else
+            echo "Case light disabled"
+          fi
+
+          # === ADVANCED PIN OVERRIDES (endstops + fans) ===
+          PIN_ENDSTOP_X=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopX // empty')
+          PIN_ENDSTOP_Y=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopY // empty')
+          PIN_ENDSTOP_Z=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopZ // empty')
+          PIN_ENDSTOP_C=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopC // empty')
+          PIN_ENDSTOP_B=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.endstopB // empty')
+
+          # C and B endstops already have #define lines in the base config
+          if [ -n "$PIN_ENDSTOP_C" ]; then
+            sed -i "s|^#define I_MIN_PIN .*|#define I_MIN_PIN $PIN_ENDSTOP_C   // C-axis endstop (Rep5x Firmware Builder)|" marlin/Marlin/Configuration.h
+            echo "Set I_MIN_PIN (C endstop) to $PIN_ENDSTOP_C"
+          fi
+          if [ -n "$PIN_ENDSTOP_B" ]; then
+            sed -i "s|^#define J_MIN_PIN .*|#define J_MIN_PIN $PIN_ENDSTOP_B   // B-axis endstop (Rep5x Firmware Builder)|" marlin/Marlin/Configuration.h
+            echo "Set J_MIN_PIN (B endstop) to $PIN_ENDSTOP_B"
+          fi
+
+          # X/Y/Z endstops: append guarded overrides after the J_MIN_PIN line
+          for AXIS_PIN in "X_MIN_PIN:$PIN_ENDSTOP_X" "Y_MIN_PIN:$PIN_ENDSTOP_Y" "Z_MIN_PIN:$PIN_ENDSTOP_Z"; do
+            DEF_NAME="${AXIS_PIN%%:*}"
+            DEF_VAL="${AXIS_PIN##*:}"
+            if [ -n "$DEF_VAL" ]; then
+              sed -i "/^#define J_MIN_PIN /a #ifndef $DEF_NAME\\n  #define $DEF_NAME $DEF_VAL  // Rep5x Firmware Builder\\n#endif" marlin/Marlin/Configuration.h
+              echo "Set $DEF_NAME to $DEF_VAL"
+            fi
+          done
+
+          # Hotend / auto fan -> E0_AUTO_FAN_PIN (settable define in Configuration_adv.h)
+          PIN_FAN_HOTEND=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.fanHotend // empty')
+          if [ -n "$PIN_FAN_HOTEND" ]; then
+            sed -i "s|^#define E0_AUTO_FAN_PIN .*|#define E0_AUTO_FAN_PIN $PIN_FAN_HOTEND  // Rep5x Firmware Builder|" marlin/Marlin/Configuration_adv.h
+            echo "Set E0_AUTO_FAN_PIN to $PIN_FAN_HOTEND"
+          fi
+
+          # Controller fan -> enable USE_CONTROLLER_FAN + set its pin
+          PIN_FAN_CONTROLLER=$(echo "$CUSTOMIZATIONS" | jq -r '.pinOverrides.fanController // empty')
+          if [ -n "$PIN_FAN_CONTROLLER" ]; then
+            sed -i 's|^//#define USE_CONTROLLER_FAN|#define USE_CONTROLLER_FAN|' marlin/Marlin/Configuration_adv.h
+            sed -i "s|^[[:space:]]*//#define CONTROLLER_FAN_PIN .*|  #define CONTROLLER_FAN_PIN $PIN_FAN_CONTROLLER  // Rep5x Firmware Builder|" marlin/Marlin/Configuration_adv.h
+            echo "Set CONTROLLER_FAN_PIN to $PIN_FAN_CONTROLLER"
+          fi
+
+          # === DUAL Z STEPPERS ===
+          DUAL_Z=$(echo "$CUSTOMIZATIONS" | jq -r '.dualZ // empty')
+          if [ "$DUAL_Z" = "true" ]; then
+            # Z2 runs in sync with Z and uses the same driver type
+            Z2_DRIVER=$(echo "$CUSTOMIZATIONS" | jq -r '.driverZ // "TMC2208"')
+            sed -i "s|^//#define Z2_DRIVER_TYPE.*|#define Z2_DRIVER_TYPE $Z2_DRIVER|" marlin/Marlin/Configuration.h
+            echo "Enabled dual Z steppers (Z2 driver $Z2_DRIVER)"
+
+            Z_MULTI=$(echo "$CUSTOMIZATIONS" | jq -r '.zMultiEndstops // empty')
+            if [ "$Z_MULTI" = "true" ]; then
+              # Independent Z endstops: enable Z_MULTI_ENDSTOPS + the Z2-STOP header
+              sed -i 's|^[[:space:]]*//#define Z_MULTI_ENDSTOPS|  #define Z_MULTI_ENDSTOPS|' marlin/Marlin/Configuration_adv.h
+              sed -i 's|^[[:space:]]*//#define Z2_STOP_PIN .*|    #define Z2_STOP_PIN PG11|' marlin/Marlin/Configuration_adv.h
+              echo "Enabled independent Z endstops (Z2_STOP_PIN PG11)"
+            else
+              echo "Z2 shares the single Z endstop"
+            fi
+          else
+            echo "Single Z stepper"
+          fi
+
+          # === MOTOR SOCKET OVERRIDES ===
+          # Re-map motor driver pins in the cloned board pin file. Only axes
+          # the user changed from the Rep5x default appear in motorOverrides.
+          BOARD_PINS=marlin/Marlin/src/pins/stm32f4/pins_BTT_OCTOPUS_V1_common.h
+          echo "$CUSTOMIZATIONS" | jq -r '(.motorOverrides // {}) | to_entries[] | "\(.key) \(.value.step) \(.value.dir) \(.value.enable) \(.value.uart)"' | while read -r LOGICAL STEP DIR ENABLE UART; do
+            [ -z "$LOGICAL" ] && continue
+            sed -i "s|^#define ${LOGICAL}_STEP_PIN .*|#define ${LOGICAL}_STEP_PIN  ${STEP}  // Rep5x Firmware Builder|" "$BOARD_PINS"
+            sed -i "s|^#define ${LOGICAL}_DIR_PIN .*|#define ${LOGICAL}_DIR_PIN  ${DIR}  // Rep5x Firmware Builder|" "$BOARD_PINS"
+            sed -i "s|^#define ${LOGICAL}_ENABLE_PIN .*|#define ${LOGICAL}_ENABLE_PIN  ${ENABLE}  // Rep5x Firmware Builder|" "$BOARD_PINS"
+            sed -i "s|^[[:space:]]*#define ${LOGICAL}_SERIAL_TX_PIN .*|  #define ${LOGICAL}_SERIAL_TX_PIN  ${UART}  // Rep5x Firmware Builder|" "$BOARD_PINS"
+            echo "Remapped motor ${LOGICAL} -> STEP ${STEP} DIR ${DIR} ENABLE ${ENABLE} UART ${UART}"
+          done
+
           # === IK PARAMETERS ===
           IK_LC=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLC // empty')
           IK_LB=$(echo "$CUSTOMIZATIONS" | jq -r '.ikLB // empty')
