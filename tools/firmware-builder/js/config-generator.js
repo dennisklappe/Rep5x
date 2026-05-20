@@ -369,11 +369,11 @@ ${config.dualZ ? `#define Z2_DRIVER_TYPE ${config.driverZ || 'TMC2208'}` : '//#d
 #define DEFAULT_RETRACT_ACCELERATION  500
 #define DEFAULT_TRAVEL_ACCELERATION   500
 
-#define DEFAULT_XJERK  0.0
-#define DEFAULT_YJERK  0.0
+#define DEFAULT_XJERK  10.0
+#define DEFAULT_YJERK  10.0
 #define DEFAULT_ZJERK  0.3
-#define DEFAULT_IJERK  0.5
-#define DEFAULT_JJERK  0.5
+#define DEFAULT_IJERK  20.0
+#define DEFAULT_JJERK  20.0
 #define DEFAULT_EJERK  5.0
 
 #define CLASSIC_JERK

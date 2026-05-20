@@ -409,19 +409,22 @@ class StepCalibrateXY {
                 Math.abs(point.b - prevPoint.b) > 45
             );
 
-            await this.app.printer.sendCommand('G90');  // Absolute mode
+            await this.app.printer.sendCommandAndWait('G90', 5000);  // Absolute mode
 
             if (needsSafetyLift) {
-                // Lift to safe Z first, then move - use sendCommandAndWait for proper sequencing
-                const safeZ = ref.z + 50;  // 50mm safety offset (increased for more clearance)
+                // Lift to safe Z first, then move
+                const safeZ = ref.z + 50;  // 50mm safety offset
                 console.log('XY calibration: Safety lift for large B change:', prevPoint?.b, '->', point.b);
 
-                // 1. Lift Z to safe height and wait
+                // 1. Lift Z to safe height and WAIT for completion before rotating
                 await this.app.printer.sendCommandAndWait(`G0 Z${safeZ.toFixed(2)} F3000`, 30000);
+                await this.app.printer.sendCommandAndWait('M400', 60000);
 
-                // 2. Move B axis first (while lifted), then C, to avoid intermediate swing positions
+                // 2. Move B axis first (while lifted), then C
                 await this.app.printer.sendCommandAndWait(`G0 B${point.b.toFixed(1)} F1000`, 30000);
+                await this.app.printer.sendCommandAndWait('M400', 60000);
                 await this.app.printer.sendCommandAndWait(`G0 C${point.c.toFixed(1)} F1800`, 30000);
+                await this.app.printer.sendCommandAndWait('M400', 60000);
 
                 // 3. Move XY to target position
                 await this.app.printer.sendCommandAndWait(`G0 X${ref.x.toFixed(2)} Y${ref.y.toFixed(2)} F3000`, 30000);
@@ -1123,22 +1126,16 @@ class StepCalibrateZ {
 
                 // Get current position and record it with Z reference
                 const pos = this.app.printer.getPosition();
-                const expected = this.app.engine.getExpectedPosition(0, 0);
 
                 if (pos && pos.x !== undefined) {
-                    // Get XY from XY calibration if available
-                    const xyMeasurement = this.app.engine.getMeasurement(0, 0);
-                    const actualX = xyMeasurement?.actual.x || pos.x;
-                    const actualY = xyMeasurement?.actual.y || pos.y;
-
                     // Use Z reference position for Z
                     // If XY reference exists, align Z to it; otherwise just use current Z
                     const adjustedZ = (this.app.referencePosition && this.app.referencePosition.z !== undefined)
                         ? this.app.referencePosition.z
                         : this.zReferencePosition;
 
-                    // Record the measurement
-                    this.app.engine.recordMeasurement(0, 0, { x: actualX, y: actualY, z: adjustedZ });
+                    // Update only Z component — preserve XY errors from XY calibration
+                    this.app.engine.updateZMeasurement(0, 0, adjustedZ);
                     if (this.graphRenderer) this.graphRenderer.render();
                     console.log('Z calibration: C0B0 auto-confirmed, advancing to next point');
 
@@ -1211,19 +1208,22 @@ class StepCalibrateZ {
                 Math.abs(point.b - prevPoint.b) > 45
             );
 
-            await this.app.printer.sendCommand('G90');
+            await this.app.printer.sendCommandAndWait('G90', 5000);
 
             if (needsSafetyLift) {
-                // Lift to safe Z first, then move - use sendCommandAndWait for proper sequencing
-                const safeZ = refZ + 50;  // 50mm safety offset (increased for more clearance)
+                // Lift to safe Z first, then move
+                const safeZ = refZ + 50;  // 50mm safety offset
                 console.log('Z calibration: Safety lift for large B change:', prevPoint?.b, '->', point.b);
 
-                // 1. Lift Z to safe height and wait
+                // 1. Lift Z to safe height and WAIT for completion before rotating
                 await this.app.printer.sendCommandAndWait(`G0 Z${safeZ.toFixed(2)} F3000`, 30000);
+                await this.app.printer.sendCommandAndWait('M400', 60000);
 
-                // 2. Move B axis first (while lifted), then C, to avoid intermediate swing positions
+                // 2. Move B axis first (while lifted), then C
                 await this.app.printer.sendCommandAndWait(`G0 B${point.b.toFixed(1)} F1000`, 30000);
+                await this.app.printer.sendCommandAndWait('M400', 60000);
                 await this.app.printer.sendCommandAndWait(`G0 C${point.c.toFixed(1)} F1800`, 30000);
+                await this.app.printer.sendCommandAndWait('M400', 60000);
 
                 // 3. Move XY to corrected target position
                 await this.app.printer.sendCommandAndWait(`G0 X${targetX.toFixed(2)} Y${targetY.toFixed(2)} F3000`, 30000);
@@ -1366,29 +1366,21 @@ class StepCalibrateZ {
                 // Reset the Z reference to current position
                 this.zReferencePosition = pos.z;
 
-                // Update existing measurement with actual Z
-                const measurement = this.app.engine.getMeasurement(point.c, point.b);
-                const actualX = measurement ? measurement.actual.x : pos.x;
-                const actualY = measurement ? measurement.actual.y : pos.y;
-
                 // Use current Z as the new reference baseline
                 const adjustedZ = (this.app.referencePosition && this.app.referencePosition.z !== undefined)
                     ? this.app.referencePosition.z
                     : this.zReferencePosition;
 
-                this.app.engine.recordMeasurement(point.c, point.b, { x: actualX, y: actualY, z: adjustedZ });
-                console.log('Recorded new B sweep reference at C0B0, advancing to next point');
+                // Update only Z component — preserve XY errors from XY calibration
+                this.app.engine.updateZMeasurement(point.c, point.b, adjustedZ);
+                console.log('Recorded new B sweep Z reference at C0B0, advancing to next point');
 
                 if (this.graphRenderer) this.graphRenderer.render();
                 await this.moveToCurrentPoint();
                 return;
             }
 
-            // Normal point confirmation
-            // Update existing measurement with actual Z
-            const measurement = this.app.engine.getMeasurement(point.c, point.b);
-            const actualX = measurement ? measurement.actual.x : pos.x;
-            const actualY = measurement ? measurement.actual.y : pos.y;
+            // Normal point confirmation — only update Z, preserve XY errors from XY calibration
 
             // Adjust Z to account for different reference points
             // If we have an XY reference position, use it; otherwise use Z reference as baseline
@@ -1401,7 +1393,7 @@ class StepCalibrateZ {
                 adjustedZ = pos.z;
             }
 
-            this.app.engine.recordMeasurement(point.c, point.b, { x: actualX, y: actualY, z: adjustedZ });
+            this.app.engine.updateZMeasurement(point.c, point.b, adjustedZ);
             console.log('Recorded Z measurement, advancing to next point');
 
             if (this.graphRenderer) this.graphRenderer.render();

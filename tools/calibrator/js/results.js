@@ -32,7 +32,7 @@ class StepResults {
             this.exportToFirmware();
         });
 
-        document.getElementById('refine-calibration-btn')?.addEventListener('click', () => {
+        document.getElementById('results-refine-btn')?.addEventListener('click', () => {
             this.startRefineCalibration();
         });
 
@@ -432,8 +432,8 @@ class StepResults {
             btn.disabled = false;
         }
 
-        // Go directly to XY calibration step (step 3)
-        // Printer is already connected and prepared for refine mode
-        this.app.goToStep(3);
+        // Go to prepare step (step 2) so user can reposition camera and confirm reference
+        // Camera needs to switch back from Z (horizontal) to XY (vertical) position
+        this.app.goToStep(2);
     }
 }

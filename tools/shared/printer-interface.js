@@ -6,14 +6,28 @@
  */
 
 class PrinterInterface {
-    static BAUD_RATE = 115200;
+    static DEFAULT_BAUD_RATE = 250000;
+    static BAUD_STORAGE_KEY = 'rep5x.baudRate';
     static POSITION_POLL_DELAY = 500;
     static COMMAND_TIMEOUT = 30000;
+
+    /**
+     * Read the user's chosen baud from localStorage, falling back to the default.
+     * @returns {number}
+     */
+    static getStoredBaudRate() {
+        try {
+            const stored = parseInt(localStorage.getItem(PrinterInterface.BAUD_STORAGE_KEY), 10);
+            if (Number.isFinite(stored) && stored > 0) return stored;
+        } catch (_) { /* localStorage unavailable */ }
+        return PrinterInterface.DEFAULT_BAUD_RATE;
+    }
 
     /**
      * Create a new PrinterInterface
      * @param {object} options - Configuration options
      * @param {boolean} options.logResponses - Whether to log all serial responses (default: true)
+     * @param {number} options.baudRate - Override the baud rate (default: read from localStorage / DEFAULT_BAUD_RATE)
      */
     constructor(options = {}) {
         this.port = null;
@@ -27,6 +41,9 @@ class PrinterInterface {
 
         // Configuration
         this.logResponses = options.logResponses !== false; // Default to true
+        this.baudRate = Number.isFinite(options.baudRate) && options.baudRate > 0
+            ? options.baudRate
+            : PrinterInterface.getStoredBaudRate();
 
         // Command queue to prevent concurrent writes (WritableStream can only have one writer)
         this.sendQueue = Promise.resolve();
@@ -146,16 +163,18 @@ class PrinterInterface {
      */
     async openPort() {
         try {
-            // Open the port
+            // Re-read baud at open time so a selector change takes effect on reconnect
+            this.baudRate = PrinterInterface.getStoredBaudRate();
+
             await this.port.open({
-                baudRate: PrinterInterface.BAUD_RATE,
+                baudRate: this.baudRate,
                 dataBits: 8,
                 stopBits: 1,
                 parity: 'none',
                 flowControl: 'none'
             });
 
-            this.log(`Connected at ${PrinterInterface.BAUD_RATE} baud`);
+            this.log(`Connected at ${this.baudRate} baud`);
 
             // Start reading
             this.startReading();
@@ -733,16 +752,11 @@ class PrinterInterface {
     /**
      * Home specified axes
      * @param {string[]} axes - Axes to home (e.g., ['X', 'Y', 'Z'])
+     * @param {number} timeout - Timeout in ms (default 120s — homing can be slow)
      */
-    async home(axes = []) {
-        if (axes.length === 0) {
-            await this.sendCommand('G28');
-        } else {
-            await this.sendCommand('G28 ' + axes.join(' '));
-        }
-
-        // Wait for homing to complete
-        await new Promise(r => setTimeout(r, 2000));
+    async home(axes = [], timeout = 120000) {
+        const cmd = axes.length === 0 ? 'G28' : 'G28 ' + axes.join(' ');
+        await this.sendCommandAndWait(cmd, timeout);
         return this.requestPosition();
     }
 

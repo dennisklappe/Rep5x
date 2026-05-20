@@ -133,7 +133,7 @@ const wizardState = {
         ikLB: 52.87,
         cHomePos: 0,  // C axis coordinate at home switch
         bRange: 135,  // B axis travel limit (±degrees)
-        segmentsPerSecond: 200,
+        segmentsPerSecond: 400,
 
         // Step 4: Advanced pin assignments
         // Each function: { header: <label>, raw: <raw pin or ''> }

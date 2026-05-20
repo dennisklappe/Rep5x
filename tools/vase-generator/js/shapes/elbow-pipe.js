@@ -151,7 +151,7 @@ class ElbowPipe extends ShapeBase {
         return pathPoints;
     }
 
-    generateGcode(params, layerHeight, speed) {
+    generateGcode(params, layerHeight, speed, nozzleDiameter = 0.4) {
         const { diameter, vertical, horizontal, tilt } = params;
         const gcode = [];
         const pipeRadius = diameter / 2;
@@ -161,13 +161,16 @@ class ElbowPipe extends ShapeBase {
         const L2 = horizontal;
         const resolution = 100;
 
+        const filamentArea = Math.PI * Math.pow(1.75 / 2, 2);
+        const extrusionMultiplier = (layerHeight * nozzleDiameter) / filamentArea;
+
         let prevPos = null;
         let totalSpiralAngle = 0;
 
         // Helper to add G-code line
         const addMove = (x, y, z, C, B, isFirst, speedMult = 1) => {
             const pos = { x, y, z };
-            const deltaE = prevPos ? distance3D(pos, prevPos) * 0.05 : 0;
+            const deltaE = prevPos ? distance3D(pos, prevPos) * extrusionMultiplier : 0;
 
             if (isFirst) {
                 gcode.push(`G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${z.toFixed(3)} C${C.toFixed(3)} B${B.toFixed(3)} ; move to start`);
@@ -260,34 +263,4 @@ class ElbowPipe extends ShapeBase {
 
         return gcode;
     }
-}
-
-// Legacy function wrappers for backwards compatibility
-function createElbowPipe(radius, verticalHeight, horizontalLength, bendAngle = 90) {
-    const shape = new ElbowPipe();
-    return shape.createGeometry({
-        diameter: radius * 2,
-        vertical: verticalHeight,
-        horizontal: horizontalLength,
-        tilt: bendAngle
-    });
-}
-
-function createElbowPipePath(radius, verticalHeight, horizontalLength, bendAngle = 90) {
-    const shape = new ElbowPipe();
-    return shape.createPath({
-        diameter: radius * 2,
-        vertical: verticalHeight,
-        horizontal: horizontalLength,
-        tilt: bendAngle
-    });
-}
-
-function generateElbowPipeGcode(diameter, verticalHeight, horizontalLength, layerHeight, speed, bendAngle) {
-    const shape = new ElbowPipe();
-    return shape.generateGcode(
-        { diameter, vertical: verticalHeight, horizontal: horizontalLength, tilt: bendAngle },
-        layerHeight,
-        speed
-    );
 }

@@ -33,6 +33,7 @@
                         <input type="checkbox" id="testModeToggle" class="form-checkbox h-4 w-4 text-primary rounded">
                         Test mode
                     </label>
+                    <span id="baudSelector"></span>
                     <button id="connectBtn" class="btn-primary px-5 py-2.5 rounded-lg font-medium flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -333,7 +334,7 @@
                 <h4 class="text-sm font-medium text-gray-600 mb-3">5-axis kinematics</h4>
                 <div class="grid grid-cols-5 gap-2">
                     <button id="ikToggle" class="toggle-btn btn-outline py-2 px-3 rounded-lg text-sm" data-state="on" data-cmd-on="G43.4" data-cmd-off="G49">IK: ON</button>
-                    <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="G43.2">Report IK params</button>
+                    <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M665">Report IK params</button>
                     <button id="calibrationToggle" class="toggle-btn btn-outline py-2 px-3 rounded-lg text-sm" data-state="on" data-cmd-on="M667 S1" data-cmd-off="M667 S0">Calibration: ON</button>
                     <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M667">Get calibration</button>
                     <button class="quick-cmd btn-outline py-2 px-3 rounded-lg text-sm" data-cmd="M667 R">Reset calibration</button>
@@ -373,8 +374,10 @@
     <script src="../shared/storage-manager.js"></script>
     <script src="../shared/footer.js"></script>
     <script src="../shared/printer-interface.js"></script>
+    <script src="../shared/baud-selector.js"></script>
     <!-- Tool-specific scripts -->
     <script src="js/app.js"></script>
+    <script>BaudSelector.mount('baudSelector');</script>
 </body>
 
 </html>
