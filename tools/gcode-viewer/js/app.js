@@ -300,6 +300,29 @@ document.addEventListener('DOMContentLoaded', () => {
             window.gcodeApp = new GcodePreviewerApp();
             // Expose engine for settings panel access
             window.gcodeApp.engine = window.gcodeApp.animationEngine;
+
+            // OrcaSlicer-Rep5x auto-load: if the page URL has ?gcodeUrl=<url>, fetch
+            // that URL and load it as if the user dropped the file in. The URL must
+            // serve CORS-permitted G-code (Access-Control-Allow-Origin: *) — typically
+            // a small local HTTP server spawned by OrcaSlicer-Rep5x's slice action.
+            const params = new URLSearchParams(window.location.search);
+            const gcodeUrl = params.get('gcodeUrl');
+            if (gcodeUrl) {
+                fetch(gcodeUrl)
+                    .then(r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                        return r.blob();
+                    })
+                    .then(blob => {
+                        const name = gcodeUrl.split('/').pop() || 'rep5x.gcode';
+                        const file = new File([blob], name, { type: 'text/plain' });
+                        window.gcodeApp.handleFileSelect(file);
+                    })
+                    .catch(err => {
+                        console.error('Auto-load from gcodeUrl failed:', err);
+                        alert('Failed to auto-load G-code from URL: ' + err.message);
+                    });
+            }
         } else {
             setTimeout(initApp, 50);
         }

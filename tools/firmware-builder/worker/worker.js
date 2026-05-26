@@ -42,10 +42,12 @@ export default {
         return await handleStatusRequest(buildId, env, corsHeaders);
       }
 
-      // GET /download/:buildId - Download firmware
+      // GET /download/:buildId[/:filename] - Download firmware or config files
       if (url.pathname.startsWith('/download/') && request.method === 'GET') {
-        const buildId = url.pathname.split('/download/')[1];
-        return await handleDownloadRequest(buildId, env, corsHeaders);
+        const parts = url.pathname.split('/').filter(Boolean);
+        const buildId = parts[1];
+        const filename = parts[2] || 'firmware.bin';
+        return await handleDownloadRequest(buildId, filename, env, corsHeaders);
       }
 
       // POST /webhook - GitHub Actions callback (internal)
@@ -223,32 +225,39 @@ async function handleStatusRequest(buildId, env, corsHeaders) {
 }
 
 /**
- * Handle firmware download request
+ * Handle download request for firmware.bin or config files.
+ * Config files are uploaded to R2 by the workflow even on build failure,
+ * so they don't require a complete build; firmware.bin does.
  */
-async function handleDownloadRequest(buildId, env, corsHeaders) {
-  // Check build status
-  const buildData = await env.BUILDS.get(`build:${buildId}`, 'json');
+async function handleDownloadRequest(buildId, filename, env, corsHeaders) {
+  const ALLOWED = ['firmware.bin', 'Configuration.h', 'Configuration_adv.h'];
+  if (!ALLOWED.includes(filename)) {
+    return new Response('File not allowed', { status: 400, headers: corsHeaders });
+  }
 
+  const buildData = await env.BUILDS.get(`build:${buildId}`, 'json');
   if (!buildData) {
     return new Response('Build not found', { status: 404, headers: corsHeaders });
   }
 
-  if (buildData.status !== 'complete') {
+  if (filename === 'firmware.bin' && buildData.status !== 'complete') {
     return new Response('Build not ready', { status: 400, headers: corsHeaders });
   }
 
-  // Get firmware from R2
-  const firmware = await env.FIRMWARE.get(`${buildId}/firmware.bin`);
-
-  if (!firmware) {
-    return new Response('Firmware file not found', { status: 404, headers: corsHeaders });
+  const file = await env.FIRMWARE.get(`${buildId}/${filename}`);
+  if (!file) {
+    return new Response('File not found', { status: 404, headers: corsHeaders });
   }
 
-  return new Response(firmware.body, {
+  const contentType = filename.endsWith('.bin')
+    ? 'application/octet-stream'
+    : 'text/plain';
+
+  return new Response(file.body, {
     headers: {
       ...corsHeaders,
-      'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="firmware.bin"`
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${filename}"`
     }
   });
 }

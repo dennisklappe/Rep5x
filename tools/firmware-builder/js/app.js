@@ -879,24 +879,35 @@ async function copyConfig() {
 /**
  * Download configuration files
  */
-function downloadConfigFiles() {
-    const config = wizardState.config;
+async function downloadConfigFiles() {
+    const buildId = window.currentBuildId;
+    if (!buildId) {
+        if (typeof showToast === 'function') {
+            showToast('Click "Build firmware.bin" first to generate the full config files', 'error');
+        }
+        return;
+    }
 
-    // Also save the JSON config so they can reload it later
+    // Save the JSON config (lets the user reload these exact settings later)
     exportConfig(false);
 
-    if (typeof ConfigGenerator !== 'undefined') {
-        // Generate Configuration.h
-        setTimeout(() => {
-            const configH = ConfigGenerator.generateConfigurationH(config);
-            downloadConfigFile('Configuration.h', configH);
-        }, 300);
-
-        // Generate Configuration_adv.h
-        setTimeout(() => {
-            const configAdvH = ConfigGenerator.generateConfigurationAdvH(config);
-            downloadConfigFile('Configuration_adv.h', configAdvH);
-        }, 600);
+    try {
+        const [hResp, advResp] = await Promise.all([
+            fetch(`${BUILDER_URL}/download/${buildId}/Configuration.h`),
+            fetch(`${BUILDER_URL}/download/${buildId}/Configuration_adv.h`)
+        ]);
+        if (!hResp.ok || !advResp.ok) {
+            throw new Error('Configs not ready');
+        }
+        const hBlob = await hResp.blob();
+        const advBlob = await advResp.blob();
+        downloadBlob(hBlob, 'Configuration.h');
+        setTimeout(() => downloadBlob(advBlob, 'Configuration_adv.h'), 300);
+    } catch (err) {
+        console.error('Config download failed:', err);
+        if (typeof showToast === 'function') {
+            showToast('Config files not ready yet — wait for the build to finish, then try again', 'error');
+        }
     }
 }
 
