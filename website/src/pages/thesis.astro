@@ -1,0 +1,359 @@
+---
+import Base from "@/layouts/Base.astro";
+
+const PAGE_COUNT = 85;
+const PAGES_BASE = "/thesis/pages";
+const PDF_URL = "/thesis.pdf";
+const TITLE = "Democratising multi-axis 3D printing";
+---
+
+<Base
+  title={`${TITLE} — Dennis Klappe`}
+  description="Master's thesis by Dennis Klappe (University of Twente): an open-source retrofit that brings multi-axis 3D printing to everyday makers. Read it as a flipbook or download the PDF."
+>
+  <section class="thesis">
+    <div class="thesis__intro">
+      <p class="thesis__kicker">Master's thesis</p>
+      <h1 class="thesis__title">{TITLE}</h1>
+      <p class="thesis__meta">
+        Dennis Klappe &middot; Industrial Design Engineering &middot;
+        University of Twente &middot; 2026
+      </p>
+      <a class="thesis__download" href={PDF_URL} download>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Download PDF</span>
+        <span class="thesis__download-sub">13&nbsp;MB &middot; 85&nbsp;pages</span>
+      </a>
+    </div>
+
+    <div class="thesis__stage">
+      <div id="book-loading" class="thesis__loading">
+        <span class="thesis__spinner" aria-hidden="true"></span>
+        <span>Loading the book&hellip;</span>
+      </div>
+
+      <div class="thesis__bookwrap">
+        <div
+          id="flipbook"
+          class="thesis__book"
+          data-count={PAGE_COUNT}
+          data-base={PAGES_BASE}
+        >
+        </div>
+      </div>
+
+      <div class="thesis__controls" hidden>
+        <button id="thesis-prev" class="thesis__ctrl" aria-label="Previous page">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <span id="thesis-pageinfo" class="thesis__pageinfo">1 / {PAGE_COUNT}</span>
+        <button id="thesis-next" class="thesis__ctrl" aria-label="Next page">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+        <button id="thesis-fs" class="thesis__ctrl thesis__ctrl--fs" aria-label="Toggle fullscreen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M8 21H5a2 2 0 0 1-2-2v-3m18 0v3a2 2 0 0 1-2 2h-3"></path></svg>
+        </button>
+      </div>
+      <p class="thesis__hint">Drag a page corner, tap the arrows, or use your &larr; &rarr; keys.</p>
+    </div>
+  </section>
+
+  <script>
+    import { PageFlip } from "page-flip/dist/js/page-flip.module.js";
+
+    function initThesisBook() {
+      const el = document.getElementById("flipbook");
+      if (!el || el.dataset.ready) return;
+      el.dataset.ready = "1";
+
+      const count = Number(el.dataset.count);
+      const base = el.dataset.base;
+      const pages = Array.from(
+        { length: count },
+        (_, i) => `${base}/p${String(i + 1).padStart(2, "0")}.webp`,
+      );
+
+      const loading = document.getElementById("book-loading");
+      const controls = document.querySelector(".thesis__controls");
+      const info = document.getElementById("thesis-pageinfo");
+      const prev = document.getElementById("thesis-prev");
+      const next = document.getElementById("thesis-next");
+
+      const pageFlip = new PageFlip(el, {
+        width: 495,
+        height: 700,
+        size: "stretch",
+        minWidth: 300,
+        maxWidth: 1000,
+        minHeight: 424,
+        maxHeight: 1414,
+        showCover: true,
+        usePortrait: true,
+        mobileScrollSupport: true,
+        maxShadowOpacity: 0.5,
+        flippingTime: 420,
+        drawShadow: true,
+        autoSize: true,
+      });
+
+      const setInfo = () => {
+        const p = pageFlip.getCurrentPageIndex() + 1;
+        if (info) info.textContent = `${p} / ${count}`;
+      };
+
+      const setHash = () => {
+        const p = pageFlip.getCurrentPageIndex() + 1;
+        history.replaceState(null, "", `#p${p}`);
+      };
+      pageFlip.on("init", () => {
+        if (loading) loading.hidden = true;
+        el.classList.add("is-ready");
+        if (controls) controls.hidden = false;
+        // deep-link: jump to #pN if present in the URL
+        const m = location.hash.match(/p(\d+)/);
+        if (m) {
+          const n = Math.min(Math.max(parseInt(m[1], 10), 1), count);
+          pageFlip.turnToPage(n - 1);
+        }
+        setInfo();
+      });
+      pageFlip.on("flip", () => {
+        setInfo();
+        setHash();
+      });
+
+      pageFlip.loadFromImages(pages);
+
+      prev?.addEventListener("click", () => pageFlip.flipPrev());
+      next?.addEventListener("click", () => pageFlip.flipNext());
+
+      // fullscreen
+      const fsBtn = document.getElementById("thesis-fs");
+      const stage = document.querySelector(".thesis__stage");
+      fsBtn?.addEventListener("click", () => {
+        if (!document.fullscreenElement) stage?.requestFullscreen?.();
+        else document.exitFullscreen?.();
+      });
+      document.addEventListener("fullscreenchange", () => {
+        // StPageFlip resizes on window 'resize'; fire a few times so it
+        // re-measures once the fullscreen layout has settled
+        [60, 250, 500].forEach((t) =>
+          setTimeout(() => window.dispatchEvent(new Event("resize")), t),
+        );
+      });
+
+      const onKey = (e) => {
+        if (e.key === "ArrowLeft") pageFlip.flipPrev();
+        else if (e.key === "ArrowRight") pageFlip.flipNext();
+      };
+      document.addEventListener("keydown", onKey);
+
+      // clean up on view-transition navigation away
+      document.addEventListener(
+        "astro:before-swap",
+        () => {
+          document.removeEventListener("keydown", onKey);
+          try {
+            pageFlip.destroy();
+          } catch (_) {}
+        },
+        { once: true },
+      );
+    }
+
+    document.addEventListener("astro:page-load", initThesisBook);
+  </script>
+
+  <style>
+    .thesis {
+      padding: 3.5rem 1rem 4.5rem;
+    }
+    .thesis__intro {
+      max-width: 720px;
+      margin: 0 auto 2.5rem;
+      text-align: center;
+    }
+    .thesis__kicker {
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #1f9d39;
+      margin-bottom: 0.75rem;
+    }
+    .thesis__title {
+      font-size: clamp(1.8rem, 4.5vw, 3rem);
+      line-height: 1.08;
+      font-weight: 800;
+      color: #0d1117;
+      margin: 0 0 0.85rem;
+    }
+    .thesis__meta {
+      color: #5b6470;
+      font-size: 0.98rem;
+      margin-bottom: 1.9rem;
+    }
+    .thesis__download {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #32d74b;
+      color: #0d1117;
+      font-weight: 700;
+      padding: 0.85rem 1.5rem;
+      border-radius: 999px;
+      text-decoration: none;
+      box-shadow: 0 10px 24px -8px rgba(50, 215, 75, 0.6);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .thesis__download:hover {
+      background: #2bc743;
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px -8px rgba(50, 215, 75, 0.7);
+    }
+    .thesis__download-sub {
+      font-weight: 600;
+      font-size: 0.82rem;
+      opacity: 0.7;
+      padding-left: 0.5rem;
+      border-left: 1px solid rgba(13, 17, 23, 0.25);
+    }
+
+    /* dark reading stage */
+    .thesis__stage {
+      position: relative;
+      max-width: 1180px;
+      margin: 0 auto;
+      background: radial-gradient(120% 120% at 50% 0%, #1b2330 0%, #0d1117 70%);
+      border-radius: 1.5rem;
+      padding: 2.75rem 1rem 2rem;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      min-height: 620px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .thesis__loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: center;
+      color: #c8ccd2;
+      font-size: 0.95rem;
+    }
+    .thesis__spinner {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #32d74b;
+      animation: thesis-spin 0.8s linear infinite;
+    }
+    @keyframes thesis-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .thesis__bookwrap {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .thesis__book {
+      width: 100%;
+      max-width: 1120px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .thesis__book.is-ready {
+      opacity: 1;
+    }
+
+    /* fullscreen: fill the screen, let the book grow past its normal cap */
+    .thesis__stage:fullscreen {
+      border-radius: 0;
+      min-height: 100vh;
+      justify-content: center;
+      padding: 3vh 2vw 2vh;
+      background: radial-gradient(120% 120% at 50% 0%, #1b2330 0%, #0d1117 75%);
+    }
+    .thesis__stage:fullscreen .thesis__book {
+      max-width: none;
+    }
+    /* page-flip draws the pages; give them a crisp edge */
+    .thesis__book :global(.stf__item) {
+      background: #fff;
+    }
+
+    .thesis__controls {
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+      margin-top: 1.9rem;
+    }
+    .thesis__ctrl {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+      color: #eef1f4;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    .thesis__ctrl:hover {
+      background: #32d74b;
+      border-color: #32d74b;
+      color: #0d1117;
+    }
+    .thesis__ctrl:active {
+      transform: scale(0.94);
+    }
+    .thesis__pageinfo {
+      color: #c8ccd2;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.95rem;
+      min-width: 4.5rem;
+      text-align: center;
+    }
+    .thesis__hint {
+      margin-top: 1.1rem;
+      color: #7f8894;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    @media (max-width: 640px) {
+      .thesis__stage {
+        min-height: 520px;
+        padding: 1.75rem 0.5rem 1.5rem;
+        border-radius: 1rem;
+      }
+      .thesis__download {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+  </style>
+</Base>
