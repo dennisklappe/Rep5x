@@ -253,38 +253,45 @@
                                 <p class="text-sm text-gray-500">Use Firmware Builder to configure and compile</p>
                             </div>
                         </a>
-                        <a href="/printer-setup/" target="_blank" class="workflow-step">
+                        <a href="/firmware-tester/" target="_blank" class="workflow-step">
                             <div class="workflow-number">2</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Test firmware</p>
+                                <p class="text-sm text-gray-500">Verify drivers, endstops, stepper directions and homing on the flashed firmware</p>
+                            </div>
+                        </a>
+                        <a href="/printer-setup/" target="_blank" class="workflow-step">
+                            <div class="workflow-number">3</div>
                             <div>
                                 <p class="font-medium text-gray-900">Setup printer</p>
                                 <p class="text-sm text-gray-500">Calibrate Z, C, and B axis home positions</p>
                             </div>
                         </a>
+                    </div>
+                    <div>
                         <a href="/lc-lb-measure/" target="_blank" class="workflow-step">
-                            <div class="workflow-number">3</div>
+                            <div class="workflow-number">4</div>
                             <div>
                                 <p class="font-medium text-gray-900">Measure LC/LB</p>
                                 <p class="text-sm text-gray-500">Determine kinematic parameters</p>
                             </div>
                         </a>
-                    </div>
-                    <div>
                         <a href="/calibrator/" target="_blank" class="workflow-step">
-                            <div class="workflow-number">4</div>
+                            <div class="workflow-number">5</div>
                             <div>
                                 <p class="font-medium text-gray-900">Calibrate errors</p>
                                 <p class="text-sm text-gray-500">Find and compensate systematic errors</p>
                             </div>
                         </a>
                         <a href="/gcode-viewer/" target="_blank" class="workflow-step">
-                            <div class="workflow-number">5</div>
+                            <div class="workflow-number">6</div>
                             <div>
                                 <p class="font-medium text-gray-900">Slice & preview</p>
                                 <p class="text-sm text-gray-500">Generate G-code and visualise in viewer</p>
                             </div>
                         </a>
                         <a href="/printer-control/" target="_blank" class="workflow-step">
-                            <div class="workflow-number">6</div>
+                            <div class="workflow-number">7</div>
                             <div>
                                 <p class="font-medium text-gray-900">Print!</p>
                                 <p class="text-sm text-gray-500">Send to printer and start printing</p>
@@ -325,17 +332,16 @@
                     </span>
                 </a>
 
-                <!-- Printer Setup -->
-                <a href="/printer-setup/" class="tool-tile">
+                <!-- Firmware Tester -->
+                <a href="/firmware-tester/" class="tool-tile">
                     <div class="tool-icon green">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                         </svg>
                     </div>
-                    <h3 class="tool-title">Printer Setup</h3>
+                    <h3 class="tool-title">Firmware Tester</h3>
                     <p class="tool-description">
-                        Calibrate Z height, C and B axis positions, and steps/degree. Essential first step before kinematic calibration.
+                        Verify a freshly flashed firmware. Walks through TMC drivers, endstops, stepper directions, homing, and the extruder, then produces a corrected JSON config if anything is reversed.
                     </p>
                     <span class="tool-link">
                         Open tool
@@ -354,7 +360,27 @@
                 <div class="category-line"></div>
             </div>
 
-            <div class="grid md:grid-cols-2 gap-5">
+            <div class="grid md:grid-cols-3 gap-5">
+                <!-- Printer Setup -->
+                <a href="/printer-setup/" class="tool-tile">
+                    <div class="tool-icon blue">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="tool-title">Printer Setup</h3>
+                    <p class="tool-description">
+                        Calibrate Z height, C and B axis positions, and steps/degree. Essential first step before kinematic calibration.
+                    </p>
+                    <span class="tool-link">
+                        Open tool
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
+
                 <!-- LC/LB Measure -->
                 <a href="/lc-lb-measure/" class="tool-tile">
                     <div class="tool-icon blue">

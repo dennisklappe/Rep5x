@@ -675,6 +675,93 @@ class PrinterInterface {
     }
 
     /**
+     * Query M119 (endstop states) and parse the response.
+     * Marlin reports each endstop on its own line: "x_min: open" or "x_min: TRIGGERED".
+     * Rep5x uses I and J as the Marlin internal names for the C and B axes respectively,
+     * so the returned object normalises those to c and b.
+     * @returns {Promise<{x: string, y: string, z: string, c: string, b: string, raw: string}>}
+     *   Each axis value is either "open", "TRIGGERED", or "unknown" (axis not reported).
+     */
+    async queryEndstops() {
+        if (this.testMode.enabled) {
+            return { x: 'open', y: 'open', z: 'open', c: 'open', b: 'open', raw: 'Test mode' };
+        }
+
+        const raw = await this.sendCommandAndCapture('M119', 5000);
+        const result = { x: 'unknown', y: 'unknown', z: 'unknown', c: 'unknown', b: 'unknown', raw };
+
+        // Match lines like "x_min: open", "y_min: TRIGGERED", "i_min: open", etc.
+        // Marlin uses i/j for the 4th/5th rotational axes which Rep5x calls c/b.
+        const axisAliases = { x: ['x'], y: ['y'], z: ['z'], c: ['c', 'i'], b: ['b', 'j'] };
+        for (const line of raw.split('\n')) {
+            const match = line.trim().match(/^([a-z])_(?:min|max):\s*(\S+)/i);
+            if (!match) continue;
+            const letter = match[1].toLowerCase();
+            const state = match[2].toLowerCase() === 'triggered' ? 'TRIGGERED' : 'open';
+            for (const [axis, aliases] of Object.entries(axisAliases)) {
+                if (aliases.includes(letter)) {
+                    result[axis] = state;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Query M122 (TMC driver diagnostics) and parse the response for UART communication health.
+     * A working setup returns numeric values for current, microstepping, etc. on every axis.
+     * A driver with broken UART typically shows "0xFFFFFFFF" or similar markers.
+     * @returns {Promise<{ok: boolean, brokenAxes: string[], raw: string}>}
+     */
+    async queryDriverStatus() {
+        if (this.testMode.enabled) {
+            return { ok: true, brokenAxes: [], raw: 'Test mode' };
+        }
+
+        const raw = await this.sendCommandAndCapture('M122', 5000);
+        const brokenAxes = [];
+
+        // Look for the "Test connection" row Marlin emits; values are "OK" or include "READ" errors.
+        // Also detect the well-known UART-broken signature "0xFFFFFFFF".
+        const testLine = raw.split('\n').find(l => /test\s+connection/i.test(l));
+        if (testLine) {
+            // Format example: "Test connection   OK    OK    OK    OK    OK    OK"
+            // We just need to confirm none read as something other than OK.
+            const tokens = testLine.split(/\s+/).filter(Boolean);
+            const firstOkIndex = tokens.findIndex(t => /^(ok|read|fail)/i.test(t));
+            if (firstOkIndex !== -1) {
+                const statuses = tokens.slice(firstOkIndex);
+                statuses.forEach((status, idx) => {
+                    if (!/^ok$/i.test(status)) {
+                        brokenAxes.push(`driver-${idx}`);
+                    }
+                });
+            }
+        }
+
+        if (raw.includes('0xFFFFFFFF') || /UART.*err/i.test(raw)) {
+            if (brokenAxes.length === 0) brokenAxes.push('uart-comm');
+        }
+
+        return { ok: brokenAxes.length === 0, brokenAxes, raw };
+    }
+
+    /**
+     * Query M115 (firmware identifier) and return the protocol/firmware string.
+     * @returns {Promise<{firmware: string, raw: string}>}
+     */
+    async queryFirmwareInfo() {
+        if (this.testMode.enabled) {
+            return { firmware: 'Test mode firmware', raw: 'Test mode' };
+        }
+
+        const raw = await this.sendCommandAndCapture('M115', 5000);
+        const fwLine = raw.split('\n').find(l => /FIRMWARE_NAME/i.test(l)) || raw.split('\n')[0] || '';
+        return { firmware: fwLine.trim(), raw };
+    }
+
+    /**
      * Query M665 (IK parameters LC/LB)
      * @returns {Promise<{lc: number, lb: number, segmentsPerSecond: number}>}
      */
